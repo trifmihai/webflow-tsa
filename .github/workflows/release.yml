@@ -1,4 +1,4 @@
-name: Release
+name: Build
 
 on:
   push:
@@ -7,13 +7,11 @@ on:
       - main
 
 jobs:
-  Release:
-    name: Release
+  Build:
+    name: Build
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -34,12 +32,3 @@ jobs:
 
       - name: Build Project
         run: pnpm build
-
-      - name: Create Release Pull Request and Publish to npm
-        id: changesets-production
-        uses: changesets/action@v1
-        with:
-          publish: pnpm release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
