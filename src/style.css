@@ -2,3 +2,867 @@
 :root {
   --custom-code-css-loaded: initial;
 }
+
+/* 
+============================================
+  TEXT ROLL
+============================================
+*/
+
+.practice-text-reel_component {
+  --reel-bg-color: 255 255 255;
+  --reel-transition-duration: 1250ms;
+  --reel-hold-duration: 950ms;
+}
+
+.practice-text-reel_mask {
+  position: relative;
+  overflow: visible;
+  clip-path: inset(0 -100vmax 0 -100vmax);
+  width: max-content;
+  max-width: none;
+}
+
+.practice-text-reel_track {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+}
+
+.practice-text-reel_item {
+  padding-inline-end: 0.2em;
+  will-change: opacity, transform;
+  transform-origin: left center;
+}
+
+.practice-text-reel_fade-top,
+.practice-text-reel_fade-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 42%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.practice-text-reel_fade-top {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--reel-bg-color)) 0%,
+    rgb(var(--reel-bg-color) / 0) 100%
+  );
+}
+
+.practice-text-reel_fade-bottom {
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgb(var(--reel-bg-color)) 0%,
+    rgb(var(--reel-bg-color) / 0) 100%
+  );
+}
+
+@media (max-width: 767px) {
+  .practice-text-reel_mask {
+    width: 100%;
+    max-width: 100%;
+    clip-path: inset(0);
+    overflow: hidden;
+  }
+
+  .practice-text-reel_item {
+    padding-inline-end: 0;
+    transform-origin: center center;
+  }
+}
+/* ?============================================
+   NAVBAR GLAZE MOTION
+   ?============================================
+*/
+
+.navbar_component {
+  --navbar-glaze-line: rgba(26, 26, 26, 0.1);
+  --navbar-glaze-highlight: rgba(255, 255, 255, 0.52);
+  --navbar-glaze-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.08);
+
+  isolation: isolate;
+  overflow: visible;
+  transform-style: preserve-3d;
+  transform-origin: top center;
+  opacity: 1 !important;
+  will-change: transform;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.navbar_component > * {
+  position: relative;
+  z-index: 1;
+}
+
+.navbar_component::before,
+.navbar_component::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition:
+    background-position 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar_component::before {
+  z-index: 0;
+  inset: auto 0 -1px;
+  height: 1px;
+  background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0),
+      var(--navbar-glaze-highlight),
+      rgba(255, 255, 255, 0)
+    ),
+    linear-gradient(90deg, rgba(26, 26, 26, 0), var(--navbar-glaze-line), rgba(26, 26, 26, 0));
+  background-position: 0 0;
+  background-size:
+    100% 100%,
+    100% 100%;
+  box-shadow: var(--navbar-glaze-shadow);
+}
+
+.navbar_component::after {
+  z-index: 0;
+  overflow: hidden;
+  background-image: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 36%,
+    rgba(255, 255, 255, 0.24) 48%,
+    rgba(255, 255, 255, 0.04) 56%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  background-position: -150% 0;
+  background-repeat: no-repeat;
+  background-size: 42% 100%;
+  mix-blend-mode: screen;
+}
+
+.navbar_component[data-scroll-state='visible'] {
+  transform-origin: top center;
+}
+
+.navbar_component[data-scroll-state='visible']::before {
+  transform: translate3d(0, 0, 0);
+}
+
+.navbar_component[data-scroll-state='visible']::after {
+  background-position: 150% 0;
+}
+
+.navbar_component[data-scroll-state='hidden'] {
+  transform-origin: top center;
+}
+
+.navbar_component[data-scroll-state='hidden']::before {
+  transform: translate3d(0, -0.125rem, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar_component,
+  .navbar_component::before,
+  .navbar_component::after {
+    transition: none !important;
+  }
+}
+
+/* 
+?============================================
+   BUTTON SCOOP
+?============================================
+*/
+
+.button-scoop {
+  --button-cave: 16px;
+  --button-inner-cave: 12px;
+  --button-line-gap: 4px;
+  --button-line-width: 1px;
+  --button-padding-y: 12px;
+  --button-padding-x: 32px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: fit-content;
+  min-width: 0;
+
+  padding-block: calc(var(--button-line-gap) + var(--button-line-width) + var(--button-padding-y));
+
+  padding-inline: calc(var(--button-line-gap) + var(--button-line-width) + var(--button-padding-x));
+
+  color: inherit;
+  background-color: transparent;
+  border: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+.button-scoop_shape {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.button-scoop_fill,
+.button-scoop_line {
+  position: absolute;
+  pointer-events: none;
+}
+
+.button-scoop_fill {
+  inset: 0;
+  background-color: currentColor;
+
+  -webkit-mask:
+    radial-gradient(
+        circle at 0 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top right / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 0 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom right / 50% 50% no-repeat;
+
+  mask:
+    radial-gradient(
+        circle at 0 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top right / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 0 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom right / 50% 50% no-repeat;
+}
+
+.button-scoop_line {
+  --button-line-radius: var(--button-inner-cave);
+  --button-line-size: var(--button-line-width);
+
+  inset: var(--button-line-gap);
+  color: currentColor;
+
+  background:
+    linear-gradient(currentColor 0 0) top left var(--button-line-radius) /
+      calc(100% - (var(--button-line-radius) * 2)) var(--button-line-size) no-repeat,
+    linear-gradient(currentColor 0 0) bottom left var(--button-line-radius) /
+      calc(100% - (var(--button-line-radius) * 2)) var(--button-line-size) no-repeat,
+    linear-gradient(currentColor 0 0) top var(--button-line-radius) left / var(--button-line-size)
+      calc(100% - (var(--button-line-radius) * 2)) no-repeat,
+    linear-gradient(currentColor 0 0) top var(--button-line-radius) right / var(--button-line-size)
+      calc(100% - (var(--button-line-radius) * 2)) no-repeat,
+    radial-gradient(
+        circle at 0 0,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      top left / var(--button-line-radius) var(--button-line-radius) no-repeat,
+    radial-gradient(
+        circle at 100% 0,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      top right / var(--button-line-radius) var(--button-line-radius) no-repeat,
+    radial-gradient(
+        circle at 0 100%,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      bottom left / var(--button-line-radius) var(--button-line-radius) no-repeat,
+    radial-gradient(
+        circle at 100% 100%,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      bottom right / var(--button-line-radius) var(--button-line-radius) no-repeat;
+}
+
+.button-scoop_text {
+  position: relative;
+  z-index: 1;
+}
+
+/* Size variants */
+
+.button-scoop.is-small {
+  --button-cave: 12px;
+  --button-inner-cave: 8px;
+  --button-padding-y: 8px;
+  --button-padding-x: 24px;
+}
+
+.button-scoop.is-large {
+  --button-cave: 20px;
+  --button-inner-cave: 16px;
+  --button-padding-y: 14px;
+  --button-padding-x: 40px;
+}
+
+/* Color variants */
+
+.button-scoop.is-dark .button-scoop_fill {
+  background-color: #202123;
+}
+
+.button-scoop.is-dark .button-scoop_line {
+  color: #8d8f91;
+}
+
+.button-scoop.is-dark .button-scoop_text {
+  color: #f4f4f1;
+}
+
+.button-scoop.is-dark:hover .button-scoop_fill {
+  background-color: #28292b;
+}
+
+.button-scoop.is-dark:hover .button-scoop_line {
+  color: #b8babd;
+}
+
+.button-scoop.is-light .button-scoop_fill {
+  background-color: #f4f4f1;
+}
+
+.button-scoop.is-light .button-scoop_line {
+  color: #6f7174;
+}
+
+.button-scoop.is-light .button-scoop_text {
+  color: #202123;
+}
+
+.button-scoop.is-light:hover .button-scoop_fill {
+  background-color: #ffffff;
+}
+
+.button-scoop.is-light:hover .button-scoop_line {
+  color: #202123;
+}
+
+/* 
+?============================================
+  TEAM HOVER, FINAL
+?============================================
+  Goal:
+  - Keep .team_image size from Webflow.
+  - Use .team_image only as the clipping mask.
+  - Animate only the image, gradient, and text reveal.
+  - Apply the gradient directly to .team_card-linear.
+  - No fake clickable cursor.
+*/
+
+/* ------------------------------
+   Motion tokens
+------------------------------ */
+
+:root {
+  --team-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --team-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --team-image-duration: 680ms;
+  --team-filter-duration: 420ms;
+  --team-role-duration: 190ms;
+  --team-gradient-duration: 320ms;
+
+  --team-gradient-height: 7.5rem;
+}
+
+/* ------------------------------
+   Card safety
+   Do not control the visual size here.
+------------------------------ */
+
+.team_card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  cursor: default;
+
+  /* Start state, cropped black and white portrait */
+  --team-start-scale: 1.16;
+  --team-start-y: -1%;
+  --team-start-position: 50% 16%;
+
+  /* Hover state, calmer full profile */
+  --team-end-scale: 1;
+  --team-end-y: 0%;
+  --team-end-position: 50% 50%;
+}
+
+/* Keep the actual Webflow sizing.
+   Webflow owns max-width and overall size on .team_image. */
+.team_image-wrapper {
+  position: relative;
+}
+
+/* .team_image remains the visual container from Webflow.
+   We only add clipping and stacking context. */
+.team_image {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* ------------------------------
+   Image layer
+------------------------------ */
+
+.team_avatar {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  height: auto;
+  max-width: none;
+  display: block;
+
+  object-fit: cover;
+  object-position: var(--team-start-position);
+
+  transform: translate3d(0, var(--team-start-y), 0) scale(var(--team-start-scale));
+  transform-origin: center top;
+  backface-visibility: hidden;
+
+  filter: grayscale(100%) contrast(1.035) saturate(0.86);
+
+  transition:
+    transform var(--team-image-duration) var(--team-ease-out),
+    object-position var(--team-image-duration) var(--team-ease-out),
+    filter var(--team-filter-duration) ease;
+}
+
+/* ------------------------------
+   Gradient layer
+   Current Webflow class: .team_card-linear
+   Older fallback class: .team_card-gradient
+------------------------------ */
+
+.team_card-linear,
+.team_card-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: auto;
+
+  z-index: 2;
+  height: var(--team-gradient-height);
+  overflow: visible;
+  pointer-events: none;
+
+  opacity: 0.96;
+
+  background: radial-gradient(
+      ellipse at 50% 100%,
+      rgba(0, 0, 0, 0.38) 0%,
+      rgba(0, 0, 0, 0.22) 34%,
+      rgba(0, 0, 0, 0) 72%
+    ),
+    linear-gradient(
+      0deg,
+      rgba(17, 17, 17, 0.98) 0%,
+      rgba(17, 17, 17, 0.96) 10%,
+      rgba(17, 17, 17, 0.9) 21%,
+      rgba(17, 17, 17, 0.78) 34%,
+      rgba(18, 18, 18, 0.58) 50%,
+      rgba(22, 22, 22, 0.36) 66%,
+      rgba(28, 28, 28, 0.16) 82%,
+      rgba(32, 32, 32, 0) 100%
+    );
+
+  transition:
+    opacity var(--team-gradient-duration) ease,
+    filter var(--team-gradient-duration) ease;
+}
+
+/* Kill older pseudo-gradient versions if they still exist. */
+.team_card-linear::before,
+.team_card-gradient::before {
+  content: none !important;
+}
+
+/* ------------------------------
+   Content layer
+------------------------------ */
+
+.team_card-content {
+  position: relative;
+  z-index: 3;
+
+  height: 100%;
+  padding: 1rem;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+/* Keep role in the stack to avoid name jumping.
+   Reveal is opacity + tiny movement only. */
+.team_role {
+  margin-bottom: 0.4rem;
+
+  opacity: 0;
+  transform: translate3d(0, 0.35rem, 0);
+
+  transition:
+    opacity var(--team-role-duration) ease,
+    transform var(--team-role-duration) var(--team-ease-soft);
+}
+
+.team_name {
+  transform: translate3d(0, 0, 0);
+}
+
+/* Text safety */
+.team_role,
+.team_name,
+.team_role .text-size-medium.is-team,
+.team_name .text-size-large.is-team {
+  color: #fff;
+}
+
+.team_name,
+.team_name .text-size-large.is-team {
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------
+   Hover state
+------------------------------ */
+
+@media (hover: hover) and (pointer: fine) {
+  .team_card:hover .team_avatar {
+    object-position: var(--team-end-position);
+    transform: translate3d(0, var(--team-end-y), 0) scale(var(--team-end-scale));
+    filter: grayscale(0%) contrast(1) saturate(0.92);
+  }
+
+  .team_card:hover .team_card-linear,
+  .team_card:hover .team_card-gradient {
+    opacity: 1;
+    filter: contrast(1.035);
+  }
+
+  .team_card:hover .team_role {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 45ms;
+  }
+}
+
+/* ------------------------------
+   Touch devices
+   No hover trap: show full info by default.
+------------------------------ */
+
+@media (hover: none), (pointer: coarse) {
+  .team_avatar {
+    object-position: var(--team-end-position);
+    transform: translate3d(0, var(--team-end-y), 0) scale(var(--team-end-scale));
+    filter: grayscale(0%) contrast(1) saturate(0.92);
+  }
+
+  .team_card-linear,
+  .team_card-gradient {
+    opacity: 1;
+    filter: contrast(1.035);
+  }
+
+  .team_role {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------
+   Reduced motion
+------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .team_avatar,
+  .team_card-linear,
+  .team_card-gradient,
+  .team_role {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .team_card:hover .team_avatar {
+    transform: none;
+  }
+}
+
+/* ------------------------------
+   Optional per-card crop tuning
+   Add these combo classes on .team_card in Webflow.
+------------------------------ */
+
+/*
+.team_card.is-raluca {
+  --team-start-scale: 1.14;
+  --team-start-y: -1%;
+  --team-start-position: 50% 15%;
+  --team-end-position: 50% 50%;
+}
+
+.team_card.is-emanuela {
+  --team-start-scale: 1.16;
+  --team-start-y: -1%;
+  --team-start-position: 50% 14%;
+  --team-end-position: 50% 49%;
+}
+
+.team_card.is-timoce {
+  --team-start-scale: 1.15;
+  --team-start-y: -1%;
+  --team-start-position: 50% 14%;
+  --team-end-position: 50% 50%;
+}
+
+.team_card.is-anca {
+  --team-start-scale: 1.15;
+  --team-start-y: -1%;
+  --team-start-position: 50% 13%;
+  --team-end-position: 50% 50%;
+}
+
+.team_card.is-tudor {
+  --team-start-scale: 1.15;
+  --team-start-y: -1%;
+  --team-start-position: 50% 14%;
+  --team-end-position: 50% 50%;
+}
+*/
+
+/* 
+?============================================
+  TOC
+?============================================
+*/
+
+:root {
+  --toc-duration-current: 300ms;
+  --toc-duration-text: 260ms;
+
+  --toc-ease-current: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --toc-text-inactive: var(--color--text--dark--tertiary);
+  --toc-text-active: var(--color--text--dark--primary);
+
+  --toc-line-muted: var(--grey--400);
+  --toc-line-active: var(--color--text--dark--primary);
+
+  --toc-text-shift: 0.125rem;
+}
+
+.cms-page_toc-list-wrapper {
+  position: relative !important;
+  width: 100% !important;
+
+  --toc-current-y: 0px;
+  --toc-current-height: 0px;
+  --toc-current-opacity: 0;
+}
+
+.cms-page_vertical-wrapper,
+.cms-page_vertical-divider {
+  display: none !important;
+}
+
+.cms-page_toc-list-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background-color: var(--toc-line-muted);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cms-page_toc-list-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: var(--toc-current-height);
+  background-color: var(--toc-line-active);
+  opacity: var(--toc-current-opacity);
+  transform: translate3d(0, var(--toc-current-y), 0);
+  pointer-events: none;
+  z-index: 3;
+  will-change: transform, height;
+
+  transition:
+    transform var(--toc-duration-current) var(--toc-ease-current),
+    height var(--toc-duration-current) var(--toc-ease-current),
+    opacity 160ms ease;
+}
+
+.blog-post_toc-list {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-inline-start: 0 !important;
+  list-style: none !important;
+  row-gap: 0 !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+.blog-post_toc-list-item {
+  position: relative !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.blog-post_toc .toc_h2,
+.blog-post_toc .toc_h3,
+.blog-post_toc .toc_h4,
+.blog-post_toc .toc_h5,
+.blog-post_toc .toc_h6 {
+  display: block !important;
+  position: relative !important;
+  z-index: 2 !important;
+
+  width: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+  border-left: 1px solid transparent !important;
+
+  color: var(--toc-text-inactive) !important;
+  opacity: 0.58;
+
+  text-decoration: none !important;
+  font-weight: 400 !important;
+
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 0.25rem !important;
+
+  line-height: var(--_typography---p-root_line-height--rp-regular) !important;
+  overflow-wrap: break-word !important;
+
+  transform: translate3d(0, 0, 0);
+
+  transition:
+    color var(--toc-duration-text) var(--toc-ease-current),
+    opacity var(--toc-duration-text) var(--toc-ease-current),
+    transform var(--toc-duration-current) var(--toc-ease-current);
+
+  transition-delay: 0ms !important;
+  will-change: transform, opacity;
+}
+
+.blog-post_toc .u-toc-current-link {
+  border-left-color: transparent !important;
+  font-weight: 400 !important;
+}
+
+.blog-post_toc .is-toc-muted {
+  color: var(--toc-text-inactive) !important;
+  opacity: 0.52 !important;
+  transform: translate3d(0, 0, 0);
+}
+
+.blog-post_toc .u-toc-current-link,
+.blog-post_toc .is-toc-active {
+  color: var(--toc-text-active) !important;
+  opacity: 1 !important;
+  transform: translate3d(var(--toc-text-shift), 0, 0);
+  font-weight: 400 !important;
+}
+
+.blog-post_toc .toc_h2:hover,
+.blog-post_toc .toc_h3:hover,
+.blog-post_toc .toc_h4:hover,
+.blog-post_toc .toc_h5:hover,
+.blog-post_toc .toc_h6:hover {
+  color: var(--toc-text-active) !important;
+  opacity: 0.9 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cms-page_toc-list-wrapper::after,
+  .blog-post_toc .toc_h2,
+  .blog-post_toc .toc_h3,
+  .blog-post_toc .toc_h4,
+  .blog-post_toc .toc_h5,
+  .blog-post_toc .toc_h6 {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  .blog-post_toc .u-toc-current-link,
+  .blog-post_toc .is-toc-active {
+    transform: none !important;
+  }
+}
