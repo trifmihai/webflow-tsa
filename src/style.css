@@ -10,14 +10,12 @@
 */
 /* ==========================================================
    TSA.LAW MOBILE FULL-SCREEN NAVIGATION
-   Fix robust pentru navbar sticky / smart-nav.
-   Panel-ul este mutat în body prin TypeScript doar pe mobil.
+   Final custom CSS
    ========================================================== */
 
 /* ==========================================================
-   PAGE LOCK STATE
-   Body primește stilurile inline necesare din TypeScript.
-   Clasa este folosită pentru overscroll safety.
+   SCROLL LOCK SAFETY
+   Clasa este adăugată și eliminată din TypeScript.
    ========================================================== */
 
 html.tsa-nav-is-locked,
@@ -30,15 +28,11 @@ body.tsa-nav-is-locked {
    ========================================================== */
 
 @media screen and (max-width: 767px) {
-  /* --------------------------------------------------------
-     Shared tokens
-     Sunt definite la nivel global deoarece overlay-ul este mutat
-     în body și nu mai moștenește variabilele din navbar.
-     -------------------------------------------------------- */
-
   :root {
-    --tsa-nav-overlay-open-duration: 280ms;
-    --tsa-nav-overlay-close-duration: 200ms;
+    /* --------------------------------------------------------
+       Motion tokens
+       -------------------------------------------------------- */
+
     --tsa-nav-content-open-duration: 250ms;
     --tsa-nav-content-close-duration: 170ms;
     --tsa-nav-icon-duration: 220ms;
@@ -46,35 +40,48 @@ body.tsa-nav-is-locked {
 
     --tsa-nav-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
+    /* --------------------------------------------------------
+       Visual tokens
+       -------------------------------------------------------- */
+
     --tsa-nav-overlay-background: var(--grey--0);
-    --tsa-nav-trigger-border: rgba(39, 36, 32, 0.14);
-    --tsa-nav-trigger-open-background: rgba(39, 36, 32, 0.045);
 
     /*
-      MODIFICĂ AICI poziția generală a meniului.
+      MODIFICĂ AICI spațiul rezervat header-ului
+      în interiorul meniului full-screen.
     */
     --tsa-nav-header-space: 5.5rem;
+
+    /*
+      MODIFICĂ AICI padding-ul lateral al conținutului din meniu.
+    */
     --tsa-nav-inline-padding: 2rem;
+
+    /*
+      MODIFICĂ AICI spațiul de jos pentru CTA.
+    */
     --tsa-nav-bottom-padding: 1.5rem;
 
     /*
-      MODIFICĂ AICI distanța dintre link-uri.
+      MODIFICĂ AICI distanța dintre link-urile centrale.
     */
     --tsa-nav-link-gap: 1.25rem;
   }
 
-  /* --------------------------------------------------------
-     Prevent flash înainte ca JavaScript-ul să inițializeze meniul.
-     -------------------------------------------------------- */
+  /* ==========================================================
+     PREVENT INITIAL FLASH
+     Iconul și panel-ul apar doar după inițializarea JavaScript.
+     ========================================================== */
 
   .navbar_component:not(.is-mobile-nav-ready) .navbar_menu-icon,
   .navbar_component:not(.is-mobile-nav-ready) .navbar_mobile-panel {
     display: none !important;
   }
 
-  /* --------------------------------------------------------
-     Header mobile row
-     -------------------------------------------------------- */
+  /* ==========================================================
+     MOBILE HEADER ROW
+     Logo în stânga, hamburger / X în dreapta.
+     ========================================================== */
 
   .navbar_component.is-mobile-nav-ready {
     isolation: isolate;
@@ -102,8 +109,8 @@ body.tsa-nav-is-locked {
   }
 
   /*
-    Cât timp meniul este deschis, navbar-ul este fixat deasupra
-    overlay-ului și este protejat de orice smart-nav hide transform.
+    Cât timp meniul este deschis, navbar-ul rămâne fix
+    peste overlay și nu mai poate fi ascuns de smart-nav.
   */
 
   .navbar_component.is-mobile-nav-ready.is-menu-open {
@@ -118,11 +125,11 @@ body.tsa-nav-is-locked {
     z-index: 10001;
   }
 
-  /* --------------------------------------------------------
-   Hamburger / X trigger
-   Fără border sau background vizibil în starea open.
-   Zona de click rămâne confortabilă: 3rem × 3rem.
-   -------------------------------------------------------- */
+  /* ==========================================================
+     HAMBURGER / X TRIGGER
+     Fără border și fără background în starea deschisă.
+     Zona de apăsare rămâne 3rem × 3rem.
+     ========================================================== */
 
   .navbar_component.is-mobile-nav-ready .navbar_menu-icon {
     -webkit-tap-highlight-color: transparent;
@@ -156,29 +163,23 @@ body.tsa-nav-is-locked {
   }
 
   /*
-  Păstrăm un indicator accesibil doar pentru utilizatorii
-  care navighează cu tastatura. Nu apare la click pe mobil.
-*/
+    Indicator accesibil doar pentru navigarea cu tastatura.
+    Nu apare la tap sau click normal.
+  */
+
   .navbar_component.is-mobile-nav-ready .navbar_menu-icon:focus-visible {
     outline: 1px solid var(--color--text--dark--primary);
     outline-offset: 0.375rem;
   }
 
-  /*
-  Meniul deschis nu mai adaugă nici border, nici background.
-  Doar liniile se transformă în X.
-*/
   .navbar_component.is-mobile-nav-ready.is-menu-open .navbar_menu-icon {
     background-color: transparent;
     border: 0;
   }
-  .navbar_component.is-mobile-nav-ready .navbar_menu-icon:active {
-    transform: scale(0.96);
-  }
 
-  /* --------------------------------------------------------
-     Hamburger lines to X
-     -------------------------------------------------------- */
+  /* ==========================================================
+     HAMBURGER LINES TO X
+     ========================================================== */
 
   .navbar_component.is-mobile-nav-ready .navbar_menu-line {
     background-color: currentColor;
@@ -221,11 +222,15 @@ body.tsa-nav-is-locked {
     transform: translate(-50%, 0) rotate(-45deg);
   }
 
-  /* --------------------------------------------------------
-     Full-screen overlay
-     Acesta este panel-ul existent mutat direct în body.
-     Nu mai depinde de grid-ul sau sticky state-ul navbar-ului.
-     -------------------------------------------------------- */
+  /* ==========================================================
+     FULL-SCREEN OVERLAY
+     Panel-ul este mutat direct în body prin TypeScript.
+
+     Important:
+     Fundalul NU are opacity sau transform animate.
+     Apare complet opac din primul frame, astfel secțiunea
+     din spate nu mai apare prin overlay.
+     ========================================================== */
 
   body > .navbar_mobile-panel.is-mobile-nav-overlay {
     background-color: var(--tsa-nav-overlay-background);
@@ -236,7 +241,6 @@ body.tsa-nav-is-locked {
     height: 100dvh;
     inset: 0;
     max-height: none;
-    opacity: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -244,32 +248,31 @@ body.tsa-nav-is-locked {
       var(--tsa-nav-inline-padding) max(var(--tsa-nav-bottom-padding), env(safe-area-inset-bottom));
     pointer-events: none;
     position: fixed !important;
-    transform: translate3d(0, -0.375rem, 0);
     visibility: hidden;
     width: 100vw;
     z-index: 10000;
 
-    transition:
-      opacity var(--tsa-nav-overlay-close-duration) var(--tsa-nav-ease-out),
-      transform var(--tsa-nav-overlay-close-duration) var(--tsa-nav-ease-out),
-      visibility 0ms linear var(--tsa-nav-overlay-close-duration);
+    /*
+      La închidere, overlay-ul rămâne opac până când
+      link-urile și CTA-ul și-au terminat ieșirea.
+    */
+    transition: visibility 0ms linear var(--tsa-nav-content-close-duration);
   }
 
   body > .navbar_mobile-panel.is-mobile-nav-overlay.is-open {
-    opacity: 1;
     pointer-events: auto;
-    transform: translate3d(0, 0, 0);
     visibility: visible;
 
-    transition:
-      opacity var(--tsa-nav-overlay-open-duration) var(--tsa-nav-ease-out),
-      transform var(--tsa-nav-overlay-open-duration) var(--tsa-nav-ease-out),
-      visibility 0ms linear 0ms;
+    /*
+      La deschidere, overlay-ul acoperă pagina instant.
+      Doar conținutul interior intră subtil.
+    */
+    transition: visibility 0ms linear 0ms;
   }
 
-  /* --------------------------------------------------------
-     Central links
-     -------------------------------------------------------- */
+  /* ==========================================================
+     CENTER NAVIGATION LINKS
+     ========================================================== */
 
   body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_links {
     align-items: center;
@@ -321,10 +324,11 @@ body.tsa-nav-is-locked {
     color: var(--color--text--dark--primary);
   }
 
-  /* --------------------------------------------------------
-     Bottom CTA
-     Fără blur și fără scale decorativ.
-     -------------------------------------------------------- */
+  /* ==========================================================
+     BOTTOM CTA
+     Alinierea internă rămâne controlabilă direct din Webflow.
+     CSS-ul custom păstrează doar poziția, apariția și vizibilitatea.
+     ========================================================== */
 
   body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_cta-group {
     border-top: 0;
@@ -336,6 +340,7 @@ body.tsa-nav-is-locked {
     opacity: 0;
     padding-top: 2rem;
     transform: translate3d(0, 0.25rem, 0);
+    width: 100%;
 
     transition:
       opacity var(--tsa-nav-content-close-duration) var(--tsa-nav-ease-out),
@@ -359,18 +364,18 @@ body.tsa-nav-is-locked {
 
 /* ==========================================================
    REDUCED MOTION
-   Meniul rămâne complet funcțional, fără deplasare spațială.
+   Overlay-ul rămâne funcțional, fără mișcare spațială.
    ========================================================== */
 
 @media screen and (max-width: 767px) and (prefers-reduced-motion: reduce) {
-  body > .navbar_mobile-panel.is-mobile-nav-overlay,
+  body > .navbar_mobile-panel.is-mobile-nav-overlay {
+    transition: visibility 0ms linear 0ms;
+  }
+
   body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_links,
   body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_cta-group {
     transform: none;
-
-    transition:
-      opacity 0ms linear,
-      visibility 0ms linear;
+    transition: opacity 0ms linear;
   }
 
   .navbar_component.is-mobile-nav-ready .navbar_menu-icon,
@@ -736,74 +741,6 @@ body.tsa-nav-is-locked {
     padding-right: 1.25rem;
   }
 }
-/*? v1 */
-/* .practice-text-reel_component {
-  --reel-bg-color: 255 255 255;
-  --reel-transition-duration: 1250ms;
-  --reel-hold-duration: 950ms;
-}
-
-.practice-text-reel_mask {
-  position: relative;
-  overflow: visible;
-  clip-path: inset(0 -100vmax 0 -100vmax);
-  width: max-content;
-  max-width: none;
-}
-
-.practice-text-reel_track {
-  position: relative;
-  z-index: 1;
-  will-change: transform;
-}
-
-.practice-text-reel_item {
-  padding-inline-end: 0.2em;
-  will-change: opacity, transform;
-  transform-origin: left center;
-}
-
-.practice-text-reel_fade-top,
-.practice-text-reel_fade-bottom {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 42%;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.practice-text-reel_fade-top {
-  top: 0;
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--reel-bg-color)) 0%,
-    rgb(var(--reel-bg-color) / 0) 100%
-  );
-}
-
-.practice-text-reel_fade-bottom {
-  bottom: 0;
-  background: linear-gradient(
-    to top,
-    rgb(var(--reel-bg-color)) 0%,
-    rgb(var(--reel-bg-color) / 0) 100%
-  );
-}
-
-@media (max-width: 767px) {
-  .practice-text-reel_mask {
-    width: 100%;
-    max-width: 100%;
-    clip-path: inset(0);
-    overflow: hidden;
-  }
-
-  .practice-text-reel_item {
-    padding-inline-end: 0;
-    transform-origin: center center;
-  }
-} */
 
 /* ?============================================
    NAVBAR GLAZE MOTION
