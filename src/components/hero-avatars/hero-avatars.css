@@ -1,0 +1,274 @@
+/* ==========================================================
+   TSA.LAW HERO AVATARS
+   Premium hover state + dynamic-width shared tooltip
+
+   Webflow controlează:
+   - designul vizual al tooltip-ului
+   - border, background, padding, corners
+   - designul săgeții
+
+   Custom code controlează:
+   - hover / focus / tap state
+   - poziționarea tooltip-ului
+   - morph-ul de width între nume
+   - repoziționarea săgeții doar când este absolut necesar
+   ========================================================== */
+
+.hero_image-list {
+  /* --------------------------------------------------------
+     Avatar motion tokens
+     -------------------------------------------------------- */
+
+  --hero-avatar-image-duration: 520ms;
+  --hero-avatar-filter-duration: 360ms;
+  --hero-avatar-shadow-duration: 300ms;
+
+  /* --------------------------------------------------------
+     Tooltip motion tokens
+     -------------------------------------------------------- */
+
+  --hero-tooltip-open-duration: 220ms;
+  --hero-tooltip-close-duration: 160ms;
+
+  /*
+    MODIFICĂ ÎMPREUNĂ cu tooltipMorphDuration din TypeScript
+    dacă vrei ca schimbarea de nume să fie mai rapidă sau mai lentă.
+  */
+  --hero-tooltip-morph-duration: 260ms;
+
+  --hero-avatar-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --hero-avatar-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /*
+    MODIFICĂ AICI distanța dintre avataruri și tooltip.
+    Recomandat: 0.875rem până la 1.25rem.
+  */
+  --hero-tooltip-gap: 1.125rem;
+
+  /*
+    Valorile sunt actualizate automat de TypeScript.
+  */
+  --hero-tooltip-x: 50%;
+  --hero-tooltip-arrow-x: 50%;
+
+  isolation: isolate;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+}
+
+/* ==========================================================
+   AVATAR MOTION
+   Dimensiunile și crop-ul rămân controlate în Webflow.
+   ========================================================== */
+
+.hero_avatar-wrapper {
+  cursor: default;
+  outline: none;
+  touch-action: manipulation;
+}
+
+.hero_avatar-item {
+  backface-visibility: hidden;
+
+  transition:
+    filter var(--hero-avatar-filter-duration) ease,
+    box-shadow var(--hero-avatar-shadow-duration) ease;
+}
+
+.hero_avatar-image {
+  /*
+    Păstrează rotațiile individuale existente.
+    Avatarul 5 are rotație proprie din designul Webflow.
+  */
+  --hero-avatar-base-rotation: rotate(0deg);
+
+  backface-visibility: hidden;
+  transform: var(--hero-avatar-base-rotation);
+  transform-origin: center center;
+
+  transition: transform var(--hero-avatar-image-duration) var(--hero-avatar-ease-out);
+}
+
+.hero_avatar-image.is-avatar-5 {
+  --hero-avatar-base-rotation: rotate(3deg);
+}
+
+/* ----------------------------------------------------------
+   Active avatar state
+   ---------------------------------------------------------- */
+
+.hero_avatar-wrapper.is-active .hero_avatar-item {
+  filter: grayscale(0%) contrast(1.01) saturate(0.94);
+
+  box-shadow:
+    -17px 24px 8px 0 rgba(51, 51, 51, 0),
+    -11px 16px 8px 0 rgba(51, 51, 51, 0.01),
+    -6px 9px 7px 0 rgba(51, 51, 51, 0.055),
+    -3px 4px 6px 0 rgba(51, 51, 51, 0.11),
+    -1px 1px 4px 0 rgba(51, 51, 51, 0.12);
+}
+
+.hero_avatar-wrapper.is-active .hero_avatar-image {
+  transform: translate3d(0, -1px, 0) var(--hero-avatar-base-rotation) scale(1.04);
+}
+
+/* ----------------------------------------------------------
+   Keyboard focus
+   ---------------------------------------------------------- */
+
+.hero_avatar-wrapper:focus-visible .hero_avatar-item {
+  outline: 1px solid var(--color--text--dark--primary);
+  outline-offset: 0.1875rem;
+}
+
+/* ==========================================================
+   TOOLTIP POSITIONING AND MOTION
+   Designul vizual rămâne cel făcut în Webflow.
+   ========================================================== */
+
+/*
+  În Webflow tooltip-ul este display:none ca fallback.
+  După inițializarea JavaScript, îl scoatem din flow
+  și îl pregătim pentru animație.
+*/
+
+.hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip {
+  bottom: calc(100% + var(--hero-tooltip-gap));
+  box-sizing: border-box;
+  display: flex !important;
+  left: var(--hero-tooltip-x);
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: auto;
+  top: auto;
+  transform: translate3d(-50%, 0.375rem, 0) scale(0.985);
+  transform-origin: 50% 100%;
+  visibility: hidden;
+  width: max-content;
+  z-index: 20;
+
+  transition:
+    left var(--hero-tooltip-morph-duration) var(--hero-avatar-ease-out),
+    width var(--hero-tooltip-morph-duration) var(--hero-avatar-ease-out),
+    opacity var(--hero-tooltip-close-duration) ease,
+    transform var(--hero-tooltip-close-duration) var(--hero-avatar-ease-out),
+    visibility 0ms linear var(--hero-tooltip-close-duration);
+}
+
+.hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip.is-visible {
+  opacity: 1;
+  transform: translate3d(-50%, 0, 0) scale(1);
+  visibility: visible;
+
+  transition:
+    left var(--hero-tooltip-morph-duration) var(--hero-avatar-ease-out),
+    width var(--hero-tooltip-morph-duration) var(--hero-avatar-ease-out),
+    opacity var(--hero-tooltip-open-duration) ease,
+    transform var(--hero-tooltip-open-duration) var(--hero-avatar-ease-out),
+    visibility 0ms linear 0ms;
+}
+
+/*
+  Folosit în momentele interne de măsurare și recalculare.
+  Utilizatorul nu vede repoziționarea intermediară.
+*/
+
+.hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip.is-positioning {
+  transition: none !important;
+}
+
+/* ==========================================================
+   DYNAMIC WIDTH MORPH
+   Tooltip-ul păstrează width natural, dar tranziția dintre
+   nume este animată controlat.
+   ========================================================== */
+
+.hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip-surface {
+  box-sizing: border-box;
+}
+
+.hero_image-list.is-avatar-motion-ready
+  .hero_avatar-tooltip.is-resizing
+  .hero_avatar-tooltip-surface {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip.is-resizing .hero_avatar-tooltip-name,
+.hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip.is-resizing [data-hero-tooltip-name] {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   WEBFLOW ARROW
+   Săgeata ta rămâne complet stilizată în Webflow.
+
+   Desktop:
+   - nu aplicăm nicio mișcare independentă;
+   - rămâne centrată prin stilurile tale Webflow.
+
+   Mobile / viewport constrained:
+   - doar dacă tooltip-ul trebuie împins în interiorul ecranului,
+     mutăm săgeata către avatar;
+   - mutarea este instant, fără tranziție proprie.
+   ========================================================== */
+
+.hero_image-list.is-avatar-motion-ready
+  .hero_avatar-tooltip.is-viewport-clamped
+  .hero_avatar-tooltip-arrow {
+  left: var(--hero-tooltip-arrow-x);
+  right: auto;
+  transition: none;
+}
+
+/* ==========================================================
+   MOBILE SAFETY
+   Tooltip-ul rămâne în viewport la tap.
+   ========================================================== */
+
+@media screen and (max-width: 479px) {
+  .hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip {
+    max-width: calc(100vw - 2rem);
+  }
+
+  .hero_avatar-tooltip-surface {
+    max-width: 100%;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .text-size-regular.is-hero-tooltip {
+    white-space: nowrap;
+  }
+}
+
+/* ==========================================================
+   REDUCED MOTION
+   Păstrăm informația și schimbarea de culoare.
+   Eliminăm zoom-ul și deplasarea percepută.
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero_avatar-item,
+  .hero_avatar-image,
+  .hero_avatar-tooltip,
+  .hero_avatar-tooltip-arrow {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .hero_avatar-wrapper.is-active .hero_avatar-image {
+    transform: var(--hero-avatar-base-rotation);
+  }
+
+  .hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip,
+  .hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip.is-visible {
+    transform: translate3d(-50%, 0, 0);
+  }
+}

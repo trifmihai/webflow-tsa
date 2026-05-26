@@ -1,0 +1,380 @@
+/*
+============================================
+  NAVBAR SMART HIDE/ SHOW AND MOBILE MENU
+============================================
+*/
+/* ==========================================================
+   TSA.LAW MOBILE FULL-SCREEN NAVIGATION
+   Final custom CSS
+   ========================================================== */
+
+/* ==========================================================
+   SCROLL LOCK SAFETY
+   Clasa este adăugată și eliminată din TypeScript.
+   ========================================================== */
+
+html.tsa-nav-is-locked,
+body.tsa-nav-is-locked {
+  overscroll-behavior: none;
+}
+
+/* ==========================================================
+   MOBILE NAVIGATION: 767px AND BELOW
+   ========================================================== */
+
+@media screen and (max-width: 767px) {
+  :root {
+    /* --------------------------------------------------------
+       Motion tokens
+       -------------------------------------------------------- */
+
+    --tsa-nav-content-open-duration: 250ms;
+    --tsa-nav-content-close-duration: 170ms;
+    --tsa-nav-icon-duration: 220ms;
+    --tsa-nav-press-duration: 120ms;
+
+    --tsa-nav-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* --------------------------------------------------------
+       Visual tokens
+       -------------------------------------------------------- */
+
+    --tsa-nav-overlay-background: var(--grey--0);
+
+    /*
+      MODIFICĂ AICI spațiul rezervat header-ului
+      în interiorul meniului full-screen.
+    */
+    --tsa-nav-header-space: 5.5rem;
+
+    /*
+      MODIFICĂ AICI padding-ul lateral al conținutului din meniu.
+    */
+    --tsa-nav-inline-padding: 2rem;
+
+    /*
+      MODIFICĂ AICI spațiul de jos pentru CTA.
+    */
+    --tsa-nav-bottom-padding: 1.5rem;
+
+    /*
+      MODIFICĂ AICI distanța dintre link-urile centrale.
+    */
+    --tsa-nav-link-gap: 1.25rem;
+  }
+
+  /* ==========================================================
+     PREVENT INITIAL FLASH
+     Iconul și panel-ul apar doar după inițializarea JavaScript.
+     ========================================================== */
+
+  .navbar_component:not(.is-mobile-nav-ready) .navbar_menu-icon,
+  .navbar_component:not(.is-mobile-nav-ready) .navbar_mobile-panel {
+    display: none !important;
+  }
+
+  /* ==========================================================
+     MOBILE HEADER ROW
+     Logo în stânga, hamburger / X în dreapta.
+     ========================================================== */
+
+  .navbar_component.is-mobile-nav-ready {
+    isolation: isolate;
+  }
+
+  .navbar_component.is-mobile-nav-ready .nav-content {
+    align-items: center;
+    column-gap: 1rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    justify-content: initial;
+    padding-right: 0;
+    position: relative;
+    row-gap: 0;
+    width: 100%;
+  }
+
+  .navbar_component.is-mobile-nav-ready .navbar_logo-wrapper {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  /*
+    Cât timp meniul este deschis, navbar-ul rămâne fix
+    peste overlay și nu mai poate fi ascuns de smart-nav.
+  */
+
+  .navbar_component.is-mobile-nav-ready.is-menu-open {
+    left: 0;
+    opacity: 1 !important;
+    position: fixed !important;
+    right: 0;
+    top: 0;
+    transform: translate3d(0, 0, 0) !important;
+    visibility: visible !important;
+    width: 100%;
+    z-index: 10001;
+  }
+
+  /* ==========================================================
+     HAMBURGER / X TRIGGER
+     Fără border și fără background în starea deschisă.
+     Zona de apăsare rămâne 3rem × 3rem.
+     ========================================================== */
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-icon {
+    -webkit-tap-highlight-color: transparent;
+    align-items: center;
+    appearance: none;
+    background-color: transparent;
+    border: 0;
+    color: var(--grey--600);
+    cursor: pointer;
+    display: inline-flex !important;
+    flex-direction: column;
+    gap: 0;
+    grid-column: 2;
+    grid-row: 1;
+    height: 3rem;
+    justify-content: center;
+    justify-self: end;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    text-decoration: none;
+    transform: scale(1);
+    width: 3rem;
+    z-index: 2;
+
+    transition: transform var(--tsa-nav-press-duration) var(--tsa-nav-ease-out);
+  }
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-icon:active {
+    transform: scale(0.96);
+  }
+
+  /*
+    Indicator accesibil doar pentru navigarea cu tastatura.
+    Nu apare la tap sau click normal.
+  */
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-icon:focus-visible {
+    outline: 1px solid var(--color--text--dark--primary);
+    outline-offset: 0.375rem;
+  }
+
+  .navbar_component.is-mobile-nav-ready.is-menu-open .navbar_menu-icon {
+    background-color: transparent;
+    border: 0;
+  }
+
+  /* ==========================================================
+     HAMBURGER LINES TO X
+     ========================================================== */
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-line {
+    background-color: currentColor;
+    display: block;
+    flex: none;
+    height: 1px;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform-origin: center;
+    width: 1.25rem;
+
+    transition:
+      opacity 140ms ease,
+      transform var(--tsa-nav-icon-duration) var(--tsa-nav-ease-out);
+  }
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-line.is-top {
+    transform: translate(-50%, -0.375rem);
+  }
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-line.is-middle {
+    transform: translate(-50%, 0);
+  }
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-line.is-bottom {
+    transform: translate(-50%, 0.375rem);
+  }
+
+  .navbar_component.is-mobile-nav-ready.is-menu-open .navbar_menu-line.is-top {
+    transform: translate(-50%, 0) rotate(45deg);
+  }
+
+  .navbar_component.is-mobile-nav-ready.is-menu-open .navbar_menu-line.is-middle {
+    opacity: 0;
+    transform: translate(-50%, 0) scaleX(0.45);
+  }
+
+  .navbar_component.is-mobile-nav-ready.is-menu-open .navbar_menu-line.is-bottom {
+    transform: translate(-50%, 0) rotate(-45deg);
+  }
+
+  /* ==========================================================
+     FULL-SCREEN OVERLAY
+     Panel-ul este mutat direct în body prin TypeScript.
+
+     Important:
+     Fundalul NU are opacity sau transform animate.
+     Apare complet opac din primul frame, astfel secțiunea
+     din spate nu mai apare prin overlay.
+     ========================================================== */
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay {
+    background-color: var(--tsa-nav-overlay-background);
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+    height: 100vh;
+    height: 100dvh;
+    inset: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: calc(var(--tsa-nav-header-space) + env(safe-area-inset-top))
+      var(--tsa-nav-inline-padding) max(var(--tsa-nav-bottom-padding), env(safe-area-inset-bottom));
+    pointer-events: none;
+    position: fixed !important;
+    visibility: hidden;
+    width: 100vw;
+    z-index: 10000;
+
+    /*
+      La închidere, overlay-ul rămâne opac până când
+      link-urile și CTA-ul și-au terminat ieșirea.
+    */
+    transition: visibility 0ms linear var(--tsa-nav-content-close-duration);
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay.is-open {
+    pointer-events: auto;
+    visibility: visible;
+
+    /*
+      La deschidere, overlay-ul acoperă pagina instant.
+      Doar conținutul interior intră subtil.
+    */
+    transition: visibility 0ms linear 0ms;
+  }
+
+  /* ==========================================================
+     CENTER NAVIGATION LINKS
+     ========================================================== */
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_links {
+    align-items: center;
+    display: flex !important;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--tsa-nav-link-gap);
+    justify-content: center;
+    opacity: 0;
+    transform: translate3d(0, 0.375rem, 0);
+    width: 100%;
+
+    transition:
+      opacity var(--tsa-nav-content-close-duration) var(--tsa-nav-ease-out),
+      transform var(--tsa-nav-content-close-duration) var(--tsa-nav-ease-out);
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay.is-open .navbar_links {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+
+    transition:
+      opacity var(--tsa-nav-content-open-duration) var(--tsa-nav-ease-out) 30ms,
+      transform var(--tsa-nav-content-open-duration) var(--tsa-nav-ease-out) 30ms;
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_link-wrapper {
+    border-top: 0;
+    color: var(--color--text--dark--tertiary);
+    width: auto;
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_link {
+    align-items: center;
+    color: var(--color--text--dark--tertiary);
+    display: flex;
+    font-size: 1.125rem;
+    justify-content: center;
+    line-height: var(--_responsive---p-line-height--p-medium);
+    min-height: 2.75rem;
+    padding: 0.25rem 0.75rem;
+    text-align: center;
+    width: auto;
+
+    transition: color 180ms ease;
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_link:is(:hover, :focus-visible) {
+    color: var(--color--text--dark--primary);
+  }
+
+  /* ==========================================================
+     BOTTOM CTA
+     Alinierea internă rămâne controlabilă direct din Webflow.
+     CSS-ul custom păstrează doar poziția, apariția și vizibilitatea.
+     ========================================================== */
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_cta-group {
+    border-top: 0;
+    display: flex !important;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: auto;
+    opacity: 0;
+    padding-top: 2rem;
+    transform: translate3d(0, 0.25rem, 0);
+    width: 100%;
+
+    transition:
+      opacity var(--tsa-nav-content-close-duration) var(--tsa-nav-ease-out),
+      transform var(--tsa-nav-content-close-duration) var(--tsa-nav-ease-out);
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay.is-open .navbar_cta-group {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+
+    transition:
+      opacity var(--tsa-nav-content-open-duration) var(--tsa-nav-ease-out) 50ms,
+      transform var(--tsa-nav-content-open-duration) var(--tsa-nav-ease-out) 50ms;
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_button-wrapper {
+    display: flex !important;
+    flex: 0 0 auto;
+  }
+}
+
+/* ==========================================================
+   REDUCED MOTION
+   Overlay-ul rămâne funcțional, fără mișcare spațială.
+   ========================================================== */
+
+@media screen and (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  body > .navbar_mobile-panel.is-mobile-nav-overlay {
+    transition: visibility 0ms linear 0ms;
+  }
+
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_links,
+  body > .navbar_mobile-panel.is-mobile-nav-overlay .navbar_cta-group {
+    transform: none;
+    transition: opacity 0ms linear;
+  }
+
+  .navbar_component.is-mobile-nav-ready .navbar_menu-icon,
+  .navbar_component.is-mobile-nav-ready .navbar_menu-line {
+    transition-duration: 0ms;
+  }
+}

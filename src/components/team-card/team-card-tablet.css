@@ -1,0 +1,46 @@
+/*
+============================================
+  MEDIA QUERIES
+===========================================
+*/
+
+/* TEAM SECTION */
+
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .team_component {
+    width: 100%;
+    container-type: inline-size;
+  }
+
+  .team_group,
+  .team_frame,
+  .team_list {
+    width: fit-content;
+  }
+
+  .team_list {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .team_card {
+    width: min(14.5rem, calc((100cqw - 5rem) / 3));
+    flex: 0 0 min(14.5rem, calc((100cqw - 5rem) / 3));
+    min-width: 0;
+  }
+
+  .team_image-wrapper,
+  .team_image {
+    width: 100%;
+  }
+
+  .team_image {
+    max-width: none;
+  }
+
+  .team_avatar {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}

@@ -1,0 +1,216 @@
+/*
+?============================================
+   BUTTON SCOOP
+?============================================
+*/
+
+.button-scoop {
+  --button-cave: 16px;
+  --button-inner-cave: 12px;
+  --button-line-gap: 4px;
+  --button-line-width: 1px;
+  --button-padding-y: 12px;
+  --button-padding-x: 32px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: fit-content;
+  min-width: 0;
+
+  padding-block: calc(var(--button-line-gap) + var(--button-line-width) + var(--button-padding-y));
+
+  padding-inline: calc(var(--button-line-gap) + var(--button-line-width) + var(--button-padding-x));
+
+  color: inherit;
+  background-color: transparent;
+  border: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+.button-scoop_shape {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.button-scoop_fill,
+.button-scoop_line {
+  position: absolute;
+  pointer-events: none;
+}
+
+.button-scoop_fill {
+  inset: 0;
+  background-color: currentColor;
+
+  -webkit-mask:
+    radial-gradient(
+        circle at 0 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top right / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 0 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom right / 50% 50% no-repeat;
+
+  mask:
+    radial-gradient(
+        circle at 0 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 0,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      top right / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 0 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom left / 50% 50% no-repeat,
+    radial-gradient(
+        circle at 100% 100%,
+        transparent 0 var(--button-cave),
+        #000 calc(var(--button-cave) + 0.5px)
+      )
+      bottom right / 50% 50% no-repeat;
+}
+
+.button-scoop_line {
+  --button-line-radius: var(--button-inner-cave);
+  --button-line-size: var(--button-line-width);
+
+  inset: var(--button-line-gap);
+  color: currentColor;
+
+  background:
+    linear-gradient(currentColor 0 0) top left var(--button-line-radius) /
+      calc(100% - (var(--button-line-radius) * 2)) var(--button-line-size) no-repeat,
+    linear-gradient(currentColor 0 0) bottom left var(--button-line-radius) /
+      calc(100% - (var(--button-line-radius) * 2)) var(--button-line-size) no-repeat,
+    linear-gradient(currentColor 0 0) top var(--button-line-radius) left / var(--button-line-size)
+      calc(100% - (var(--button-line-radius) * 2)) no-repeat,
+    linear-gradient(currentColor 0 0) top var(--button-line-radius) right / var(--button-line-size)
+      calc(100% - (var(--button-line-radius) * 2)) no-repeat,
+    radial-gradient(
+        circle at 0 0,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      top left / var(--button-line-radius) var(--button-line-radius) no-repeat,
+    radial-gradient(
+        circle at 100% 0,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      top right / var(--button-line-radius) var(--button-line-radius) no-repeat,
+    radial-gradient(
+        circle at 0 100%,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      bottom left / var(--button-line-radius) var(--button-line-radius) no-repeat,
+    radial-gradient(
+        circle at 100% 100%,
+        transparent 0 calc(var(--button-line-radius) - var(--button-line-size)),
+        currentColor calc(var(--button-line-radius) - var(--button-line-size))
+          var(--button-line-radius),
+        transparent calc(var(--button-line-radius) + 0.5px)
+      )
+      bottom right / var(--button-line-radius) var(--button-line-radius) no-repeat;
+}
+
+.button-scoop_text {
+  position: relative;
+  z-index: 1;
+}
+
+/* Size variants */
+
+.button-scoop.is-small {
+  --button-cave: 12px;
+  --button-inner-cave: 8px;
+  --button-padding-y: 8px;
+  --button-padding-x: 24px;
+}
+
+.button-scoop.is-large {
+  --button-cave: 20px;
+  --button-inner-cave: 16px;
+  --button-padding-y: 14px;
+  --button-padding-x: 40px;
+}
+
+/* Color variants */
+
+.button-scoop.is-dark .button-scoop_fill {
+  background-color: #202123;
+}
+
+.button-scoop.is-dark .button-scoop_line {
+  color: #8d8f91;
+}
+
+.button-scoop.is-dark .button-scoop_text {
+  color: #f4f4f1;
+}
+
+.button-scoop.is-dark:hover .button-scoop_fill {
+  background-color: #28292b;
+}
+
+.button-scoop.is-dark:hover .button-scoop_line {
+  color: #b8babd;
+}
+
+.button-scoop.is-light .button-scoop_fill {
+  background-color: #f4f4f1;
+}
+
+.button-scoop.is-light .button-scoop_line {
+  color: #6f7174;
+}
+
+.button-scoop.is-light .button-scoop_text {
+  color: #202123;
+}
+
+.button-scoop.is-light:hover .button-scoop_fill {
+  background-color: #ffffff;
+}
+
+.button-scoop.is-light:hover .button-scoop_line {
+  color: #202123;
+}

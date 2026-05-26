@@ -1,0 +1,358 @@
+/*
+============================================
+  TEXT ROLL
+============================================
+*/
+
+/*? v2 */
+/* ==========================================================
+   PRACTICE TEXT REEL: PREMIUM TSA MOTION SYSTEM
+   Adaugă după stilurile existente ale componentei.
+   Înlocuiește codul custom anterior pentru acest reel.
+   ========================================================== */
+
+.practice-text-reel_component {
+  /* ----------------------------------------------------------
+     Shared motion tokens
+     ---------------------------------------------------------- */
+
+  /*
+    Durata mișcării track-ului.
+    Mai scurtă decât versiunea anterioară pentru ca lista
+    să petreacă mai mult timp într-o stare clară, lizibilă.
+  */
+  --reel-transition-duration: 760ms;
+
+  /*
+    Durata tranziției de opacity.
+    Puțin mai scurtă decât mișcarea, astfel încât ierarhia
+    vizuală să se stabilizeze calm înainte de finalul deplasării.
+  */
+  --reel-opacity-duration: 680ms;
+
+  /*
+    Timpul în care un mesaj rămâne complet lizibil.
+    Pentru TSA, repausul trebuie să domine mișcarea.
+  */
+  --reel-hold-duration: 2250;
+
+  /*
+    Elementele sunt deja vizibile și își schimbă poziția.
+    Un ease-in-out controlat este mai potrivit decât bounce
+    sau un ease-out agresiv.
+  */
+  --reel-ease-move: cubic-bezier(0.65, 0, 0.35, 1);
+  --reel-ease-opacity: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ----------------------------------------------------------
+     Desktop hierarchy
+     ---------------------------------------------------------- */
+
+  --reel-desktop-near-opacity: 0.26;
+  --reel-desktop-far-opacity: 0.055;
+
+  /*
+    Spațiu de siguranță pentru fontul serif, astfel încât
+    literele să nu fie tăiate în stânga sau dreapta.
+  */
+  --reel-desktop-inline-safety: 0.625rem;
+
+  /*
+    MODIFICĂ AICI cât de devreme dispar textele
+    în partea superioară și inferioară pe desktop.
+  */
+  --reel-desktop-fade-start: 16%;
+  --reel-desktop-fade-end: 84%;
+}
+
+/* ==========================================================
+   SHARED ANIMATION STATE
+   Aceste tranziții sunt activate doar după inițializarea JS.
+   Astfel, componenta rămâne lizibilă și dacă JS nu pornește.
+   ========================================================== */
+
+.practice-text-reel_component.is-initialized .practice-text-reel_track {
+  transform: translate3d(0, 0, 0);
+  transition-property: transform;
+  transition-duration: var(--reel-transition-duration);
+  transition-timing-function: var(--reel-ease-move);
+}
+
+.practice-text-reel_component.is-initialized .practice-text-reel_item {
+  opacity: 0;
+  transform: none;
+  transition-property: opacity;
+  transition-duration: var(--reel-opacity-duration);
+  transition-timing-function: var(--reel-ease-opacity);
+}
+
+/* ==========================================================
+   DESKTOP AND TABLET: 768px+
+   Prefix în stânga, listă editorială în dreapta.
+   ========================================================== */
+
+@media screen and (min-width: 768px) {
+  .practice-text-reel_mask {
+    /*
+      Extinde discret aria de clipping pentru fontul serif,
+      fără să modifice alinierea vizuală a componentei.
+    */
+    box-sizing: content-box;
+    padding-inline: var(--reel-desktop-inline-safety);
+    margin-inline: calc(var(--reel-desktop-inline-safety) * -1);
+
+    /*
+      Fade real, independent de culoarea fundalului.
+      Textele nu mai sunt tăiate brutal la capetele măștii.
+    */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 var(--reel-desktop-fade-start),
+      #000 var(--reel-desktop-fade-end),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 var(--reel-desktop-fade-start),
+      #000 var(--reel-desktop-fade-end),
+      transparent 100%
+    );
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
+
+  /*
+    Overlay-urile vechi nu mai sunt necesare.
+    Mask-image creează un fade mai curat și mai predictibil.
+  */
+  .practice-text-reel_fade-top,
+  .practice-text-reel_fade-bottom {
+    display: none;
+  }
+
+  /*
+    Ierarhia desktop:
+    activul este dominant, vecinii apropiați susțin continuitatea,
+    iar item-urile mai îndepărtate construiesc profunzime discretă.
+  */
+
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-active {
+    opacity: 1;
+  }
+
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-prev,
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-next {
+    opacity: var(--reel-desktop-near-opacity);
+  }
+
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-prev-two,
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-next-two {
+    opacity: var(--reel-desktop-far-opacity);
+  }
+}
+
+/* ==========================================================
+   MOBILE: 767px AND BELOW
+   Item activ + următoarele două opțiuni ca preview.
+   ========================================================== */
+
+@media screen and (max-width: 767px) {
+  .practice-text-reel_component {
+    /*
+      Mișcarea mobilă este ușor mai calmă deoarece unele texte
+      ocupă două rânduri și au nevoie de puțin mai mult timp.
+    */
+    --reel-transition-duration: 700ms;
+    --reel-opacity-duration: 620ms;
+    --reel-hold-duration: 2550;
+
+    /*
+      MODIFICĂ AICI spațiul dintre opțiunile mobile.
+      Recomandare: între 0.125rem și 0.375rem.
+    */
+    --reel-mobile-item-gap: 0.25rem;
+
+    /*
+      MODIFICĂ AICI distanța dintre "Lucrăm cu" și listă.
+    */
+    --reel-mobile-prefix-gap: 1.25rem;
+
+    /*
+      JavaScript recalculează automat această înălțime
+      pentru cele mai înalte trei opțiuni consecutive.
+    */
+    --reel-mobile-mask-height: 11rem;
+
+    /*
+      MODIFICĂ AICI contrastul preview-urilor mobile.
+    */
+    --reel-mobile-next-opacity: 0.14;
+    --reel-mobile-next-two-opacity: 0.045;
+  }
+
+  .practice-text-reel_layout {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--reel-mobile-prefix-gap);
+    justify-content: center;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .practice-text-reel_prefix {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .practice-text-reel_prefix > .heading-style-h4 {
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .practice-text-reel_mask {
+    height: var(--reel-mobile-mask-height);
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+
+    /*
+      Item-ul activ trebuie să fie primul răspuns clar
+      după heading, fără fade superior peste el.
+    */
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .practice-text-reel_track {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: var(--reel-mobile-item-gap);
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .practice-text-reel_item {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    height: auto;
+    justify-content: center;
+    min-height: 0;
+    padding-block: 0;
+    white-space: normal;
+    width: 100%;
+  }
+
+  .practice-text-reel_item > .heading-style-h4 {
+    max-width: min(100%, 22ch);
+    text-align: center;
+    text-wrap: balance;
+    white-space: normal;
+  }
+
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-active {
+    opacity: 1;
+  }
+
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-next {
+    opacity: var(--reel-mobile-next-opacity);
+  }
+
+  .practice-text-reel_component.is-initialized .practice-text-reel_item.is-next-two {
+    opacity: var(--reel-mobile-next-two-opacity);
+  }
+
+  .practice-text-reel_fade-top,
+  .practice-text-reel_fade-bottom {
+    display: none;
+  }
+}
+
+/* ==========================================================
+   STATIC LIST MODE
+   Folosit pentru prefers-reduced-motion sau când animația
+   este dezactivată din settings.
+   Nu ascundem informația, afișăm lista completă static.
+   ========================================================== */
+
+.practice-text-reel_component.is-static-list .practice-text-reel_mask {
+  height: auto !important;
+  margin-inline: 0;
+  overflow: visible;
+  padding-inline: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.practice-text-reel_component.is-static-list .practice-text-reel_track {
+  gap: 0.25rem;
+  transform: none !important;
+  transition: none !important;
+}
+
+.practice-text-reel_component.is-static-list .practice-text-reel_item {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.practice-text-reel_component.is-static-list .practice-text-reel_fade-top,
+.practice-text-reel_component.is-static-list .practice-text-reel_fade-bottom {
+  display: none;
+}
+
+@media screen and (min-width: 768px) {
+  .practice-text-reel_component.is-static-list .practice-text-reel_layout {
+    align-items: start;
+  }
+
+  .practice-text-reel_component.is-static-list .practice-text-reel_prefix {
+    padding-top: 0.08em;
+  }
+}
+
+/* ==========================================================
+   INVISIBLE SETUP AND LOOP RESET
+   Orice recalculare internă se produce fără fade sau deplasare
+   vizibilă pentru utilizator.
+   ========================================================== */
+
+.practice-text-reel_component.is-setting-up .practice-text-reel_track,
+.practice-text-reel_component.is-setting-up .practice-text-reel_item,
+.practice-text-reel_component.is-loop-resetting .practice-text-reel_track,
+.practice-text-reel_component.is-loop-resetting .practice-text-reel_item {
+  transition: none !important;
+}
+
+/* ==========================================================
+   REDUCED MOTION SAFETY
+   JS transformă componenta într-o listă statică completă.
+   Această regulă previne orice tranziție accidentală.
+   ========================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-text-reel_component .practice-text-reel_track,
+  .practice-text-reel_component .practice-text-reel_item {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================
+   SMALL MOBILE GUTTER
+   Regula existentă elimină padding-ul sub 479px.
+   Îl readăugăm doar acestei secțiuni pentru lizibilitate.
+   ========================================================== */
+
+@media screen and (max-width: 479px) {
+  .content-wrapper.is-who {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}

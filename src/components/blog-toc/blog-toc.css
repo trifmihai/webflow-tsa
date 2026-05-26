@@ -1,0 +1,179 @@
+/*
+?============================================
+  TOC
+?============================================
+*/
+
+:root {
+  --toc-duration-current: 300ms;
+  --toc-duration-text: 260ms;
+
+  --toc-ease-current: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --toc-text-inactive: var(--color--text--dark--tertiary);
+  --toc-text-active: var(--color--text--dark--primary);
+
+  --toc-line-muted: var(--grey--400);
+  --toc-line-active: var(--color--text--dark--primary);
+
+  --toc-text-shift: 0.125rem;
+}
+
+.cms-page_toc-list-wrapper {
+  position: relative !important;
+  width: 100% !important;
+
+  --toc-current-y: 0px;
+  --toc-current-height: 0px;
+  --toc-current-opacity: 0;
+}
+
+.cms-page_vertical-wrapper,
+.cms-page_vertical-divider {
+  display: none !important;
+}
+
+.cms-page_toc-list-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background-color: var(--toc-line-muted);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cms-page_toc-list-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: var(--toc-current-height);
+  background-color: var(--toc-line-active);
+  opacity: var(--toc-current-opacity);
+  transform: translate3d(0, var(--toc-current-y), 0);
+  pointer-events: none;
+  z-index: 3;
+  will-change: transform, height;
+
+  transition:
+    transform var(--toc-duration-current) var(--toc-ease-current),
+    height var(--toc-duration-current) var(--toc-ease-current),
+    opacity 160ms ease;
+}
+
+.blog-post_toc-list {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-inline-start: 0 !important;
+  list-style: none !important;
+  row-gap: 0 !important;
+
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+
+.blog-post_toc-list-item {
+  position: relative !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.blog-post_toc .toc_h2,
+.blog-post_toc .toc_h3,
+.blog-post_toc .toc_h4,
+.blog-post_toc .toc_h5,
+.blog-post_toc .toc_h6 {
+  display: block !important;
+  position: relative !important;
+  z-index: 2 !important;
+
+  width: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+  border-left: 1px solid transparent !important;
+
+  color: var(--toc-text-inactive) !important;
+  opacity: 0.58;
+
+  text-decoration: none !important;
+  font-weight: 400 !important;
+
+  padding-top: 0.35rem !important;
+  padding-bottom: 0.35rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 0.25rem !important;
+
+  line-height: var(--_typography---p-root_line-height--rp-regular) !important;
+  overflow-wrap: break-word !important;
+
+  transform: translate3d(0, 0, 0);
+
+  transition:
+    color var(--toc-duration-text) var(--toc-ease-current),
+    opacity var(--toc-duration-text) var(--toc-ease-current),
+    transform var(--toc-duration-current) var(--toc-ease-current);
+
+  transition-delay: 0ms !important;
+  will-change: transform, opacity;
+}
+
+.blog-post_toc .u-toc-current-link {
+  border-left-color: transparent !important;
+  font-weight: 400 !important;
+}
+
+.blog-post_toc .is-toc-muted {
+  color: var(--toc-text-inactive) !important;
+  opacity: 0.52 !important;
+  transform: translate3d(0, 0, 0);
+}
+
+.blog-post_toc .u-toc-current-link,
+.blog-post_toc .is-toc-active {
+  color: var(--toc-text-active) !important;
+  opacity: 1 !important;
+  transform: translate3d(var(--toc-text-shift), 0, 0);
+  font-weight: 400 !important;
+}
+
+.blog-post_toc .toc_h2:hover,
+.blog-post_toc .toc_h3:hover,
+.blog-post_toc .toc_h4:hover,
+.blog-post_toc .toc_h5:hover,
+.blog-post_toc .toc_h6:hover {
+  color: var(--toc-text-active) !important;
+  opacity: 0.9 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cms-page_toc-list-wrapper::after,
+  .blog-post_toc .toc_h2,
+  .blog-post_toc .toc_h3,
+  .blog-post_toc .toc_h4,
+  .blog-post_toc .toc_h5,
+  .blog-post_toc .toc_h6 {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
+  .blog-post_toc .u-toc-current-link,
+  .blog-post_toc .is-toc-active {
+    transform: none !important;
+  }
+}
