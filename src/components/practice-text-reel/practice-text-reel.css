@@ -177,7 +177,7 @@
     /*
       MODIFICĂ AICI distanța dintre "Lucrăm cu" și listă.
     */
-    --reel-mobile-prefix-gap: 1.25rem;
+    --reel-mobile-prefix-gap: 0.25rem;
 
     /*
       JavaScript recalculează automat această înălțime
