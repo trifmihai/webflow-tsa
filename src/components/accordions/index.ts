@@ -11,6 +11,7 @@ type AccordionConfig = {
 export function initAccordions(): void {
   const ICON_SELECTOR = '[data-accordion-icon]';
   const DIVIDER_SELECTOR = '.divider-horizontal-full';
+  const MOBILE_QUERY = '(max-width: 767px)';
 
   const CONFIGS: AccordionConfig[] = [
     {
@@ -34,6 +35,7 @@ export function initAccordions(): void {
   ];
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const mobileLayout = window.matchMedia(MOBILE_QUERY);
 
   function initAccordionSystem(config: AccordionConfig): void {
     const { gsap } = window;
@@ -51,7 +53,7 @@ export function initAccordions(): void {
     roots.forEach((root, rootIndex) => {
       if (root.dataset.accordionReady === 'true') return;
 
-      const activeTimelines = new WeakMap<HTMLElement, any>();
+      const activeTimelines = new WeakMap<HTMLElement, GSAPTimeline>();
       const groupRequestIds = new WeakMap<HTMLElement, number>();
 
       const groups = Array.from(root.querySelectorAll<HTMLElement>(config.groupSelector));
@@ -66,6 +68,10 @@ export function initAccordions(): void {
           divider: inner?.querySelector<HTMLElement>(DIVIDER_SELECTOR) ?? null,
           icon: item.querySelector<HTMLElement>(ICON_SELECTOR),
         };
+      }
+
+      function isMobileMode(): boolean {
+        return mobileLayout.matches;
       }
 
       function getNextRequestId(group: HTMLElement): number {
@@ -133,7 +139,7 @@ export function initAccordions(): void {
 
         trigger.setAttribute('aria-expanded', String(open));
 
-        if (open && !collapsible) {
+        if (open && !collapsible && !isMobileMode()) {
           trigger.setAttribute('aria-disabled', 'true');
         } else {
           trigger.removeAttribute('aria-disabled');
@@ -395,16 +401,27 @@ export function initAccordions(): void {
         }
       }
 
+      function applyDesktopSingleOpenState(group: HTMLElement, items: HTMLElement[]): void {
+        const openItems = items.filter((item) => item.dataset.state === 'open');
+
+        if (openItems.length <= 1) return;
+
+        openItems.slice(1).forEach((item) => {
+          setImmediateState(item, group, false);
+        });
+      }
+
       groups.forEach((group, groupIndex) => {
         const items = Array.from(group.querySelectorAll<HTMLElement>(config.itemSelector));
 
         const triggers: HTMLElement[] = [];
 
         const initialMode = group.dataset.initialOpen || 'first';
-
         const explicitlyOpen = items.find((item) => item.dataset.state === 'open');
 
-        const initialOpen = explicitlyOpen || (initialMode === 'first' ? items[0] : null);
+        const desktopInitialOpen = explicitlyOpen || (initialMode === 'first' ? items[0] : null);
+
+        const initialOpen = isMobileMode() ? null : desktopInitialOpen;
 
         items.forEach((item, itemIndex) => {
           const { trigger, panel, inner, icon } = getParts(item);
@@ -449,7 +466,6 @@ export function initAccordions(): void {
           triggers.push(trigger);
 
           const activate = (): void => {
-            const requestId = getNextRequestId(group);
             const isOpen = item.dataset.state === 'open';
             const isClosing = item.dataset.motion === 'closing';
             const collapsible = group.dataset.collapsible !== 'false';
@@ -460,12 +476,26 @@ export function initAccordions(): void {
             }
 
             if (isOpen) {
-              if (collapsible) {
+              if (collapsible || isMobileMode()) {
                 closeItem(item, group, true);
               }
 
               return;
             }
+
+            /*
+              Mobile: fiecare item este independent.
+              Un nou item se deschide fără să închidă item-urile existente.
+            */
+            if (isMobileMode()) {
+              openItem(item, group, true);
+              return;
+            }
+
+            /*
+              Desktop: rămâne maximum un item deschis în fiecare grup.
+            */
+            const requestId = getNextRequestId(group);
 
             const visibleSibling = items.find(
               (sibling) =>
@@ -536,7 +566,26 @@ export function initAccordions(): void {
         });
       };
 
+      const syncForLayoutMode = (): void => {
+        groups.forEach((group) => {
+          const items = Array.from(group.querySelectorAll<HTMLElement>(config.itemSelector));
+
+          /*
+            Când revenim la desktop, restaurăm regula de maximum
+            un item deschis per grup. Pe mobil nu închidem nimic automat.
+          */
+          if (!isMobileMode()) {
+            applyDesktopSingleOpenState(group, items);
+          }
+
+          items.forEach((item) => {
+            setAriaState(item, group, item.dataset.state === 'open');
+          });
+        });
+      };
+
       reducedMotion.addEventListener('change', syncForMotionPreference);
+      mobileLayout.addEventListener('change', syncForLayoutMode);
     });
   }
 

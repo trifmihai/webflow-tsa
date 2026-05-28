@@ -59,6 +59,10 @@
   min-height: 0;
 }
 
+/*
+  Starea authored este folosită doar înainte de inițializarea JavaScript.
+  Pe mobil, JavaScript închide toate item-urile la inițializare.
+*/
 [data-practices-accordion]:not([data-accordion-ready='true'])
   [data-practices-item][data-state='open']
   [data-practices-panel],
