@@ -61,7 +61,7 @@
 
 /*
   Authored open state is used only before JavaScript initialization.
-  On mobile, JavaScript closes every item during initialization.
+  JavaScript keeps the first item open by default in each group.
 */
 [data-practices-accordion]:not([data-accordion-ready='true'])
   [data-practices-item][data-state='open']

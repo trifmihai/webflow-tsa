@@ -445,9 +445,7 @@ export function initAccordions(): void {
         const initialMode = group.dataset.initialOpen || 'first';
         const explicitlyOpen = items.find((item) => item.dataset.state === 'open');
 
-        const desktopInitialOpen = explicitlyOpen || (initialMode === 'first' ? items[0] : null);
-
-        const initialOpen = isMobileMode() ? null : desktopInitialOpen;
+        const initialOpen = explicitlyOpen || (initialMode === 'first' ? items[0] : null);
 
         items.forEach((item, itemIndex) => {
           const { trigger, panel, inner, icon } = getParts(item);
