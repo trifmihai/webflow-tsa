@@ -1,25 +1,49 @@
+type AccordionConfig = {
+  name: string;
+  rootSelector: string;
+  groupSelector: string;
+  itemSelector: string;
+  triggerSelector: string;
+  panelSelector: string;
+  innerSelector: string;
+};
+
 export function initAccordions(): void {
-  const ROOT_SELECTOR = '[data-practices-accordion]';
-  const GROUP_SELECTOR = '[data-practices-group]';
-  const ITEM_SELECTOR = '[data-practices-item]';
-  const TRIGGER_SELECTOR = '[data-practices-trigger]';
-  const PANEL_SELECTOR = '[data-practices-panel]';
-  const INNER_SELECTOR = '[data-practices-panel-inner]';
-  const ICON_SELECTOR = '[data-practices-icon]';
+  const ICON_SELECTOR = '[data-accordion-icon]';
   const DIVIDER_SELECTOR = '.divider-horizontal-full';
+
+  const CONFIGS: AccordionConfig[] = [
+    {
+      name: 'practices',
+      rootSelector: '[data-practices-accordion]',
+      groupSelector: '[data-practices-group]',
+      itemSelector: '[data-practices-item]',
+      triggerSelector: '[data-practices-trigger]',
+      panelSelector: '[data-practices-panel]',
+      innerSelector: '[data-practices-panel-inner]',
+    },
+    {
+      name: 'faq',
+      rootSelector: '[data-faq-accordion]',
+      groupSelector: '[data-faq-group]',
+      itemSelector: '[data-faq-item]',
+      triggerSelector: '[data-faq-trigger]',
+      panelSelector: '[data-faq-panel]',
+      innerSelector: '[data-faq-panel-inner]',
+    },
+  ];
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-  function initPracticesAccordions(): void {
+  function initAccordionSystem(config: AccordionConfig): void {
     const { gsap } = window;
-
-    const roots = document.querySelectorAll<HTMLElement>(ROOT_SELECTOR);
+    const roots = document.querySelectorAll<HTMLElement>(config.rootSelector);
 
     if (!roots.length) return;
 
     if (!gsap) {
       console.warn(
-        'Practices accordion: GSAP is missing. Enable the Webflow GSAP integration first.'
+        `${config.name} accordion: GSAP is missing. Enable the Webflow GSAP integration first.`
       );
       return;
     }
@@ -30,14 +54,14 @@ export function initAccordions(): void {
       const activeTimelines = new WeakMap<HTMLElement, any>();
       const groupRequestIds = new WeakMap<HTMLElement, number>();
 
-      const groups = Array.from(root.querySelectorAll<HTMLElement>(GROUP_SELECTOR));
+      const groups = Array.from(root.querySelectorAll<HTMLElement>(config.groupSelector));
 
       function getParts(item: HTMLElement) {
-        const inner = item.querySelector<HTMLElement>(INNER_SELECTOR);
+        const inner = item.querySelector<HTMLElement>(config.innerSelector);
 
         return {
-          trigger: item.querySelector<HTMLElement>(TRIGGER_SELECTOR),
-          panel: item.querySelector<HTMLElement>(PANEL_SELECTOR),
+          trigger: item.querySelector<HTMLElement>(config.triggerSelector),
+          panel: item.querySelector<HTMLElement>(config.panelSelector),
           inner,
           divider: inner?.querySelector<HTMLElement>(DIVIDER_SELECTOR) ?? null,
           icon: item.querySelector<HTMLElement>(ICON_SELECTOR),
@@ -46,7 +70,6 @@ export function initAccordions(): void {
 
       function getNextRequestId(group: HTMLElement): number {
         const nextId = (groupRequestIds.get(group) || 0) + 1;
-
         groupRequestIds.set(group, nextId);
 
         return nextId;
@@ -174,11 +197,6 @@ export function initAccordions(): void {
         const targetHeight = getTargetHeight(inner);
         const startsFromClosed = wasHidden || startHeight <= 0.5;
 
-        /*
-          La o deschidere nouă, divider-ul pornește invizibil.
-          La redeschidere în timpul închiderii, păstrăm opacitatea curentă,
-          pentru ca animația să se inverseze fluid.
-        */
         if (divider && startsFromClosed) {
           gsap.set(divider, {
             opacity: 0,
@@ -378,7 +396,7 @@ export function initAccordions(): void {
       }
 
       groups.forEach((group, groupIndex) => {
-        const items = Array.from(group.querySelectorAll<HTMLElement>(ITEM_SELECTOR));
+        const items = Array.from(group.querySelectorAll<HTMLElement>(config.itemSelector));
 
         const triggers: HTMLElement[] = [];
 
@@ -389,23 +407,29 @@ export function initAccordions(): void {
         const initialOpen = explicitlyOpen || (initialMode === 'first' ? items[0] : null);
 
         items.forEach((item, itemIndex) => {
-          const { trigger, panel, inner } = getParts(item);
+          const { trigger, panel, inner, icon } = getParts(item);
 
           if (!trigger || !panel) return;
 
           if (!inner) {
+            console.warn(`${config.name} accordion: missing inner wrapper inside panel.`, panel);
+            return;
+          }
+
+          if (!icon) {
             console.warn(
-              'Practices accordion: missing [data-practices-panel-inner] inside panel.',
-              panel
+              `${config.name} accordion: missing [data-accordion-icon] inside item.`,
+              item
             );
             return;
           }
 
           const triggerId =
-            trigger.id || `practices-trigger-${rootIndex + 1}-${groupIndex + 1}-${itemIndex + 1}`;
+            trigger.id ||
+            `${config.name}-trigger-${rootIndex + 1}-${groupIndex + 1}-${itemIndex + 1}`;
 
           const panelId =
-            panel.id || `practices-panel-${rootIndex + 1}-${groupIndex + 1}-${itemIndex + 1}`;
+            panel.id || `${config.name}-panel-${rootIndex + 1}-${groupIndex + 1}-${itemIndex + 1}`;
 
           trigger.id = triggerId;
           panel.id = panelId;
@@ -430,10 +454,6 @@ export function initAccordions(): void {
             const isClosing = item.dataset.motion === 'closing';
             const collapsible = group.dataset.collapsible !== 'false';
 
-            /*
-              Dacă utilizatorul apasă pe item în timp ce se închide,
-              îl redeschidem fluid din starea vizibilă curentă.
-            */
             if (isClosing) {
               openItem(item, group, true);
               return;
@@ -453,12 +473,6 @@ export function initAccordions(): void {
                 (sibling.dataset.state === 'open' || sibling.dataset.motion === 'closing')
             );
 
-            /*
-              Schimbare între două item-uri:
-              închidem mai întâi răspunsul curent,
-              apoi deschidem noul răspuns.
-              Astfel conținutul nou nu este repoziționat în timp ce apare.
-            */
             if (visibleSibling) {
               closeItem(visibleSibling, group, true, () => {
                 if (!isLatestRequest(group, requestId)) return;
@@ -516,7 +530,7 @@ export function initAccordions(): void {
 
       const syncForMotionPreference = (): void => {
         groups.forEach((group) => {
-          Array.from(group.querySelectorAll<HTMLElement>(ITEM_SELECTOR)).forEach((item) => {
+          Array.from(group.querySelectorAll<HTMLElement>(config.itemSelector)).forEach((item) => {
             setImmediateState(item, group, item.dataset.state === 'open');
           });
         });
@@ -526,9 +540,17 @@ export function initAccordions(): void {
     });
   }
 
+  function initAllAccordions(): void {
+    CONFIGS.forEach((config) => {
+      initAccordionSystem(config);
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPracticesAccordions, { once: true });
+    document.addEventListener('DOMContentLoaded', initAllAccordions, {
+      once: true,
+    });
   } else {
-    initPracticesAccordions();
+    initAllAccordions();
   }
 }

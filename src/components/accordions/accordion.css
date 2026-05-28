@@ -1,8 +1,10 @@
 /* =========================================
-   TSA.LAW | Practices Accordion
+   TSA.LAW | Accordions
+   Practices + FAQ
    ========================================= */
 
-[data-practices-accordion] {
+[data-practices-accordion],
+[data-faq-accordion] {
   --accordion-focus-color: currentColor;
 }
 
@@ -10,19 +12,18 @@
    Item hover / active state
    ----------------------------------------- */
 
-[data-practices-item] {
+:is([data-practices-item], [data-faq-item]) {
   transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  [data-practices-item]:hover {
+  :is([data-practices-item], [data-faq-item]):hover {
     background-color: var(--grey--100);
   }
 }
 
-/* Item activ sau aflat în proces de închidere */
-[data-practices-item][data-state='open'],
-[data-practices-item][data-motion='closing'] {
+:is([data-practices-item], [data-faq-item])[data-state='open'],
+:is([data-practices-item], [data-faq-item])[data-motion='closing'] {
   background-color: var(--grey--100);
 }
 
@@ -30,13 +31,13 @@
    Trigger
    ----------------------------------------- */
 
-[data-practices-trigger] {
+:is([data-practices-trigger], [data-faq-trigger]) {
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-[data-practices-trigger]:focus-visible {
+:is([data-practices-trigger], [data-faq-trigger]):focus-visible {
   outline: 1px solid var(--accordion-focus-color);
   outline-offset: 0.375rem;
 }
@@ -45,52 +46,42 @@
    Panel animation shell
    ----------------------------------------- */
 
-/*
-  Exteriorul este doar masca animată.
-  Nu îi adăuga padding vertical, margin sau gap.
-  Rămâne permanent overflow hidden pentru a evita jump-ul conținutului.
-*/
-[data-practices-panel] {
+:is([data-practices-panel], [data-faq-panel]) {
   display: block;
   height: 0;
   visibility: hidden;
   overflow: hidden;
 }
 
-/*
-  Wrapper-ul interior deține conținutul și spacing-ul.
-  flow-root împiedică marginile copiilor să afecteze calculul înălțimii.
-*/
-[data-practices-panel-inner] {
+:is([data-practices-panel-inner], [data-faq-panel-inner]) {
   display: flow-root;
-  min-height: 0;
   width: 100%;
+  min-height: 0;
 }
 
-/*
-  Starea authored înainte de inițializarea JS.
-  După inițializare, GSAP controlează height și visibility.
-*/
 [data-practices-accordion]:not([data-accordion-ready='true'])
   [data-practices-item][data-state='open']
-  [data-practices-panel] {
+  [data-practices-panel],
+[data-faq-accordion]:not([data-accordion-ready='true'])
+  [data-faq-item][data-state='open']
+  [data-faq-panel] {
   height: auto;
   visibility: visible;
 }
 
 /* -----------------------------------------
-   Chevron
+   Shared accordion icon
    ----------------------------------------- */
 
-[data-practices-icon] {
+[data-accordion-icon] {
   transform-origin: 50% 50%;
 }
 
-[data-practices-item][data-state='closed'] [data-practices-icon] {
+:is([data-practices-item], [data-faq-item])[data-state='closed'] [data-accordion-icon] {
   transform: rotate(180deg);
 }
 
-[data-practices-item][data-state='open'] [data-practices-icon] {
+:is([data-practices-item], [data-faq-item])[data-state='open'] [data-accordion-icon] {
   transform: rotate(0deg);
 }
 
@@ -99,6 +90,7 @@
    ----------------------------------------- */
 
 .practice_paper-corner,
+.faq_clip,
 .corner {
   pointer-events: none;
   user-select: none;
@@ -110,10 +102,15 @@
    ----------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
-  [data-practices-item],
-  [data-practices-trigger],
-  [data-practices-icon],
-  [data-practices-panel],
+  :is(
+    [data-practices-item],
+    [data-faq-item],
+    [data-practices-trigger],
+    [data-faq-trigger],
+    [data-practices-panel],
+    [data-faq-panel],
+    [data-accordion-icon]
+  ),
   .divider-horizontal-full {
     transition: none !important;
     animation: none !important;

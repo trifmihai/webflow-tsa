@@ -2,3 +2,20 @@
 :root {
   --custom-code-css-loaded: initial;
 }
+
+/* Accordion */
+.chevron-wrapper {
+  width: 0.875rem;
+  height: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  flex: none;
+}
+
+.chevron-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
