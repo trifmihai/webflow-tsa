@@ -8,6 +8,30 @@ type AccordionConfig = {
   innerSelector: string;
 };
 
+type GsapTarget = Element | Element[] | NodeListOf<Element> | string;
+
+type GsapVars = Record<string, unknown>;
+
+type GsapTimeline = {
+  kill(): void;
+  to(target: GsapTarget, vars: GsapVars, position?: number | string): GsapTimeline;
+};
+
+type GsapStatic = {
+  set(target: GsapTarget, vars: GsapVars): void;
+  killTweensOf(target: GsapTarget): void;
+  timeline(config?: GsapVars): GsapTimeline;
+  utils: {
+    clamp(minimum: number, maximum: number, value: number): number;
+  };
+};
+
+declare global {
+  interface Window {
+    gsap?: GsapStatic;
+  }
+}
+
 export function initAccordions(): void {
   const ICON_SELECTOR = '[data-accordion-icon]';
   const DIVIDER_SELECTOR = '.divider-horizontal-full';
@@ -38,22 +62,24 @@ export function initAccordions(): void {
   const mobileLayout = window.matchMedia(MOBILE_QUERY);
 
   function initAccordionSystem(config: AccordionConfig): void {
-    const { gsap } = window;
+    const windowGsap = window.gsap;
     const roots = document.querySelectorAll<HTMLElement>(config.rootSelector);
 
     if (!roots.length) return;
 
-    if (!gsap) {
+    if (!windowGsap) {
       console.warn(
         `${config.name} accordion: GSAP is missing. Enable the Webflow GSAP integration first.`
       );
       return;
     }
 
+    const gsap = windowGsap;
+
     roots.forEach((root, rootIndex) => {
       if (root.dataset.accordionReady === 'true') return;
 
-      const activeTimelines = new WeakMap<HTMLElement, GSAPTimeline>();
+      const activeTimelines = new WeakMap<HTMLElement, GsapTimeline>();
       const groupRequestIds = new WeakMap<HTMLElement, number>();
 
       const groups = Array.from(root.querySelectorAll<HTMLElement>(config.groupSelector));
