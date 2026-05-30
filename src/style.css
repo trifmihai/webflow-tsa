@@ -2,6 +2,7 @@
 @import './components/navbar/mobile-menu.css';
 @import './components/accordions/accordion.css';
 @import './components/practice-text-reel/practice-text-reel.css';
+@import './components/resources-filter/resources-filter.css';
 @import './components/navbar/smart-navbar.css';
 @import './components/button-scoop/button-scoop.css';
 @import './components/team-card/team-card.css';
