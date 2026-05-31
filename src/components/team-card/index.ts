@@ -6,8 +6,8 @@ const MOBILE_QUERY = '(max-width: 767px)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const ORIENTATION_RESET_DELAY = 250;
 
-const ACTIVE_ZONE_TOP = 0.38;
-const ACTIVE_ZONE_BOTTOM = 0.62;
+const ACTIVE_ZONE_TOP = 0.3;
+const ACTIVE_ZONE_BOTTOM = 0.7;
 
 let isTeamCardMotionQueued = false;
 
