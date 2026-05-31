@@ -1,13 +1,7 @@
 /*
-?============================================
-  TEAM HOVER, FINAL
-?============================================
-  Goal:
-  - Keep .team_image size from Webflow.
-  - Use .team_image only as the clipping mask.
-  - Animate only the image, gradient, and text reveal.
-  - Apply the gradient directly to .team_card-linear.
-  - No fake clickable cursor.
+============================================
+  TSA.LAW | Team Hover + Mobile Scroll Reveal
+============================================
 */
 
 /* ------------------------------
@@ -28,7 +22,6 @@
 
 /* ------------------------------
    Card safety
-   Do not control the visual size here.
 ------------------------------ */
 
 .team_card {
@@ -37,25 +30,19 @@
   isolation: isolate;
   cursor: default;
 
-  /* Start state, cropped black and white portrait */
   --team-start-scale: 1.16;
   --team-start-y: -1%;
   --team-start-position: 50% 16%;
 
-  /* Hover state, calmer full profile */
   --team-end-scale: 1;
   --team-end-y: 0%;
   --team-end-position: 50% 50%;
 }
 
-/* Keep the actual Webflow sizing.
-   Webflow owns max-width and overall size on .team_image. */
 .team_image-wrapper {
   position: relative;
 }
 
-/* .team_image remains the visual container from Webflow.
-   We only add clipping and stacking context. */
 .team_image {
   position: relative;
   overflow: hidden;
@@ -92,8 +79,6 @@
 
 /* ------------------------------
    Gradient layer
-   Current Webflow class: .team_card-linear
-   Older fallback class: .team_card-gradient
 ------------------------------ */
 
 .team_card-linear,
@@ -134,7 +119,6 @@
     filter var(--team-gradient-duration) ease;
 }
 
-/* Kill older pseudo-gradient versions if they still exist. */
 .team_card-linear::before,
 .team_card-gradient::before {
   content: none !important;
@@ -157,8 +141,6 @@
   justify-content: flex-end;
 }
 
-/* Keep role in the stack to avoid name jumping.
-   Reveal is opacity + tiny movement only. */
 .team_role {
   margin-bottom: 0.4rem;
 
@@ -174,7 +156,6 @@
   transform: translate3d(0, 0, 0);
 }
 
-/* Text safety */
 .team_role,
 .team_name,
 .team_role .text-size-medium.is-team,
@@ -188,23 +169,23 @@
 }
 
 /* ------------------------------
-   Hover state
+   Desktop hover state
 ------------------------------ */
 
 @media (hover: hover) and (pointer: fine) {
-  .team_card:hover .team_avatar {
+  .team_card:is(:hover, :focus-within) .team_avatar {
     object-position: var(--team-end-position);
     transform: translate3d(0, var(--team-end-y), 0) scale(var(--team-end-scale));
     filter: grayscale(0%) contrast(1) saturate(0.92);
   }
 
-  .team_card:hover .team_card-linear,
-  .team_card:hover .team_card-gradient {
+  .team_card:is(:hover, :focus-within) .team_card-linear,
+  .team_card:is(:hover, :focus-within) .team_card-gradient {
     opacity: 1;
     filter: contrast(1.035);
   }
 
-  .team_card:hover .team_role {
+  .team_card:is(:hover, :focus-within) .team_role {
     opacity: 1;
     transform: translate3d(0, 0, 0);
     transition-delay: 45ms;
@@ -212,8 +193,8 @@
 }
 
 /* ------------------------------
-   Touch devices
-   No hover trap: show full info by default.
+   Touch fallback
+   Keeps full info available if JS fails.
 ------------------------------ */
 
 @media (hover: none), (pointer: coarse) {
@@ -236,6 +217,49 @@
 }
 
 /* ------------------------------
+   Mobile scroll reveal
+   Active only when JS adds html.team-scroll-motion-ready.
+------------------------------ */
+
+@media screen and (max-width: 767px) {
+  html.team-scroll-motion-ready .team_card .team_avatar {
+    object-position: var(--team-start-position);
+    transform: translate3d(0, var(--team-start-y), 0) scale(var(--team-start-scale));
+    filter: grayscale(100%) contrast(1.035) saturate(0.86);
+  }
+
+  html.team-scroll-motion-ready .team_card .team_card-linear,
+  html.team-scroll-motion-ready .team_card .team_card-gradient {
+    opacity: 0.96;
+    filter: none;
+  }
+
+  html.team-scroll-motion-ready .team_card .team_role {
+    opacity: 0;
+    transform: translate3d(0, 0.35rem, 0);
+    transition-delay: 0ms;
+  }
+
+  html.team-scroll-motion-ready .team_card.is-inview .team_avatar {
+    object-position: var(--team-end-position);
+    transform: translate3d(0, var(--team-end-y), 0) scale(var(--team-end-scale));
+    filter: grayscale(0%) contrast(1) saturate(0.92);
+  }
+
+  html.team-scroll-motion-ready .team_card.is-inview .team_card-linear,
+  html.team-scroll-motion-ready .team_card.is-inview .team_card-gradient {
+    opacity: 1;
+    filter: contrast(1.035);
+  }
+
+  html.team-scroll-motion-ready .team_card.is-inview .team_role {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 45ms;
+  }
+}
+
+/* ------------------------------
    Reduced motion
 ------------------------------ */
 
@@ -253,44 +277,68 @@
   }
 }
 
-/* ------------------------------
-   Optional per-card crop tuning
-   Add these combo classes on .team_card in Webflow.
------------------------------- */
+@media screen and (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  html.team-scroll-motion-ready .team_card .team_avatar {
+    object-position: var(--team-end-position);
+    transform: none;
+    filter: grayscale(0%) contrast(1) saturate(0.92);
+  }
+
+  html.team-scroll-motion-ready .team_card .team_card-linear,
+  html.team-scroll-motion-ready .team_card .team_card-gradient {
+    opacity: 1;
+    filter: contrast(1.035);
+  }
+
+  html.team-scroll-motion-ready .team_card .team_role {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /*
-.team_card.is-raluca {
-  --team-start-scale: 1.14;
-  --team-start-y: -1%;
-  --team-start-position: 50% 15%;
-  --team-end-position: 50% 50%;
-}
-
-.team_card.is-emanuela {
-  --team-start-scale: 1.16;
-  --team-start-y: -1%;
-  --team-start-position: 50% 14%;
-  --team-end-position: 50% 49%;
-}
-
-.team_card.is-timoce {
-  --team-start-scale: 1.15;
-  --team-start-y: -1%;
-  --team-start-position: 50% 14%;
-  --team-end-position: 50% 50%;
-}
-
-.team_card.is-anca {
-  --team-start-scale: 1.15;
-  --team-start-y: -1%;
-  --team-start-position: 50% 13%;
-  --team-end-position: 50% 50%;
-}
-
-.team_card.is-tudor {
-  --team-start-scale: 1.15;
-  --team-start-y: -1%;
-  --team-start-position: 50% 14%;
-  --team-end-position: 50% 50%;
-}
+============================================
+  MEDIA QUERIES
+============================================
 */
+
+/* TEAM SECTION */
+
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .team_component {
+    width: 100%;
+    container-type: inline-size;
+  }
+
+  .team_group,
+  .team_frame,
+  .team_list {
+    width: fit-content;
+  }
+
+  .team_list {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .team_card {
+    width: min(14.5rem, calc((100cqw - 5rem) / 3));
+    flex: 0 0 min(14.5rem, calc((100cqw - 5rem) / 3));
+    min-width: 0;
+  }
+
+  .team_image-wrapper,
+  .team_image {
+    width: 100%;
+  }
+
+  .team_image {
+    max-width: none;
+  }
+
+  .team_avatar {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}

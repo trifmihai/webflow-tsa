@@ -1,5 +1,6 @@
 @import './styles/globals.css';
 @import './components/navbar/mobile-menu.css';
+@import './components/call-popover/call-popover.css';
 @import './components/accordions/accordion.css';
 @import './components/practice-text-reel/practice-text-reel.css';
 @import './components/resources-filter/resources-filter.css';
