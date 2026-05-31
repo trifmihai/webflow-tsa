@@ -1,0 +1,123 @@
+/*
+============================================
+  TSA.LAW | Resources Card Hover
+============================================
+*/
+
+/* ------------------------------
+   Motion tokens
+------------------------------ */
+
+:root {
+  --resources-card-duration: 240ms;
+  --resources-arrow-duration: 260ms;
+  --resources-avatar-image-duration: 520ms;
+  --resources-avatar-filter-duration: 360ms;
+  --resources-avatar-shadow-duration: 300ms;
+
+  --resources-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --resources-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ------------------------------
+   Card base state
+------------------------------ */
+
+.resources_card {
+  background-color: transparent;
+  transition:
+    background-color var(--resources-card-duration) ease,
+    border-color var(--resources-card-duration) ease;
+}
+
+/* ------------------------------
+   Arrow base state
+------------------------------ */
+
+.resources_arrow-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transform: rotate(0deg);
+  transform-origin: center center;
+  backface-visibility: hidden;
+
+  transition: transform var(--resources-arrow-duration) var(--resources-ease-out);
+}
+
+.resources_arrow-right img {
+  display: block;
+}
+
+/* ------------------------------
+   Author avatar base state
+   Similar motion logic to hero avatars
+------------------------------ */
+
+.resources_author-item {
+  backface-visibility: hidden;
+
+  transition:
+    filter var(--resources-avatar-filter-duration) ease,
+    box-shadow var(--resources-avatar-shadow-duration) ease;
+}
+
+.resources_avatar-image {
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center center;
+  backface-visibility: hidden;
+
+  transition: transform var(--resources-avatar-image-duration) var(--resources-ease-out);
+}
+
+/* ------------------------------
+   Hover and keyboard state
+------------------------------ */
+
+@media (hover: hover) and (pointer: fine) {
+  .resources_card:is(:hover, :focus-visible) {
+    background-color: var(--grey--150);
+  }
+
+  .resources_card:is(:hover, :focus-visible) .resources_arrow-right {
+    transform: rotate(-45deg);
+  }
+
+  .resources_card:is(:hover, :focus-visible) .resources_author-item {
+    filter: grayscale(0%) contrast(1.01) saturate(0.94);
+
+    box-shadow:
+      -17px 24px 8px 0 rgba(51, 51, 51, 0),
+      -11px 16px 8px 0 rgba(51, 51, 51, 0.01),
+      -6px 9px 7px 0 rgba(51, 51, 51, 0.055),
+      -3px 4px 6px 0 rgba(51, 51, 51, 0.11),
+      -1px 1px 4px 0 rgba(51, 51, 51, 0.12);
+  }
+
+  .resources_card:is(:hover, :focus-visible) .resources_avatar-image {
+    transform: translate3d(0, -1px, 0) scale(1.04);
+  }
+}
+
+/* ------------------------------
+   Reduced motion
+------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .resources_card,
+  .resources_arrow-right,
+  .resources_author-item,
+  .resources_avatar-image {
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .resources_card:is(:hover, :focus-visible) .resources_arrow-right {
+    transform: rotate(-45deg);
+  }
+
+  .resources_card:is(:hover, :focus-visible) .resources_avatar-image {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
