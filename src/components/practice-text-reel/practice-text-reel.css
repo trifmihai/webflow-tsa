@@ -166,7 +166,7 @@
     */
     --reel-transition-duration: 700ms;
     --reel-opacity-duration: 620ms;
-    --reel-hold-duration: 2550;
+    --reel-hold-duration: 2250;
 
     /*
       MODIFICĂ AICI spațiul dintre opțiunile mobile.
@@ -177,7 +177,7 @@
     /*
       MODIFICĂ AICI distanța dintre "Lucrăm cu" și listă.
     */
-    --reel-mobile-prefix-gap: 1.25rem;
+    --reel-mobile-prefix-gap: 0.25rem;
 
     /*
       JavaScript recalculează automat această înălțime
@@ -189,7 +189,7 @@
       MODIFICĂ AICI contrastul preview-urilor mobile.
     */
     --reel-mobile-next-opacity: 0.14;
-    --reel-mobile-next-two-opacity: 0.045;
+    --reel-mobile-next-two-opacity: 0.06;
   }
 
   .practice-text-reel_layout {
