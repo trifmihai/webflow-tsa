@@ -18,6 +18,16 @@
   --team-gradient-duration: 320ms;
 
   --team-gradient-height: 7.5rem;
+  --team-image-height: 18.125rem;
+}
+
+@media screen and (max-width: 767px) {
+  html.team-scroll-motion-ready {
+    --team-image-duration: 840ms;
+    --team-filter-duration: 620ms;
+    --team-role-duration: 260ms;
+    --team-gradient-duration: 460ms;
+  }
 }
 
 /* ------------------------------
@@ -30,9 +40,9 @@
   isolation: isolate;
   cursor: default;
 
-  --team-start-scale: 1.16;
-  --team-start-y: -1%;
-  --team-start-position: 50% 16%;
+  --team-start-scale: 1.08;
+  --team-start-y: -0.5%;
+  --team-start-position: 50% 22%;
 
   --team-end-scale: 1;
   --team-end-y: 0%;
@@ -51,6 +61,7 @@
 
 /* ------------------------------
    Image layer
+   Keeps Webflow sizing intact.
 ------------------------------ */
 
 .team_avatar {
@@ -58,8 +69,7 @@
   z-index: 1;
 
   width: 100%;
-  height: auto;
-  max-width: none;
+  height: var(--team-image-height);
   display: block;
 
   object-fit: cover;
@@ -339,6 +349,43 @@
   .team_avatar {
     display: block;
     width: 100%;
-    height: auto;
+    height: var(--team-image-height);
+  }
+}
+
+/*
+============================================
+  TSA.LAW | Team Card Layout Guard
+  Keeps Webflow card sizing stable
+============================================
+*/
+
+.team_component .team_image {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+
+  width: 14.5rem;
+  max-width: 14.5rem;
+  aspect-ratio: 14.5 / 18.125;
+}
+
+.team_component .team_avatar {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+
+  width: 100%;
+  height: 100% !important;
+  max-width: none;
+  display: block;
+
+  object-fit: cover;
+}
+
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .team_component .team_image {
+    width: 100%;
+    max-width: none;
   }
 }
