@@ -6,8 +6,9 @@ const MOBILE_QUERY = '(max-width: 767px)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const ORIENTATION_RESET_DELAY = 250;
 
-const ACTIVE_ZONE_TOP = 0.3;
-const ACTIVE_ZONE_BOTTOM = 0.7;
+const ENTER_ZONE_TOP = 0.35;
+const ENTER_ZONE_BOTTOM = 0.68;
+const RESET_OFFSET = 80;
 
 let isTeamCardMotionQueued = false;
 
@@ -22,16 +23,28 @@ function initializeTeamCardScrollMotion(): void {
 
   function updateCards(): void {
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-    const activeZoneTop = viewportHeight * ACTIVE_ZONE_TOP;
-    const activeZoneBottom = viewportHeight * ACTIVE_ZONE_BOTTOM;
+
+    const enterZoneTop = viewportHeight * ENTER_ZONE_TOP;
+    const enterZoneBottom = viewportHeight * ENTER_ZONE_BOTTOM;
 
     cards.forEach((card) => {
       const rect = card.getBoundingClientRect();
       const cardCenter = rect.top + rect.height / 2;
 
-      const isInsideActiveZone = cardCenter >= activeZoneTop && cardCenter <= activeZoneBottom;
+      const isActive = card.classList.contains(ACTIVE_CLASS);
+      const isInsideEnterZone = cardCenter >= enterZoneTop && cardCenter <= enterZoneBottom;
 
-      card.classList.toggle(ACTIVE_CLASS, isInsideActiveZone);
+      const isFullyOutOfView =
+        rect.bottom < -RESET_OFFSET || rect.top > viewportHeight + RESET_OFFSET;
+
+      if (isFullyOutOfView) {
+        card.classList.remove(ACTIVE_CLASS);
+        return;
+      }
+
+      if (!isActive && isInsideEnterZone) {
+        card.classList.add(ACTIVE_CLASS);
+      }
     });
   }
 
