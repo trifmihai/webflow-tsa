@@ -78,13 +78,14 @@
 
 .hero_avatar-image {
   /*
-    Păstrează rotațiile individuale existente.
-    Avatarul 5 are rotație proprie din designul Webflow.
+    IMPORTANT:
+    Webflow centrează imaginea cu left: 50%, top: 50% și translate(-50%, -50%).
+    Custom code-ul trebuie să păstreze această centrare.
   */
   --hero-avatar-base-rotation: rotate(0deg);
 
   backface-visibility: hidden;
-  transform: var(--hero-avatar-base-rotation);
+  transform: translate3d(-50%, -50%, 0) var(--hero-avatar-base-rotation);
   transform-origin: center center;
 
   transition: transform var(--hero-avatar-image-duration) var(--hero-avatar-ease-out);
@@ -110,7 +111,8 @@
 }
 
 .hero_avatar-wrapper.is-active .hero_avatar-image {
-  transform: translate3d(0, -1px, 0) var(--hero-avatar-base-rotation) scale(1.04);
+  transform: translate3d(-50%, -50%, 0) translate3d(0, -1px, 0) var(--hero-avatar-base-rotation)
+    scale(1.04);
 }
 
 /* ----------------------------------------------------------
@@ -264,7 +266,7 @@
   }
 
   .hero_avatar-wrapper.is-active .hero_avatar-image {
-    transform: var(--hero-avatar-base-rotation);
+    transform: translate3d(-50%, -50%, 0) var(--hero-avatar-base-rotation);
   }
 
   .hero_image-list.is-avatar-motion-ready .hero_avatar-tooltip,
