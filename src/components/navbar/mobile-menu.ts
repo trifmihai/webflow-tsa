@@ -3,6 +3,7 @@
   NAVABAR SMART HIDE/SHOW ON SCROLL
 ============================================
 */
+
 const MOBILE_NAV_SETTINGS = {
   breakpoint: 767,
   readyClass: 'is-mobile-nav-ready',
@@ -34,8 +35,8 @@ export function initMobileNavbarMenus(): void {
     navbar.dataset.mobileNavReady = 'true';
 
     /*
-      Păstrăm poziția originală a panel-ului pentru a-l putea readuce
-      în navbar când viewport-ul trece din mobil în desktop.
+      Pastram pozitia originala a panel-ului pentru a-l putea readuce
+      in navbar cand viewport-ul trece din mobil in desktop.
     */
     const originalPanelParent = panel.parentNode;
     const originalPanelNextSibling = panel.nextSibling;
@@ -44,6 +45,7 @@ export function initMobileNavbarMenus(): void {
 
     let isOpen = false;
     let lockedScrollY = 0;
+    let navHeightObserver: ResizeObserver | null = null;
 
     let bodyInlineStyles: {
       position: string;
@@ -59,9 +61,9 @@ export function initMobileNavbarMenus(): void {
     }
 
     /*
-      Trigger-ul tău actual este <a class="navbar_menu-icon">.
-      Îl tratăm accesibil ca buton fără să fie nevoie să îl refaci
-      imediat în Webflow.
+      Trigger-ul actual este <a class="navbar_menu-icon">.
+      Il tratam accesibil ca buton fara sa fie nevoie sa il refaci
+      imediat in Webflow.
     */
     if (!isNativeButton) {
       trigger.setAttribute('role', 'button');
@@ -77,10 +79,30 @@ export function initMobileNavbarMenus(): void {
       return mobileQuery.matches;
     }
 
+    function syncNavbarHeightVariable(): void {
+      const navbarHeight = Math.ceil(navbar.getBoundingClientRect().height);
+
+      if (navbarHeight <= 0) return;
+
+      panel.style.setProperty('--tsa-nav-real-header-height', `${navbarHeight}px`);
+    }
+
+    function startNavbarHeightObserver(): void {
+      syncNavbarHeightVariable();
+
+      if (!('ResizeObserver' in window) || navHeightObserver) return;
+
+      navHeightObserver = new ResizeObserver(() => {
+        syncNavbarHeightVariable();
+      });
+
+      navHeightObserver.observe(navbar);
+    }
+
     /*
       Fix-ul principal:
-      Pe mobil, panel-ul este mutat direct în body.
-      Astfel nu mai poate fi decupat, repoziționat sau ascuns
+      Pe mobil, panel-ul este mutat direct in body.
+      Astfel nu mai poate fi decupat, repozitionat sau ascuns
       de navbar-ul sticky, grid-ul Webflow sau smart-nav behavior.
     */
     function mountOverlayToBody(): void {
@@ -107,8 +129,8 @@ export function initMobileNavbarMenus(): void {
     }
 
     /*
-      Blochează scroll-ul fără să schimbe poziția vizuală a paginii.
-      Acest lucru elimină saltul observat în video la deschiderea meniului.
+      Blocheaza scroll-ul fara sa schimbe pozitia vizuala a paginii.
+      Acest lucru elimina saltul observat la deschiderea meniului.
     */
     function lockPageScroll(): void {
       if (bodyInlineStyles) return;
@@ -125,7 +147,6 @@ export function initMobileNavbarMenus(): void {
       };
 
       document.documentElement.classList.add(MOBILE_NAV_SETTINGS.scrollLockClass);
-
       document.body.classList.add(MOBILE_NAV_SETTINGS.scrollLockClass);
 
       document.body.style.position = 'fixed';
@@ -144,7 +165,6 @@ export function initMobileNavbarMenus(): void {
       bodyInlineStyles = null;
 
       document.documentElement.classList.remove(MOBILE_NAV_SETTINGS.scrollLockClass);
-
       document.body.classList.remove(MOBILE_NAV_SETTINGS.scrollLockClass);
 
       document.body.style.position = savedStyles.position;
@@ -193,6 +213,14 @@ export function initMobileNavbarMenus(): void {
         mountOverlayToBody();
       }
 
+      if (isMobileViewport()) {
+        startNavbarHeightObserver();
+
+        window.requestAnimationFrame(() => {
+          syncNavbarHeightVariable();
+        });
+      }
+
       isOpen = open;
 
       navbar.classList.toggle(MOBILE_NAV_SETTINGS.openClass, open);
@@ -228,6 +256,7 @@ export function initMobileNavbarMenus(): void {
 
       if (isMobileViewport()) {
         mountOverlayToBody();
+        startNavbarHeightObserver();
         syncPanelAccessibility(false);
       } else {
         restorePanelToNavbar();
@@ -240,7 +269,7 @@ export function initMobileNavbarMenus(): void {
 
       /*
         Elementul actual este un <a>.
-        Prevenim navigarea accidentală dacă primește ulterior href.
+        Prevenim navigarea accidentala daca primeste ulterior href.
       */
       if (trigger instanceof HTMLAnchorElement) {
         event.preventDefault();
@@ -272,8 +301,8 @@ export function initMobileNavbarMenus(): void {
 
       /*
         Focus trap simplu pentru overlay-ul full-screen.
-        Devine relevant după ce link-urile și CTA-ul sunt elemente
-        interactive reale în Webflow.
+        Devine relevant dupa ce link-urile si CTA-ul sunt elemente
+        interactive reale in Webflow.
       */
       if (event.key !== 'Tab') return;
 
@@ -295,8 +324,8 @@ export function initMobileNavbarMenus(): void {
     });
 
     /*
-      Panel-ul este mutat în body, deci nu mai este copil al navbar-ului.
-      Verificăm separat atât navbar-ul, cât și overlay-ul.
+      Panel-ul este mutat in body, deci nu mai este copil al navbar-ului.
+      Verificam separat atat navbar-ul, cat si overlay-ul.
     */
     document.addEventListener('pointerdown', (event: PointerEvent): void => {
       if (!isOpen || !isMobileViewport()) return;
@@ -325,6 +354,16 @@ export function initMobileNavbarMenus(): void {
         setMenuOpen(false);
       }
     });
+
+    window.addEventListener(
+      'resize',
+      () => {
+        if (!isMobileViewport()) return;
+
+        syncNavbarHeightVariable();
+      },
+      { passive: true }
+    );
 
     if (typeof mobileQuery.addEventListener === 'function') {
       mobileQuery.addEventListener('change', syncViewportMode);
