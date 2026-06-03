@@ -50,11 +50,13 @@ export function initHeroAvatarHover(): void {
       list.querySelectorAll<HTMLElement>(HERO_AVATAR_SETTINGS.avatarSelector)
     );
 
-    const tooltip = list.querySelector<HTMLElement>(HERO_AVATAR_SETTINGS.tooltipSelector);
+    const tooltip = list.querySelector<HTMLElement>(
+      HERO_AVATAR_SETTINGS.tooltipSelector
+    ) as HTMLElement;
 
-    const tooltipName = tooltip?.querySelector<HTMLElement>(
+    const tooltipName = tooltip.querySelector<HTMLElement>(
       HERO_AVATAR_SETTINGS.tooltipNameSelector
-    );
+    ) as HTMLElement;
 
     if (!avatars.length || !tooltip || !tooltipName) {
       console.warn('Hero avatars: lipsesc data-hero-name sau tooltip-ul configurat.', list);

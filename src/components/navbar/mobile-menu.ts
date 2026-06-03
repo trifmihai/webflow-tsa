@@ -22,8 +22,8 @@ export function initMobileNavbarMenus(): void {
   navbars.forEach((navbar, navbarIndex) => {
     if (navbar.dataset.mobileNavReady === 'true') return;
 
-    const trigger = navbar.querySelector<HTMLElement>('.navbar_menu-icon');
-    const panel = navbar.querySelector<HTMLElement>('.navbar_mobile-panel');
+    const trigger = navbar.querySelector<HTMLElement>('.navbar_menu-icon') as HTMLElement;
+    const panel = navbar.querySelector<HTMLElement>('.navbar_mobile-panel') as HTMLElement;
 
     if (!trigger || !panel) {
       console.warn('Mobile navbar: lipsesc .navbar_menu-icon sau .navbar_mobile-panel.', navbar);

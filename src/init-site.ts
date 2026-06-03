@@ -7,6 +7,7 @@ import { initPracticeTextReels } from './components/practice-text-reel';
 import { initRelatedArticlesEmptyState } from './components/related-articles';
 import { initResourcesFilters } from './components/resources-filter';
 import { initTeamCards } from './components/team-card';
+// import { initTextReveal } from './components/text-reveal';
 import { onDomReady } from './utils/dom';
 
 export function initSite(): void {
@@ -19,4 +20,5 @@ export function initSite(): void {
   initBlogToc();
   onDomReady(initHeroAvatarHover);
   onDomReady(initRelatedArticlesEmptyState);
+  // onDomReady(initTextReveal);
 }

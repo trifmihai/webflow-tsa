@@ -6,7 +6,7 @@
 
 export function initBlogToc(): void {
   document.addEventListener('DOMContentLoaded', () => {
-    const wrappers = document.querySelectorAll('.cms-page_toc-list-wrapper');
+    const wrappers = document.querySelectorAll<HTMLElement>('.cms-page_toc-list-wrapper');
 
     wrappers.forEach((wrapper) => {
       const list = wrapper.querySelector('.blog-post_toc-list');
@@ -17,14 +17,14 @@ export function initBlogToc(): void {
 
       const activeSelectors = ['a.u-toc-current-link', 'a.w--current', "a[aria-current='true']"];
 
-      let frame = null;
+      let frame: number | null = null;
 
       const updateTocState = () => {
         if (frame) cancelAnimationFrame(frame);
 
         frame = requestAnimationFrame(() => {
-          const links = Array.from(wrapper.querySelectorAll(linkSelector));
-          const activeLink = wrapper.querySelector(activeSelectors.join(', '));
+          const links = Array.from(wrapper.querySelectorAll<HTMLElement>(linkSelector));
+          const activeLink = wrapper.querySelector<HTMLElement>(activeSelectors.join(', '));
 
           if (!activeLink) {
             wrapper.style.setProperty('--toc-current-opacity', '0');

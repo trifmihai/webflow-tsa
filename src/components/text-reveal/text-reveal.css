@@ -1,0 +1,76 @@
+/*
+============================================
+  Text Reveal
+============================================
+
+
+:root {
+  --tsa-reveal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --tsa-reveal-duration-media: 500ms;
+  --tsa-reveal-duration-eyebrow: 320ms;
+  --tsa-reveal-duration-heading: 520ms;
+  --tsa-reveal-duration-body: 440ms;
+  --tsa-reveal-duration-action: 400ms;
+
+  --tsa-reveal-y-media: 0.625rem;
+  --tsa-reveal-y-eyebrow: 0.375rem;
+  --tsa-reveal-y-heading: 0.625rem;
+  --tsa-reveal-y-body: 0.5rem;
+  --tsa-reveal-y-action: 0.375rem;
+}
+
+
+html.tsa-text-reveal-ready [data-tsa-reveal-item='true'] {
+  opacity: 0;
+  transform: translate3d(0, var(--tsa-reveal-y, 0.5rem), 0);
+  transition-property: opacity, transform;
+  transition-duration: var(--tsa-reveal-duration, 440ms);
+  transition-timing-function: var(--tsa-reveal-ease);
+  transition-delay: var(--tsa-reveal-delay, 0ms);
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+html.tsa-text-reveal-ready [data-tsa-reveal-part='media'] {
+  --tsa-reveal-y: var(--tsa-reveal-y-media);
+  --tsa-reveal-duration: var(--tsa-reveal-duration-media);
+}
+
+html.tsa-text-reveal-ready [data-tsa-reveal-part='eyebrow'] {
+  --tsa-reveal-y: var(--tsa-reveal-y-eyebrow);
+  --tsa-reveal-duration: var(--tsa-reveal-duration-eyebrow);
+}
+
+html.tsa-text-reveal-ready [data-tsa-reveal-part='heading'] {
+  --tsa-reveal-y: var(--tsa-reveal-y-heading);
+  --tsa-reveal-duration: var(--tsa-reveal-duration-heading);
+}
+
+html.tsa-text-reveal-ready [data-tsa-reveal-part='body'] {
+  --tsa-reveal-y: var(--tsa-reveal-y-body);
+  --tsa-reveal-duration: var(--tsa-reveal-duration-body);
+}
+
+html.tsa-text-reveal-ready [data-tsa-reveal-part='action'] {
+  --tsa-reveal-y: var(--tsa-reveal-y-action);
+  --tsa-reveal-duration: var(--tsa-reveal-duration-action);
+}
+
+html.tsa-text-reveal-ready
+  [data-tsa-reveal-prepared='true'].is-reveal-visible
+  [data-tsa-reveal-item='true'] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.tsa-text-reveal-ready [data-tsa-reveal-item='true'] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    pointer-events: auto !important;
+  }
+}
+*/
