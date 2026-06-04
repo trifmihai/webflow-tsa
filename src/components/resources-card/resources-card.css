@@ -25,9 +25,11 @@
 
 .resources_card {
   background-color: transparent;
+
   transition:
     background-color 240ms ease,
     border-color 240ms ease;
+
   transition:
     background-color var(--resources-card-duration) ease,
     border-color var(--resources-card-duration) ease;
@@ -56,12 +58,25 @@
 
 /* ------------------------------
    Author avatar base state
-   Stable wrapper and image positioning
+   Keeps absolute centering with translate
 ------------------------------ */
 
-.resources_author-item {
+.resources_author-image-wrapper {
   position: relative;
-  flex: none;
+  flex: 0 0 auto;
+  width: 3.125rem;
+  height: 3.125rem;
+}
+
+.resources_author-item {
+  position: relative !important;
+
+  width: 3.125rem;
+  height: 3.125rem;
+  min-width: 3.125rem;
+  min-height: 3.125rem;
+
+  flex: 0 0 auto;
   overflow: hidden;
 
   backface-visibility: hidden;
@@ -70,24 +85,29 @@
   transition:
     filter 360ms ease,
     box-shadow 300ms ease;
+
   transition:
     filter var(--resources-avatar-filter-duration) ease,
     box-shadow var(--resources-avatar-shadow-duration) ease;
 }
 
 .resources_avatar-image {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  position: absolute !important;
 
-  width: 100%;
-  height: 100%;
-  max-width: none;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+
+  width: 3.125rem !important;
+  height: 3.125rem !important;
+  max-width: none !important;
 
   display: block;
   object-fit: cover;
+  object-position: center center;
 
-  transform: translate(-50%, -50%) translate3d(0, 0, 0) scale(1);
+  transform: translate(-50%, -50%) scale(1) !important;
   transform-origin: center center;
   backface-visibility: hidden;
 
@@ -124,7 +144,7 @@
 
   .resources_card:hover .resources_avatar-image,
   .resources_card:focus-visible .resources_avatar-image {
-    transform: translate(-50%, -50%) translate3d(0, -1px, 0) scale(1.04);
+    transform: translate(-50%, -50%) scale(1.04) !important;
   }
 }
 
@@ -148,13 +168,12 @@
 
   .resources_card:hover .resources_avatar-image,
   .resources_card:focus-visible .resources_avatar-image {
-    transform: translate(-50%, -50%) translate3d(0, 0, 0) scale(1);
+    transform: translate(-50%, -50%) scale(1) !important;
   }
 }
 
 /* ------------------------------
    Internet Explorer and Edge IE Mode fallback
-   Keeps cards usable and disables fragile effects
 ------------------------------ */
 
 @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
@@ -177,9 +196,20 @@
     transform: rotate(-45deg);
   }
 
-  .resources_author-item {
+  .resources_author-image-wrapper {
     position: relative;
-    flex: none;
+    width: 3.125rem;
+    height: 3.125rem;
+  }
+
+  .resources_author-item {
+    position: relative !important;
+
+    width: 3.125rem;
+    height: 3.125rem;
+    min-width: 3.125rem;
+    min-height: 3.125rem;
+
     overflow: hidden;
 
     filter: none;
@@ -190,29 +220,34 @@
   .resources_card:hover .resources_author-item,
   .resources_card:focus .resources_author-item {
     filter: none;
+
     box-shadow:
       -2px 4px 7px 0 rgba(51, 51, 51, 0.06),
       -1px 1px 4px 0 rgba(51, 51, 51, 0.075);
   }
 
   .resources_avatar-image {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute !important;
 
-    width: 100%;
-    height: 100%;
-    max-width: none;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+
+    width: 3.125rem !important;
+    height: 3.125rem !important;
+    max-width: none !important;
 
     display: block;
     object-fit: cover;
+    object-position: center center;
 
     transition: none;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(1) !important;
   }
 
   .resources_card:hover .resources_avatar-image,
   .resources_card:focus .resources_avatar-image {
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(-50%, -50%) scale(1) !important;
   }
 }
