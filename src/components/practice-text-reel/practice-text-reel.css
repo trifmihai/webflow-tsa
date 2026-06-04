@@ -44,12 +44,32 @@
   --reel-ease-move: cubic-bezier(0.65, 0, 0.35, 1);
   --reel-ease-opacity: cubic-bezier(0.65, 0, 0.35, 1);
 
+  /*
+    Snap-ul după drag trebuie să reacționeze elegant,
+    fără să pară elastic sau jucăuș.
+  */
+  --reel-ease-drag-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --reel-drag-settle-duration: 440ms;
+  --reel-drag-opacity-duration: 280ms;
+  --reel-drag-resume-delay: 760;
+
   /* ----------------------------------------------------------
-     Desktop hierarchy
+     Desktop hierarchy and spacing
      ---------------------------------------------------------- */
 
   --reel-desktop-near-opacity: 0.26;
-  --reel-desktop-far-opacity: 0.055;
+  --reel-desktop-far-opacity: 0.08;
+
+  /*
+    MODIFICĂ AICI distanța dintre "Lucrăm cu" și textul animat pe desktop.
+  */
+  --reel-desktop-prefix-gap: 0.75rem;
+
+  /*
+    MODIFICĂ AICI distanța verticală dintre item-urile animate pe desktop.
+    Recomandare: între 0rem și 0.25rem.
+  */
+  --reel-desktop-item-gap: 0.075rem;
 
   /*
     Spațiu de siguranță pentru fontul serif, astfel încât
@@ -87,11 +107,64 @@
 }
 
 /* ==========================================================
+   DRAG INTERACTION STATE
+   Păstrează layout-ul Webflow intact și mișcă doar track-ul.
+   ========================================================== */
+
+.practice-text-reel_component.is-initialized:not(.is-static-list) .practice-text-reel_mask {
+  cursor: grab;
+  touch-action: pan-x pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.practice-text-reel_component.is-dragging .practice-text-reel_mask {
+  cursor: grabbing;
+}
+
+.practice-text-reel_component.is-dragging .practice-text-reel_track,
+.practice-text-reel_component.is-drag-settling .practice-text-reel_track {
+  will-change: transform;
+}
+
+.practice-text-reel_component.is-dragging .practice-text-reel_track {
+  transition-duration: 0ms !important;
+}
+
+.practice-text-reel_component.is-dragging .practice-text-reel_item {
+  transition-duration: var(--reel-drag-opacity-duration);
+}
+
+.practice-text-reel_component.is-drag-settling .practice-text-reel_track {
+  transition-duration: var(--reel-drag-settle-duration);
+  transition-timing-function: var(--reel-ease-drag-settle);
+}
+
+.practice-text-reel_component.is-drag-settling .practice-text-reel_item {
+  transition-duration: var(--reel-drag-opacity-duration);
+}
+
+.practice-text-reel_component.is-static-list .practice-text-reel_mask {
+  cursor: auto;
+  touch-action: auto;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+
+/* ==========================================================
    DESKTOP AND TABLET: 768px+
    Prefix în stânga, listă editorială în dreapta.
    ========================================================== */
 
 @media screen and (min-width: 768px) {
+  .practice-text-reel_layout {
+    gap: var(--reel-desktop-prefix-gap);
+  }
+
+  .practice-text-reel_track {
+    gap: var(--reel-desktop-item-gap);
+  }
+
   .practice-text-reel_mask {
     /*
       Extinde discret aria de clipping pentru fontul serif,
@@ -172,12 +245,12 @@
       MODIFICĂ AICI spațiul dintre opțiunile mobile.
       Recomandare: între 0.125rem și 0.375rem.
     */
-    --reel-mobile-item-gap: 0.25rem;
+    --reel-mobile-item-gap: 0.3rem;
 
     /*
       MODIFICĂ AICI distanța dintre "Lucrăm cu" și listă.
     */
-    --reel-mobile-prefix-gap: 0.25rem;
+    --reel-mobile-prefix-gap: 0.75rem;
 
     /*
       JavaScript recalculează automat această înălțime

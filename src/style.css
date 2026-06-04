@@ -10,6 +10,7 @@
 @import './components/text-reveal/text-reveal.css';
 @import './components/team-card/team-card.css';
 @import './components/blog-toc/blog-toc.css';
+@import './components/footer-map/footer-map.css';
 
 /* Keep this late tablet override separate to preserve the original cascade order. */
 @import './components/team-card/team-card-tablet.css';
@@ -17,3 +18,4 @@
 /* Keep this guard after team motion and responsive overrides so image sizing wins. */
 @import './components/team-card/team-card-layout-guard.css';
 @import './components/hero-avatars/hero-avatars.css';
+@import './components/hero-pillars/hero-pillars.css';

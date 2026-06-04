@@ -39,7 +39,50 @@ const PRACTICE_TEXT_REEL_SETTINGS = {
     Animația pornește doar după ce o parte relevantă
     a componentei a intrat în viewport.
   */
-  visibilityThreshold: 0.15,
+  visibilityThreshold: 0.01,
+
+  /*
+    Permite utilizatorului să tragă lista manual.
+    Folosește Pointer Events, deci funcționează pe mouse, touch și stylus.
+  */
+  dragEnabled: true,
+
+  /*
+    Numărul minim de pixeli înainte ca pointer-ul să fie tratat ca drag.
+    Previne pornirea accidentală a interacțiunii la un simplu tap/click.
+  */
+  dragMinDistance: 6,
+
+  /*
+    Cât de mult trebuie să tragă utilizatorul ca starea vizuală
+    să treacă pe item-ul următor/anterior în timpul drag-ului.
+  */
+  dragStateChangeThreshold: 0.38,
+
+  /*
+    Cât de mult trebuie să tragă utilizatorul ca item-ul următor/anterior
+    să fie selectat la release, dacă gestul nu are viteză mare.
+  */
+  dragReleaseThreshold: 0.34,
+
+  /*
+    Dacă utilizatorul eliberează cu o mișcare rapidă,
+    reel-ul avansează încă un item în direcția gestului.
+    Valoarea este în px/ms.
+  */
+  dragVelocityThreshold: 0.65,
+
+  /*
+    Limitează cât de departe poate fi tras track-ul peste un singur item.
+    Asta păstrează senzația editorială și previne spațiile goale mari.
+  */
+  dragMaxPullRatio: 1.08,
+
+  /*
+    Câtă rezistență primește drag-ul după ce trece de zona naturală.
+    Valori mici = mai controlat. Valori mari = mai elastic.
+  */
+  dragResistance: 0.16,
 } as const;
 
 const PRACTICE_TEXT_REEL_STATE_CLASSES = [
@@ -83,7 +126,6 @@ export function initPracticeTextReels(): void {
     if (!prefix || !mask || !track) return;
 
     let originalItemCount = 0;
-    let cycleStartIndex = 0;
     let currentTrackIndex = 0;
     let activeLogicalIndex: number = PRACTICE_TEXT_REEL_SETTINGS.initialActiveIndex;
 
@@ -97,6 +139,22 @@ export function initPracticeTextReels(): void {
     let setupFrame: number | undefined;
     let resetFrame: number | undefined;
     let resizeTimer: number | undefined;
+    let dragResumeTimer: number | undefined;
+
+    let isDragging = false;
+    let hasDragMoved = false;
+    let dragPointerId: number | undefined;
+    let dragStartClientY = 0;
+    let dragStartTrackY = 0;
+    let dragLastClientY = 0;
+    let dragLastTime = 0;
+    let dragVelocityY = 0;
+    let dragBaseIndex = 0;
+    let dragBaseY = 0;
+    let dragCurrentDeltaY = 0;
+    let dragVisualIndex = 0;
+    let dragPendingTrackY: number | null = null;
+    let dragFrame: number | undefined;
 
     let lastViewportWidth = window.innerWidth;
 
@@ -116,6 +174,20 @@ export function initPracticeTextReels(): void {
       return ((value % itemCount) + itemCount) % itemCount;
     }
 
+    function clamp(value: number, min: number, max: number): number {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function getCssNumberVariable(name: string, fallback: number): number {
+      const value = Number.parseFloat(getComputedStyle(component).getPropertyValue(name).trim());
+
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function getDragResumeDelay(): number {
+      return getCssNumberVariable('--reel-drag-resume-delay', 760);
+    }
+
     function getHoldDuration(): number {
       const value = Number.parseFloat(
         getComputedStyle(component).getPropertyValue('--reel-hold-duration').trim()
@@ -131,6 +203,30 @@ export function initPracticeTextReels(): void {
       holdTimer = undefined;
     }
 
+    function clearDragResumeTimer(): void {
+      if (dragResumeTimer === undefined) return;
+
+      window.clearTimeout(dragResumeTimer);
+      dragResumeTimer = undefined;
+    }
+
+    function cancelDragFrame(): void {
+      if (dragFrame === undefined) return;
+
+      window.cancelAnimationFrame(dragFrame);
+      dragFrame = undefined;
+    }
+
+    function flushDragFrame(): void {
+      if (dragPendingTrackY === null) return;
+
+      cancelDragFrame();
+
+      setTrackY(dragPendingTrackY, false);
+
+      dragPendingTrackY = null;
+    }
+
     function cancelScheduledFrames(): void {
       if (setupFrame !== undefined) {
         window.cancelAnimationFrame(setupFrame);
@@ -141,6 +237,8 @@ export function initPracticeTextReels(): void {
         window.cancelAnimationFrame(resetFrame);
         resetFrame = undefined;
       }
+
+      cancelDragFrame();
     }
 
     function syncMotionMode(): void {
@@ -200,16 +298,6 @@ export function initPracticeTextReels(): void {
       });
     }
 
-    /**
-     * Pe mobil, item-urile au înălțimea lor naturală.
-     * Masca primește înălțimea necesară pentru cea mai mare
-     * combinație posibilă de trei item-uri consecutive.
-     *
-     * Astfel:
-     * 1. textul pe două rânduri nu este tăiat;
-     * 2. nu introducem spațiu artificial mare între item-uri;
-     * 3. înălțimea vizibilă nu sare în timpul loop-ului.
-     */
     function setMobileMaskHeight(originalItems: HTMLElement[]): void {
       component.style.removeProperty('--reel-mobile-mask-height');
 
@@ -250,14 +338,6 @@ export function initPracticeTextReels(): void {
       );
     }
 
-    /**
-     * Desktop:
-     * Item-ul activ este aliniat cu centrul prefixului "Lucrăm cu".
-     *
-     * Mobil:
-     * Item-ul activ începe în partea de sus a măștii.
-     * Următoarele două item-uri apar dedesubt ca preview.
-     */
     function getTargetY(targetIndex: number): number {
       const targetItem = getAllItems()[targetIndex];
 
@@ -277,26 +357,72 @@ export function initPracticeTextReels(): void {
       return prefixCenterRelativeToMask - itemCenterInTrack;
     }
 
-    function setTrackPosition(targetIndex: number, animate: boolean): void {
+    function getCurrentTrackY(): number {
+      const { transform } = window.getComputedStyle(track);
+
+      if (!transform || transform === 'none') return 0;
+
+      const matrixValues = transform.match(/matrix.*\((.+)\)/)?.[1];
+
+      if (!matrixValues) return 0;
+
+      const values = matrixValues.split(',').map((value) => Number.parseFloat(value.trim()));
+
+      if (transform.startsWith('matrix3d')) {
+        return Number.isFinite(values[13]) ? values[13] : 0;
+      }
+
+      return Number.isFinite(values[5]) ? values[5] : 0;
+    }
+
+    function setTrackY(value: number, animate: boolean): void {
       if (animate) {
         track.style.removeProperty('transition-duration');
       } else {
         track.style.transitionDuration = '0ms';
       }
 
-      track.style.transform = `translate3d(0, ${getTargetY(targetIndex)}px, 0)`;
+      track.style.transform = `translate3d(0, ${value}px, 0)`;
     }
 
-    /**
-     * În loc să calculăm opacity în fiecare frame,
-     * schimbăm doar stările semantice la începutul tranziției.
-     *
-     * Beneficii:
-     * 1. mai puține recalculări de layout;
-     * 2. ierarhie predictibilă;
-     * 3. tranziție coerentă între text și poziție;
-     * 4. comportament mai ușor de ajustat din CSS.
-     */
+    function scheduleDragTrackY(value: number): void {
+      dragPendingTrackY = value;
+
+      if (dragFrame !== undefined) return;
+
+      dragFrame = window.requestAnimationFrame(() => {
+        dragFrame = undefined;
+
+        if (dragPendingTrackY === null) return;
+
+        setTrackY(dragPendingTrackY, false);
+
+        dragPendingTrackY = null;
+      });
+    }
+
+    function setTrackPosition(targetIndex: number, animate: boolean): void {
+      setTrackY(getTargetY(targetIndex), animate);
+    }
+
+    function getLoopResetIndex(): number | null {
+      if (!originalItemCount) return null;
+
+      if (currentTrackIndex < originalItemCount) {
+        return currentTrackIndex + originalItemCount;
+      }
+
+      if (currentTrackIndex >= originalItemCount * 2) {
+        return currentTrackIndex - originalItemCount;
+      }
+
+      return null;
+    }
+
+    function updateActiveLogicalIndexFromTrackIndex(trackIndex: number): void {
+      activeLogicalIndex = normalizeIndex(trackIndex - originalItemCount, originalItemCount);
+    }
+
     function applyVisualState(targetIndex: number): void {
       const items = getAllItems();
 
@@ -327,8 +453,10 @@ export function initPracticeTextReels(): void {
         !isInView ||
         isPausedByHover ||
         isLoopResetting ||
+        isDragging ||
         document.hidden ||
-        component.classList.contains('is-setting-up')
+        component.classList.contains('is-setting-up') ||
+        component.classList.contains('is-drag-settling')
       ) {
         return;
       }
@@ -350,25 +478,19 @@ export function initPracticeTextReels(): void {
       }, getHoldDuration());
     }
 
-    /**
-     * Când ajungem la item-ul clonat echivalent cu începutul ciclului,
-     * track-ul este repoziționat instant pe originalul identic.
-     *
-     * Deoarece textul, poziția și opacitățile coincid perfect,
-     * resetarea nu trebuie să fie perceptibilă.
-     */
     function silentlyResetLoop(): boolean {
       if (!shouldAnimate) return false;
 
-      if (currentTrackIndex < cycleStartIndex + originalItemCount) {
-        return false;
-      }
+      const resetIndex = getLoopResetIndex();
+
+      if (resetIndex === null) return false;
 
       isLoopResetting = true;
 
       component.classList.add('is-loop-resetting');
 
-      currentTrackIndex = cycleStartIndex;
+      currentTrackIndex = resetIndex;
+      updateActiveLogicalIndexFromTrackIndex(currentTrackIndex);
 
       applyVisualState(currentTrackIndex);
       setTrackPosition(currentTrackIndex, false);
@@ -393,10 +515,6 @@ export function initPracticeTextReels(): void {
       return true;
     }
 
-    /**
-     * Finalizează inițializarea sau recalcularea fără ca utilizatorul
-     * să vadă repoziționări ori modificări intermediare de opacity.
-     */
     function finishInstantSetup(): void {
       void track.offsetHeight;
 
@@ -411,9 +529,27 @@ export function initPracticeTextReels(): void {
       });
     }
 
+    function resetDragState(): void {
+      isDragging = false;
+      hasDragMoved = false;
+      dragPointerId = undefined;
+      dragVelocityY = 0;
+      dragBaseIndex = currentTrackIndex;
+      dragBaseY = getCurrentTrackY();
+      dragCurrentDeltaY = 0;
+      dragVisualIndex = currentTrackIndex;
+      dragPendingTrackY = null;
+
+      cancelDragFrame();
+      clearDragResumeTimer();
+
+      component.classList.remove('is-dragging', 'is-drag-settling');
+    }
+
     function setup(): void {
       stopHoldTimer();
       cancelScheduledFrames();
+      resetDragState();
 
       component.classList.add('is-initialized', 'is-setting-up');
       component.classList.remove('is-loop-resetting');
@@ -465,13 +601,241 @@ export function initPracticeTextReels(): void {
         Pornim din blocul original al item-urilor, nu din clone.
         Dacă setup rulează după resize, păstrăm categoria activă curentă.
       */
-      cycleStartIndex = originalItemCount + activeLogicalIndex;
-      currentTrackIndex = cycleStartIndex;
+      currentTrackIndex = originalItemCount + activeLogicalIndex;
 
       applyVisualState(currentTrackIndex);
       setTrackPosition(currentTrackIndex, false);
 
       finishInstantSetup();
+    }
+
+    function canDrag(): boolean {
+      return (
+        PRACTICE_TEXT_REEL_SETTINGS.dragEnabled &&
+        shouldAnimate &&
+        originalItemCount > 1 &&
+        !isLoopResetting &&
+        !component.classList.contains('is-setting-up') &&
+        !component.classList.contains('is-drag-settling')
+      );
+    }
+
+    function getDragDirection(deltaY: number): -1 | 0 | 1 {
+      if (Math.abs(deltaY) < PRACTICE_TEXT_REEL_SETTINGS.dragMinDistance) return 0;
+
+      /*
+        Delta negativ = utilizatorul trage în sus = următorul item.
+        Delta pozitiv = utilizatorul trage în jos = item-ul anterior.
+      */
+      return deltaY < 0 ? 1 : -1;
+    }
+
+    function getVelocityDirection(velocityY: number): -1 | 0 | 1 {
+      if (Math.abs(velocityY) < PRACTICE_TEXT_REEL_SETTINGS.dragVelocityThreshold) return 0;
+
+      return velocityY < 0 ? 1 : -1;
+    }
+
+    function getNeighborIndex(baseIndex: number, direction: -1 | 0 | 1): number {
+      const items = getAllItems();
+
+      if (!items.length || direction === 0) return baseIndex;
+
+      return clamp(baseIndex + direction, 0, items.length - 1);
+    }
+
+    function getDragStepDistance(baseIndex: number, direction: -1 | 0 | 1): number {
+      const neighborIndex = getNeighborIndex(baseIndex, direction);
+
+      if (neighborIndex === baseIndex) return 1;
+
+      return Math.max(Math.abs(getTargetY(neighborIndex) - getTargetY(baseIndex)), 1);
+    }
+
+    function getResistedDelta(deltaY: number, stepDistance: number): number {
+      const sign = Math.sign(deltaY);
+      const distance = Math.abs(deltaY);
+      const maxNaturalDistance = stepDistance * PRACTICE_TEXT_REEL_SETTINGS.dragMaxPullRatio;
+
+      if (distance <= maxNaturalDistance) return deltaY;
+
+      const extraDistance = distance - maxNaturalDistance;
+
+      return (
+        sign * (maxNaturalDistance + extraDistance * PRACTICE_TEXT_REEL_SETTINGS.dragResistance)
+      );
+    }
+
+    function getDragProgress(deltaY: number, stepDistance: number): number {
+      return clamp(Math.abs(deltaY) / stepDistance, 0, 1);
+    }
+
+    function beginDrag(event: PointerEvent): void {
+      if (!canDrag()) return;
+
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      isDragging = true;
+      hasDragMoved = false;
+      dragPointerId = event.pointerId;
+      dragStartClientY = event.clientY;
+      dragStartTrackY = getCurrentTrackY();
+      dragLastClientY = event.clientY;
+      dragLastTime = performance.now();
+      dragVelocityY = 0;
+      dragBaseIndex = currentTrackIndex;
+      dragBaseY = getTargetY(currentTrackIndex);
+      dragCurrentDeltaY = 0;
+      dragVisualIndex = currentTrackIndex;
+      dragPendingTrackY = null;
+
+      stopHoldTimer();
+      clearDragResumeTimer();
+
+      component.classList.add('is-dragging');
+      component.classList.remove('is-drag-settling');
+
+      track.style.transitionDuration = '0ms';
+
+      try {
+        mask.setPointerCapture(event.pointerId);
+      } catch {
+        /*
+          Unele browsere pot refuza pointer capture dacă pointer-ul
+          nu mai este activ. Interacțiunea rămâne funcțională.
+        */
+      }
+    }
+
+    function updateDrag(event: PointerEvent): void {
+      if (!isDragging || event.pointerId !== dragPointerId) return;
+
+      const currentTime = performance.now();
+      const rawDeltaY = event.clientY - dragStartClientY;
+      const direction = getDragDirection(rawDeltaY);
+
+      if (!hasDragMoved && direction === 0) return;
+
+      hasDragMoved = true;
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      const timeDelta = Math.max(currentTime - dragLastTime, 1);
+
+      dragVelocityY = (event.clientY - dragLastClientY) / timeDelta;
+      dragLastClientY = event.clientY;
+      dragLastTime = currentTime;
+      dragCurrentDeltaY = rawDeltaY;
+
+      if (direction === 0) {
+        scheduleDragTrackY(dragStartTrackY + rawDeltaY);
+
+        if (dragVisualIndex !== dragBaseIndex) {
+          dragVisualIndex = dragBaseIndex;
+          applyVisualState(dragVisualIndex);
+        }
+
+        return;
+      }
+
+      const stepDistance = getDragStepDistance(dragBaseIndex, direction);
+      const resistedDeltaY = getResistedDelta(rawDeltaY, stepDistance);
+      const progress = getDragProgress(rawDeltaY, stepDistance);
+      const candidateIndex = getNeighborIndex(dragBaseIndex, direction);
+
+      scheduleDragTrackY(dragBaseY + resistedDeltaY);
+
+      const nextVisualIndex =
+        progress >= PRACTICE_TEXT_REEL_SETTINGS.dragStateChangeThreshold
+          ? candidateIndex
+          : dragBaseIndex;
+
+      if (nextVisualIndex === dragVisualIndex) return;
+
+      dragVisualIndex = nextVisualIndex;
+
+      applyVisualState(dragVisualIndex);
+    }
+
+    function getReleaseIndex(): number {
+      const velocityDirection = getVelocityDirection(dragVelocityY);
+      const dragDirection = getDragDirection(dragCurrentDeltaY);
+      const direction = velocityDirection || dragDirection;
+
+      if (direction === 0) return dragBaseIndex;
+
+      const stepDistance = getDragStepDistance(dragBaseIndex, direction);
+      const progress = getDragProgress(dragCurrentDeltaY, stepDistance);
+      const candidateIndex = getNeighborIndex(dragBaseIndex, direction);
+
+      if (velocityDirection !== 0 || progress >= PRACTICE_TEXT_REEL_SETTINGS.dragReleaseThreshold) {
+        return candidateIndex;
+      }
+
+      return dragBaseIndex;
+    }
+
+    function finishDrag(event: PointerEvent): void {
+      if (!isDragging || event.pointerId !== dragPointerId) return;
+
+      try {
+        if (mask.hasPointerCapture(event.pointerId)) {
+          mask.releasePointerCapture(event.pointerId);
+        }
+      } catch {
+        /*
+          Pointer capture poate fi deja eliberat de browser.
+        */
+      }
+
+      flushDragFrame();
+
+      component.classList.remove('is-dragging');
+
+      const shouldSnap = hasDragMoved;
+
+      isDragging = false;
+      hasDragMoved = false;
+      dragPointerId = undefined;
+
+      if (!shouldSnap) {
+        track.style.removeProperty('transition-duration');
+        queueNextMove();
+
+        return;
+      }
+
+      currentTrackIndex = getReleaseIndex();
+      updateActiveLogicalIndexFromTrackIndex(currentTrackIndex);
+
+      component.classList.add('is-drag-settling');
+
+      applyVisualState(currentTrackIndex);
+      setTrackPosition(currentTrackIndex, true);
+
+      clearDragResumeTimer();
+
+      /*
+        Fallback pentru cazurile în care nu apare transitionend,
+        de exemplu dacă snap-ul ajunge exact în poziția curentă.
+      */
+      dragResumeTimer = window.setTimeout(() => {
+        dragResumeTimer = undefined;
+
+        component.classList.remove('is-drag-settling');
+
+        if (silentlyResetLoop()) return;
+
+        queueNextMove();
+      }, getDragResumeDelay());
+    }
+
+    function cancelDrag(event: PointerEvent): void {
+      if (!isDragging || event.pointerId !== dragPointerId) return;
+
+      finishDrag(event);
     }
 
     track.addEventListener('transitionend', (event: TransitionEvent): void => {
@@ -483,10 +847,20 @@ export function initPracticeTextReels(): void {
         return;
       }
 
+      if (component.classList.contains('is-drag-settling')) {
+        component.classList.remove('is-drag-settling');
+        clearDragResumeTimer();
+      }
+
       if (silentlyResetLoop()) return;
 
       queueNextMove();
     });
+
+    mask.addEventListener('pointerdown', beginDrag);
+    window.addEventListener('pointermove', updateDrag, { passive: false });
+    window.addEventListener('pointerup', finishDrag);
+    window.addEventListener('pointercancel', cancelDrag);
 
     component.addEventListener('pointerenter', (): void => {
       if (
@@ -519,6 +893,7 @@ export function initPracticeTextReels(): void {
     document.addEventListener('visibilitychange', (): void => {
       if (document.hidden) {
         stopHoldTimer();
+        resetDragState();
 
         return;
       }

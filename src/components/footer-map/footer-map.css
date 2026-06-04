@@ -1,0 +1,112 @@
+/* ==========================================================
+   TSA.LAW FOOTER MAP
+   Premium editorial zoom-in interaction
+   Attribute-based version
+   Corners stay visible above the zooming map
+   ========================================================== */
+
+[data-footer-map='wrapper'] {
+  --footer-map-zoom-scale: 1.055;
+  --footer-map-zoom-duration: 720ms;
+  --footer-map-filter-duration: 420ms;
+  --footer-map-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+[data-footer-map='image'] {
+  backface-visibility: hidden;
+  display: block;
+  height: auto;
+  position: relative;
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center center;
+  width: 100%;
+  z-index: 1;
+
+  transition:
+    transform var(--footer-map-zoom-duration) var(--footer-map-ease-out),
+    filter var(--footer-map-filter-duration) ease;
+}
+
+/*
+  Corners stay fixed above the zooming map.
+  Important: do not add transform here, because Webflow already controls
+  each corner rotation/flip with combo classes like .is-top-right.
+*/
+
+[data-footer-map='corner'] {
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+}
+
+/* Keep existing Webflow corner positioning safe */
+
+[data-footer-map='corner'].is-top-left {
+  top: 0;
+  right: auto;
+  bottom: auto;
+  left: 0;
+}
+
+[data-footer-map='corner'].is-top-right {
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: auto;
+}
+
+[data-footer-map='corner'].is-bottom-left {
+  top: auto;
+  right: auto;
+  bottom: 0;
+  left: 0;
+}
+
+[data-footer-map='corner'].is-bottom-right {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: auto;
+}
+
+/* Desktop hover + keyboard focus */
+
+@media (hover: hover) and (pointer: fine) {
+  [data-footer-map='wrapper']:is(:hover, :focus-visible) [data-footer-map='image'] {
+    filter: contrast(1.025) saturate(1.02);
+    transform: translate3d(0, 0, 0) scale(var(--footer-map-zoom-scale));
+  }
+}
+
+/* Touch feedback */
+
+[data-footer-map='wrapper']:active [data-footer-map='image'] {
+  transform: translate3d(0, 0, 0) scale(1.03);
+}
+
+/* Keyboard accessibility */
+
+[data-footer-map='wrapper']:focus-visible {
+  outline: 1px solid var(--color--text--dark--primary);
+  outline-offset: 0.1875rem;
+}
+
+/* Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-footer-map='image'] {
+    transition-duration: 1ms !important;
+  }
+
+  [data-footer-map='wrapper']:is(:hover, :focus-visible, :active) [data-footer-map='image'] {
+    filter: none;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}

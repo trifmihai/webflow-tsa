@@ -1,0 +1,90 @@
+@media screen and (max-width: 576px) {
+  .content-wrapper.is-hero {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .hero_pillar-left,
+  .hero_pillar-right {
+    position: absolute;
+    z-index: 0;
+    top: 0rem;
+    width: 72%;
+    max-width: none;
+    height: auto;
+    opacity: 0.38;
+    pointer-events: none;
+    filter: grayscale(100%) contrast(0.82) brightness(1.18);
+
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black 0%,
+      black 52%,
+      rgba(0, 0, 0, 0.45) 72%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      black 0%,
+      black 52%,
+      rgba(0, 0, 0, 0.45) 72%,
+      transparent 100%
+    );
+  }
+
+  .hero_pillar-left {
+    left: -20%;
+
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        black 0%,
+        black 52%,
+        rgba(0, 0, 0, 0.45) 72%,
+        transparent 100%
+      ),
+      linear-gradient(to right, black 0%, black 42%, transparent 100%);
+    mask-image: linear-gradient(
+        to bottom,
+        black 0%,
+        black 52%,
+        rgba(0, 0, 0, 0.45) 72%,
+        transparent 100%
+      ),
+      linear-gradient(to right, black 0%, black 42%, transparent 100%);
+
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  .hero_pillar-right {
+    right: -20%;
+
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        black 0%,
+        black 52%,
+        rgba(0, 0, 0, 0.45) 72%,
+        transparent 100%
+      ),
+      linear-gradient(to left, black 0%, black 42%, transparent 100%);
+    mask-image: linear-gradient(
+        to bottom,
+        black 0%,
+        black 52%,
+        rgba(0, 0, 0, 0.45) 72%,
+        transparent 100%
+      ),
+      linear-gradient(to left, black 0%, black 42%, transparent 100%);
+
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  .hero_header,
+  .hero_top,
+  .hero_bottom {
+    position: relative;
+    z-index: 1;
+  }
+}
