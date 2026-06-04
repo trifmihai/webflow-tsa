@@ -18,4 +18,3 @@
 /* Keep this guard after team motion and responsive overrides so image sizing wins. */
 @import './components/team-card/team-card-layout-guard.css';
 @import './components/hero-avatars/hero-avatars.css';
-@import './components/hero-pillars/hero-pillars.css';
