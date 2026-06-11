@@ -61,7 +61,8 @@
 
 /*
   Authored open state is used only before JavaScript initialization.
-  JavaScript keeps the first item open by default in each group.
+  JavaScript keeps the first item open by default in each group, except
+  practices accordions on phone portrait where only opted-in groups start open.
 */
 [data-practices-accordion]:not([data-accordion-ready='true'])
   [data-practices-item][data-state='open']
@@ -71,6 +72,16 @@
   [data-faq-panel] {
   height: auto;
   visibility: visible;
+}
+
+@media screen and (max-width: 479px) {
+  [data-practices-accordion]:not([data-accordion-ready='true'])
+    [data-practices-group]:not([data-practices-phone-initial-open='first'])
+    [data-practices-item][data-state='open']
+    [data-practices-panel] {
+    height: 0;
+    visibility: hidden;
+  }
 }
 
 /* -----------------------------------------

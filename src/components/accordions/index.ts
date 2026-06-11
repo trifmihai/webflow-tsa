@@ -6,6 +6,7 @@ type AccordionConfig = {
   triggerSelector: string;
   panelSelector: string;
   innerSelector: string;
+  phoneInitialOpenAttribute?: string;
 };
 
 type GsapTarget = Element | Element[] | NodeListOf<Element> | string;
@@ -36,6 +37,7 @@ export function initAccordions(): void {
   const ICON_SELECTOR = '[data-accordion-icon]';
   const DIVIDER_SELECTOR = '.divider-horizontal-full';
   const MOBILE_QUERY = '(max-width: 767px)';
+  const PHONE_PORTRAIT_QUERY = '(max-width: 479px)';
 
   const CONFIGS: AccordionConfig[] = [
     {
@@ -46,6 +48,7 @@ export function initAccordions(): void {
       triggerSelector: '[data-practices-trigger]',
       panelSelector: '[data-practices-panel]',
       innerSelector: '[data-practices-panel-inner]',
+      phoneInitialOpenAttribute: 'data-practices-phone-initial-open',
     },
     {
       name: 'faq',
@@ -60,6 +63,7 @@ export function initAccordions(): void {
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const mobileLayout = window.matchMedia(MOBILE_QUERY);
+  const phonePortraitLayout = window.matchMedia(PHONE_PORTRAIT_QUERY);
 
   function initAccordionSystem(config: AccordionConfig): void {
     const windowGsap = window.gsap;
@@ -437,6 +441,15 @@ export function initAccordions(): void {
         });
       }
 
+      function getPhoneInitialOpenMode(group: HTMLElement): string | null {
+        if (!config.phoneInitialOpenAttribute || !phonePortraitLayout.matches) return null;
+
+        return group.getAttribute(config.phoneInitialOpenAttribute)?.trim().toLowerCase() ===
+          'first'
+          ? 'first'
+          : 'none';
+      }
+
       groups.forEach((group, groupIndex) => {
         const items = Array.from(group.querySelectorAll<HTMLElement>(config.itemSelector));
 
@@ -444,8 +457,13 @@ export function initAccordions(): void {
 
         const initialMode = group.dataset.initialOpen || 'first';
         const explicitlyOpen = items.find((item) => item.dataset.state === 'open');
+        const phoneInitialOpenMode = getPhoneInitialOpenMode(group);
 
-        const initialOpen = explicitlyOpen || (initialMode === 'first' ? items[0] : null);
+        const initialOpen = phoneInitialOpenMode
+          ? phoneInitialOpenMode === 'first'
+            ? items[0]
+            : null
+          : explicitlyOpen || (initialMode === 'first' ? items[0] : null);
 
         items.forEach((item, itemIndex) => {
           const { trigger, panel, inner, icon } = getParts(item);
