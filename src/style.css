@@ -1,4 +1,5 @@
 @import './styles/globals.css';
+@import './components/animations/govel/gavel.css';
 @import './components/navbar/mobile-menu.css';
 @import './components/call-popover/call-popover.css';
 @import './components/accordions/accordion.css';
