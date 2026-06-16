@@ -44,6 +44,7 @@ type PlanStampTimelineConfig = {
 type PlanStampMatchMediaContext = {
   conditions?: {
     desktop?: boolean;
+    mobile?: boolean;
     reduceMotion?: boolean;
   };
 };
@@ -99,7 +100,7 @@ type PlanStampScrollTrigger = {
 };
 
 type PlanStampRuntimeWindow = {
-  __tsaPlanStampDesktop?: PlanStampMedia;
+  __tsaPlanStampAnimation?: PlanStampMedia;
   gsap?: PlanStampGsap;
   ScrollTrigger?: PlanStampScrollTrigger;
   Webflow?: Array<() => void>;
@@ -122,90 +123,33 @@ type PlanStampMotionPhase = PlanStampMotionState & {
 type PlanStampPreset = {
   approach: PlanStampMotionPhase;
   impact: PlanStampMotionPhase;
+
   ink: {
     duration: number;
     ease: string;
     opacity: number;
     start: number;
   };
+
   settle: PlanStampMotionPhase;
+
   restore: {
     duration: number;
     ease: string;
   };
+
   exit: PlanStampMotionPhase;
 };
 
-/*
- * ============================================================
- * SELECT THE ACTIVE PRESET HERE
- * ============================================================
- *
- * Available:
- *
- * classicImpact
- * precisionSeal
- * archivalImprint
- * verdictStrike
- */
-
-const ACTIVE_PLAN_STAMP_PRESET: PlanStampPresetName = 'archivalImprint';
+type PlanStampDeviceMode = 'desktop' | 'mobile';
 
 /*
  * ============================================================
- * GLOBAL SETTINGS
- * ============================================================
- *
- * These apply to every preset.
- */
-
-const PLAN_STAMP_SETTINGS = {
-  desktopMinWidth: 768,
-
-  trigger: {
-    /*
-     * The element point used by ScrollTrigger.
-     */
-    itemAnchor: 'center',
-
-    /*
-     * Where the item anchor reaches inside the viewport.
-     *
-     * Higher value = earlier
-     * Lower value = later
-     *
-     * 85 = early
-     * 75 = balanced
-     * 65 = later
-     * 55 = much later
-     */
-    viewportPercent: 75,
-
-    end: 'bottom top',
-  },
-
-  /*
-   * Set to true to display ScrollTrigger markers.
-   * Change back to false before publishing.
-   */
-  debugMarkers: false,
-} as const;
-
-/*
- * ============================================================
- * PRESETS
+ * ANIMATION PRESETS
  * ============================================================
  */
 
 const PLAN_STAMP_PRESETS = {
-  /*
-   * PRESET 1
-   *
-   * The current balanced physical stamp.
-   *
-   * Perception:
-   * Clear, familiar, controlled physical contact.
-   */
   classicImpact: {
     approach: {
       x: 6,
@@ -268,17 +212,6 @@ const PLAN_STAMP_PRESETS = {
     },
   },
 
-  /*
-   * PRESET 2
-   *
-   * Recommended for TSA.
-   *
-   * The stamp makes a small alignment correction before
-   * applying a precise impression.
-   *
-   * Perception:
-   * Meticulous, composed, confident, premium.
-   */
   precisionSeal: {
     approach: {
       x: 9,
@@ -341,15 +274,6 @@ const PLAN_STAMP_PRESETS = {
     },
   },
 
-  /*
-   * PRESET 3
-   *
-   * The stamp moves less, but the ink impression develops
-   * gradually under sustained pressure.
-   *
-   * Perception:
-   * Archival, editorial, sophisticated, calm.
-   */
   archivalImprint: {
     approach: {
       x: 2,
@@ -412,14 +336,6 @@ const PLAN_STAMP_PRESETS = {
     },
   },
 
-  /*
-   * PRESET 4
-   *
-   * A heavier downward motion with stronger compression.
-   *
-   * Perception:
-   * Authority, resolution, finality, judicial decision.
-   */
   verdictStrike: {
     approach: {
       x: 7,
@@ -487,6 +403,65 @@ type PlanStampPresetName = keyof typeof PLAN_STAMP_PRESETS;
 
 /*
  * ============================================================
+ * EASY-TO-EDIT SETTINGS
+ * ============================================================
+ */
+
+const ACTIVE_PLAN_STAMP_PRESET: PlanStampPresetName = 'precisionSeal';
+
+const PLAN_STAMP_SETTINGS = {
+  breakpoint: 768,
+
+  trigger: {
+    /*
+     * APPEARANCE
+     *
+     * Higher percentage = appears earlier.
+     * Lower percentage = appears later.
+     */
+    desktop: {
+      itemAnchor: 'center',
+      viewportPercent: 60,
+    },
+
+    mobile: {
+      itemAnchor: 'center',
+      viewportPercent: 100,
+    },
+
+    /*
+     * DISAPPEARANCE WHEN SCROLLING BACK UP
+     *
+     * Lower percentage = disappears earlier.
+     *
+     * Desktop examples:
+     * 70 = slightly earlier
+     * 65 = recommended
+     * 55 = much earlier
+     *
+     * Mobile examples:
+     * 95 = slightly earlier
+     * 88 = recommended
+     * 80 = noticeably earlier
+     */
+    exitViewportPercent: {
+      desktop: 60,
+      mobile: 80,
+    },
+
+    end: 'bottom top',
+  },
+
+  /*
+   * Set to true temporarily to see the trigger lines.
+   */
+  debugMarkers: false,
+
+  transformOrigin: '50% 50%',
+} as const;
+
+/*
+ * ============================================================
  * SELECTORS
  * ============================================================
  */
@@ -499,20 +474,31 @@ const MARK_SELECTOR = '[data-plan-stamp-mark="true"]';
 
 /*
  * ============================================================
- * GENERATED SETTINGS
+ * GENERATED VALUES
  * ============================================================
  */
 
 const ACTIVE_PRESET = PLAN_STAMP_PRESETS[ACTIVE_PLAN_STAMP_PRESET];
 
 const PLAN_STAMP_MEDIA_QUERIES = {
-  desktop: `(min-width: ` + `${PLAN_STAMP_SETTINGS.desktopMinWidth}px)`,
+  desktop: `(min-width: ` + `${PLAN_STAMP_SETTINGS.breakpoint}px)`,
+
+  mobile: `(max-width: ` + `${PLAN_STAMP_SETTINGS.breakpoint - 1}px)`,
 
   reduceMotion: '(prefers-reduced-motion: reduce)',
 } as const;
 
-const PLAN_STAMP_TRIGGER_START =
-  `${PLAN_STAMP_SETTINGS.trigger.itemAnchor} ` + `${PLAN_STAMP_SETTINGS.trigger.viewportPercent}%`;
+function getPlanStampTriggerStart(mode: PlanStampDeviceMode): string {
+  const trigger = PLAN_STAMP_SETTINGS.trigger[mode];
+
+  return `${trigger.itemAnchor} ` + `${trigger.viewportPercent}%`;
+}
+
+function getPlanStampExitStart(mode: PlanStampDeviceMode): string {
+  const viewportPercent = PLAN_STAMP_SETTINGS.trigger.exitViewportPercent[mode];
+
+  return `center ${viewportPercent}%`;
+}
 
 /*
  * ============================================================
@@ -533,16 +519,22 @@ export function initPlanStamp(): void {
 
     gsap.registerPlugin(ScrollTrigger);
 
-    runtimeWindow.__tsaPlanStampDesktop?.revert();
+    runtimeWindow.__tsaPlanStampAnimation?.revert();
 
     const media = gsap.matchMedia();
 
-    runtimeWindow.__tsaPlanStampDesktop = media;
+    runtimeWindow.__tsaPlanStampAnimation = media;
 
     media.add(PLAN_STAMP_MEDIA_QUERIES, (context) => {
-      const { desktop = false, reduceMotion = false } = context.conditions ?? {};
+      const { desktop = false, mobile = false, reduceMotion = false } = context.conditions ?? {};
 
-      if (!desktop) return;
+      if (!desktop && !mobile) return;
+
+      const mode: PlanStampDeviceMode = mobile ? 'mobile' : 'desktop';
+
+      const appearanceTriggerStart = getPlanStampTriggerStart(mode);
+
+      const exitTriggerStart = getPlanStampExitStart(mode);
 
       const cleanupFunctions: Array<() => void> = [];
 
@@ -555,22 +547,6 @@ export function initPlanStamp(): void {
           const stamp = item.querySelector<HTMLElement>(MARK_SELECTOR);
 
           if (!stamp) return;
-
-          if (reduceMotion) {
-            gsap.set(stamp, {
-              autoAlpha: 1,
-
-              clearProps: 'transform,transformOrigin,willChange',
-            });
-
-            cleanupFunctions.push(() => {
-              gsap.set(stamp, {
-                clearProps: 'opacity,visibility,transform,transformOrigin,willChange',
-              });
-            });
-
-            return;
-          }
 
           let activeAnimation: PlanStampTimeline | null = null;
 
@@ -594,9 +570,9 @@ export function initPlanStamp(): void {
 
               rotation: ACTIVE_PRESET.approach.rotation,
 
-              transformOrigin: '50% 50%',
-              force3D: true,
+              transformOrigin: PLAN_STAMP_SETTINGS.transformOrigin,
 
+              force3D: true,
               clearProps: 'willChange',
             });
           };
@@ -612,12 +588,26 @@ export function initPlanStamp(): void {
 
               rotation: ACTIVE_PRESET.settle.rotation,
 
-              transformOrigin: '50% 50%',
-              force3D: true,
+              transformOrigin: PLAN_STAMP_SETTINGS.transformOrigin,
 
+              force3D: true,
               clearProps: 'willChange',
             });
           };
+
+          if (reduceMotion) {
+            setCompletedState();
+
+            cleanupFunctions.push(() => {
+              killActiveAnimation();
+
+              gsap.set(stamp, {
+                clearProps: 'opacity,visibility,transform,transformOrigin,willChange',
+              });
+            });
+
+            return;
+          }
 
           const playStrike = (): void => {
             if (isStamped) return;
@@ -642,9 +632,6 @@ export function initPlanStamp(): void {
               },
             });
 
-            /*
-             * Reveal a faint preview during approach.
-             */
             activeAnimation.to(
               stamp,
               {
@@ -657,9 +644,6 @@ export function initPlanStamp(): void {
               ACTIVE_PRESET.approach.start
             );
 
-            /*
-             * Main contact motion.
-             */
             activeAnimation.to(
               stamp,
               {
@@ -677,9 +661,6 @@ export function initPlanStamp(): void {
               ACTIVE_PRESET.impact.start
             );
 
-            /*
-             * Ink reaches full opacity around contact.
-             */
             activeAnimation.to(
               stamp,
               {
@@ -692,20 +673,17 @@ export function initPlanStamp(): void {
               ACTIVE_PRESET.ink.start
             );
 
-            /*
-             * Pressure release.
-             */
             activeAnimation.to(
               stamp,
               {
+                autoAlpha: ACTIVE_PRESET.settle.opacity,
+
                 x: ACTIVE_PRESET.settle.x,
                 y: ACTIVE_PRESET.settle.y,
 
                 scale: ACTIVE_PRESET.settle.scale,
 
                 rotation: ACTIVE_PRESET.settle.rotation,
-
-                autoAlpha: ACTIVE_PRESET.settle.opacity,
 
                 duration: ACTIVE_PRESET.settle.duration,
 
@@ -805,10 +783,16 @@ export function initPlanStamp(): void {
 
           setHiddenState();
 
-          const scrollTrigger = ScrollTrigger.create({
+          /*
+           * ==================================================
+           * APPEARANCE TRIGGER
+           * ==================================================
+           */
+
+          const appearanceScrollTrigger = ScrollTrigger.create({
             trigger: item,
 
-            start: PLAN_STAMP_TRIGGER_START,
+            start: appearanceTriggerStart,
 
             end: PLAN_STAMP_SETTINGS.trigger.end,
 
@@ -820,27 +804,32 @@ export function initPlanStamp(): void {
 
             onLeave: () => {
               /*
-               * Keep the stamp visible after
-               * the user passes the item.
+               * Keep the stamp visible after passing
+               * the item while scrolling down.
                */
             },
 
             onEnterBack: restoreVisibleStamp,
 
-            onLeaveBack: hideAndResetStamp,
+            onLeaveBack: () => {
+              /*
+               * Exit is controlled by the separate
+               * disappearance trigger below.
+               */
+            },
 
             onRefresh: (self) => {
-              if (self.isActive && !isStamped) {
-                playStrike();
-                return;
-              }
-
               if (self.progress >= 1) {
                 isStamped = true;
 
                 killActiveAnimation();
                 setCompletedState();
 
+                return;
+              }
+
+              if (self.isActive && !isStamped) {
+                playStrike();
                 return;
               }
 
@@ -853,9 +842,52 @@ export function initPlanStamp(): void {
             },
           });
 
+          /*
+           * ==================================================
+           * DISAPPEARANCE TRIGGER
+           * ==================================================
+           *
+           * This trigger only handles the upward-scroll exit.
+           */
+
+          const exitScrollTrigger = ScrollTrigger.create({
+            trigger: item,
+
+            start: exitTriggerStart,
+
+            end: PLAN_STAMP_SETTINGS.trigger.end,
+
+            markers: PLAN_STAMP_SETTINGS.debugMarkers,
+
+            invalidateOnRefresh: true,
+
+            onEnter: () => {
+              /*
+               * No action while scrolling down.
+               */
+            },
+
+            onLeave: () => {
+              /*
+               * Keep the stamp visible.
+               */
+            },
+
+            onEnterBack: () => {
+              /*
+               * The appearance trigger restores the stamp
+               * when the item re-enters from above.
+               */
+            },
+
+            onLeaveBack: hideAndResetStamp,
+          });
+
           cleanupFunctions.push(() => {
             killActiveAnimation();
-            scrollTrigger.kill();
+
+            appearanceScrollTrigger.kill();
+            exitScrollTrigger.kill();
 
             gsap.set(stamp, {
               clearProps: 'opacity,visibility,transform,transformOrigin,willChange',
