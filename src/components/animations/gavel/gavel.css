@@ -5,6 +5,7 @@
 [data-gavel-component] [data-gavel],
 [data-gavel-component] [data-gavel-cast-shadow],
 [data-gavel-component] [data-gavel-impact-dust],
+[data-gavel-component] [data-gavel-resonance],
 [data-gavel-component] [data-gavel-target],
 [data-gavel-component] [data-gavel-shadow] {
   pointer-events: none;
@@ -17,9 +18,9 @@
 }
 
 /*
- * Gavel și cast shadow folosesc exact aceeași cutie,
- * poziție de layout și dimensiune. GSAP le aplică aceeași
- * traiectorie. Umbra păstrează doar un offset local constant.
+ * Gavel and cast shadow use the same layout box, position and size.
+ * GSAP applies the same trajectory to both. The shadow keeps only
+ * a small local offset and a subtle opacity change.
  */
 .practice-cta_govel-shadow,
 .practice-cta_govel {
@@ -46,9 +47,9 @@
 }
 
 /*
- * Poziția exactă a prafului este setată de TypeScript
- * din punctul real de contact. CSS-ul nu mai folosește
- * right sau bottom, deci nu dublează offseturile GSAP.
+ * Dust is positioned dynamically from the measured contact point.
+ * Do not add right or bottom offsets here, because that would stack
+ * CSS positioning on top of the GSAP geometry calculation.
  */
 .practice-cta_dust {
   position: absolute;
@@ -67,6 +68,34 @@
   visibility: hidden;
   transform: translate(-50%, -28%) scale(0.7);
   transform-origin: center bottom;
+}
+
+/*
+ * The resonance is created automatically by TypeScript when the
+ * component does not already contain [data-gavel-resonance].
+ * It is positioned dynamically at the exact target contact point.
+ */
+.tsa-gavel-resonance,
+[data-gavel-resonance] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  z-index: 100;
+
+  display: block;
+  width: 5.75rem;
+  height: 1.35rem;
+
+  border: 1px solid rgb(70 70 70 / 14%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 22%);
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.7, 0.85);
+  transform-origin: center center;
 }
 
 .practice-cta_hit {
@@ -186,6 +215,12 @@
     transform: translate(-50%, -28%) scale(0.7);
   }
 
+  .tsa-gavel-resonance,
+  [data-gavel-resonance] {
+    width: clamp(4.25rem, 18vw, 5.5rem);
+    height: clamp(1rem, 4.5vw, 1.3rem);
+  }
+
   .practice-cta_hit {
     position: relative;
     inset: auto;
@@ -205,12 +240,15 @@
   [data-gavel-component] [data-gavel],
   [data-gavel-component] [data-gavel-cast-shadow],
   [data-gavel-component] [data-gavel-impact-dust],
+  [data-gavel-component] [data-gavel-resonance],
   [data-gavel-component] [data-gavel-target],
   [data-gavel-component] [data-gavel-shadow] {
     will-change: auto !important;
   }
 
-  .practice-cta_dust {
+  .practice-cta_dust,
+  .tsa-gavel-resonance,
+  [data-gavel-resonance] {
     display: none !important;
   }
 

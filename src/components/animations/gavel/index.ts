@@ -209,6 +209,12 @@ type GavelController = {
   setRest: () => void;
   setImpact: () => void;
 
+  /*
+   * Mobile-only scroll control.
+   * Progress is normalized from 0 (rest) to 1 (impact hold).
+   */
+  setScrubProgress: (progress: number, suppressImpactReaction?: boolean) => void;
+
   refresh: () => void;
 
   geometry: () => GavelGeometry | null;
@@ -292,10 +298,59 @@ const QUICK_TUNING = {
     desktopMinWidthPx: 992,
 
     /*
-     * Scroll în jos peste această linie: impact.
-     * Scroll în sus peste această linie: revenire.
+     * Desktop keeps the hover/focus interaction.
+     *
+     * Mobile uses a true scrubbed ScrollTrigger:
+     * 0 = rest
+     * 1 = contact, micro follow-through, settle and impact hold
      */
-    mobileStart: 'top 80%',
+    mobileScrub: {
+      /*
+       * Change only these two values to control the scroll area.
+       *
+       * Earlier start:
+       *   'top 96%'
+       *
+       * Later start:
+       *   'top 82%'
+       *
+       * Longer scrub:
+       *   end: 'bottom 48%'
+       *
+       * Shorter scrub:
+       *   end: 'bottom 68%'
+       */
+      start: 'top 92%',
+      end: 'bottom 56%',
+
+      /*
+       * Scroll-follow smoothing in seconds.
+       * 0.45 = tighter
+       * 0.7  = recommended
+       * 1    = softer and more cinematic
+       */
+      smoothingSeconds: 0.7,
+
+      /*
+       * Normalized motion map.
+       *
+       * 0.00 -> anticipationEnd: slight lift away from the target
+       * anticipationEnd -> contact: accelerating strike
+       * contact -> followThroughEnd: tiny physical follow-through
+       * followThroughEnd -> settleEnd: return to exact contact
+       * settleEnd -> 1.00: hold at impact
+       */
+      anticipationEndProgress: 0.14,
+      contactProgress: 0.64,
+      followThroughEndProgress: 0.7,
+      settleEndProgress: 0.82,
+
+      /*
+       * The target shock is a short real-time event, not scrubbed.
+       * It resets below this point when scrolling upward.
+       */
+      reactionResetProgress: 0.56,
+    },
   },
 
   /*
@@ -677,7 +732,18 @@ const QUICK_TUNING = {
     },
 
     C: {
-      label: 'Strong judicial impact',
+      label: 'Smooth judicial impact',
+
+      /*
+       * This remains the stronger TSA preset, but the motion is now
+       * more controlled:
+       *
+       * - smaller anticipation so it does not feel theatrical;
+       * - slightly longer accelerating strike;
+       * - exact contact before follow-through;
+       * - sub-pixel follow-through instead of visible penetration;
+       * - calmer pressure release similar to the stamp animation.
+       */
 
       desktop: {
         pivotXPercent: 18,
@@ -693,26 +759,30 @@ const QUICK_TUNING = {
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.08,
-          anticipationRotationDeltaDeg: -5,
-          anticipationXpx: -1.5,
-          anticipationYpx: -1,
+          anticipationDurationSeconds: 0.095,
+          anticipationRotationDeltaDeg: -3.4,
+          anticipationXpx: -0.9,
+          anticipationYpx: -0.7,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.22,
+          anticipationMaxProgress: 0.2,
 
-          strikeMinDurationSeconds: 0.1,
-          strikeMaxDurationSeconds: 0.145,
-          strikeEase: 'power3.in',
+          strikeMinDurationSeconds: 0.125,
+          strikeMaxDurationSeconds: 0.17,
+          strikeEase: 'power4.in',
 
-          overshootRotationDeltaDeg: 1.1,
-          overshootXpx: 1.2,
-          overshootYpx: 1.7,
+          /*
+           * These values are now a small post-contact follow-through,
+           * not the end point of the main strike.
+           */
+          overshootRotationDeltaDeg: 0.28,
+          overshootXpx: 0.28,
+          overshootYpx: 0.55,
 
-          settleDurationSeconds: 0.12,
-          settleEase: 'power3.out',
+          settleDurationSeconds: 0.135,
+          settleEase: 'power4.out',
 
           liftMinDurationSeconds: 0.18,
-          liftMaxDurationSeconds: 0.38,
+          liftMaxDurationSeconds: 0.34,
           liftEase: 'power3.out',
         },
       },
@@ -721,6 +791,10 @@ const QUICK_TUNING = {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
+        /*
+         * Same movement scope as desktop. The mobile authored origin
+         * and layout calibration still handle responsive placement.
+         */
         restRotationDeg: -22,
         impactRotationDeg: 2,
 
@@ -731,40 +805,41 @@ const QUICK_TUNING = {
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.08,
-          anticipationRotationDeltaDeg: -5,
-          anticipationXpx: -1.5,
-          anticipationYpx: -1,
+          anticipationDurationSeconds: 0.095,
+          anticipationRotationDeltaDeg: -3.4,
+          anticipationXpx: -0.9,
+          anticipationYpx: -0.7,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.22,
+          anticipationMaxProgress: 0.2,
 
-          strikeMinDurationSeconds: 0.1,
-          strikeMaxDurationSeconds: 0.145,
-          strikeEase: 'power3.in',
+          strikeMinDurationSeconds: 0.125,
+          strikeMaxDurationSeconds: 0.17,
+          strikeEase: 'power4.in',
 
-          overshootRotationDeltaDeg: 1.1,
-          overshootXpx: 1.2,
-          overshootYpx: 1.7,
+          overshootRotationDeltaDeg: 0.28,
+          overshootXpx: 0.28,
+          overshootYpx: 0.55,
 
-          settleDurationSeconds: 0.12,
-          settleEase: 'power3.out',
+          settleDurationSeconds: 0.135,
+          settleEase: 'power4.out',
 
           liftMinDurationSeconds: 0.18,
-          liftMaxDurationSeconds: 0.38,
+          liftMaxDurationSeconds: 0.34,
           liftEase: 'power3.out',
         },
       },
 
       targetReaction: {
         translateXpx: 0,
-        translateYpx: 1,
-        scaleX: 1.003,
-        scaleY: 0.996,
+        translateYpx: 0.9,
 
-        compressionDurationSeconds: 0.04,
-        compressionEase: 'power2.out',
+        scaleX: 1.0015,
+        scaleY: 0.998,
 
-        recoveryDurationSeconds: 0.13,
+        compressionDurationSeconds: 0.045,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.15,
         recoveryEase: 'power3.out',
 
         transformOrigin: 'bottom center',
@@ -772,20 +847,104 @@ const QUICK_TUNING = {
 
       shadowReaction: {
         translateXpx: 0,
-        translateYpx: 1.5,
+        translateYpx: 1.15,
 
-        scaleX: 1.12,
-        scaleY: 0.86,
+        scaleX: 1.08,
+        scaleY: 0.9,
 
-        opacity: 0.84,
+        opacity: 0.87,
 
-        compressionDurationSeconds: 0.05,
-        compressionEase: 'power2.out',
+        compressionDurationSeconds: 0.055,
+        compressionEase: 'power3.out',
 
-        recoveryDurationSeconds: 0.16,
+        recoveryDurationSeconds: 0.18,
         recoveryEase: 'power3.out',
 
         transformOrigin: 'center center',
+      },
+
+      impactEffects: {
+        target: {
+          /*
+           * Marble reads as rigid. The target moves, but it does not
+           * deform like rubber.
+           */
+          compressionXpx: 0.12,
+          compressionYpx: 0.9,
+          compressionRotationDeg: 0.025,
+          compressionScaleX: 1.0008,
+          compressionScaleY: 0.998,
+          compressionDurationSeconds: 0.045,
+          compressionEase: 'power3.out',
+
+          recoilXpx: -0.06,
+          recoilYpx: -0.12,
+          recoilRotationDeg: -0.012,
+          recoilScaleX: 1,
+          recoilScaleY: 1.0002,
+          recoilDurationSeconds: 0.04,
+          recoilEase: 'power2.out',
+
+          settleDurationSeconds: 0.105,
+          settleEase: 'power4.out',
+          transformOrigin: 'bottom center',
+        },
+
+        castShadow: {
+          xPercent: 3,
+          yPercent: 6,
+          rotationOffsetDeg: 8,
+
+          rest: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.48,
+          },
+
+          anticipation: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.43,
+          },
+
+          impact: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.6,
+          },
+
+          settle: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.55,
+          },
+        },
+
+        dust: {
+          anchorOffsetXpx: -8,
+          anchorOffsetYpx: 9,
+
+          xPercent: -50,
+
+          startOpacity: 0,
+          peakOpacity: 0.14,
+
+          startScale: 0.72,
+          peakScale: 0.9,
+          endScale: 1.05,
+
+          startYPercent: -24,
+          peakYPercent: -33,
+          endYPercent: -52,
+
+          revealDurationSeconds: 0.05,
+          fadeDurationSeconds: 0.18,
+
+          revealEase: 'power2.out',
+          fadeEase: 'power2.out',
+
+          transformOrigin: 'center bottom',
+        },
       },
     },
 
@@ -1627,9 +1786,15 @@ export function initGavel(): void {
       let geometry: GavelGeometry | null = null;
 
       let activeTimeline: any = null;
+      let impactReactionTimeline: any = null;
       let resizeFrame = 0;
 
       let desiredState: GavelDesiredState = 'rest';
+
+      let scrubModeActive = false;
+      let scrubProgressValue = 0;
+      let previousScrubProgress = 0;
+      let scrubImpactTriggered = false;
 
       const motionConfig = deviceProfile.motion;
 
@@ -1648,11 +1813,17 @@ export function initGavel(): void {
           return;
         }
 
-        [gavel, castShadow, dust, target, shadow]
-          .filter((element): element is HTMLElement => Boolean(element))
-          .forEach((element) => {
-            element.style.willChange = active ? 'transform' : '';
-          });
+        gavel.style.willChange = active ? 'transform' : '';
+        target.style.willChange = active ? 'transform' : '';
+        shadow.style.willChange = active ? 'transform, opacity' : '';
+
+        if (castShadow) {
+          castShadow.style.willChange = active ? 'transform, opacity' : '';
+        }
+
+        if (dust) {
+          dust.style.willChange = active ? 'transform, opacity' : '';
+        }
       };
 
       const getNumericProperty = (element: HTMLElement, property: string): number => {
@@ -1807,7 +1978,7 @@ export function initGavel(): void {
         });
       };
 
-      const setReactionDefaults = (): void => {
+      const setImpactReactionDefaults = (): void => {
         const targetEffect = impactEffects.target;
         const dustEffect = impactEffects.dust;
 
@@ -1831,10 +2002,6 @@ export function initGavel(): void {
           transformOrigin: shadowReaction.transformOrigin,
         });
 
-        if (castShadow && geometry) {
-          gsap.set(castShadow, getCastShadowVars(geometry.rest, 'rest'));
-        }
-
         if (dust) {
           positionDustAtContact();
 
@@ -1850,9 +2017,260 @@ export function initGavel(): void {
         }
       };
 
+      const setReactionDefaults = (): void => {
+        setImpactReactionDefaults();
+
+        if (castShadow && geometry) {
+          gsap.set(castShadow, getCastShadowVars(geometry.rest, 'rest'));
+        }
+      };
+
       const killActiveTimeline = (): void => {
         activeTimeline?.kill();
         activeTimeline = null;
+      };
+
+      const killImpactReactionTimeline = (): void => {
+        impactReactionTimeline?.kill();
+        impactReactionTimeline = null;
+      };
+
+      const easeProgress = (easeName: string, progress: number): number => {
+        const normalizedProgress = clamp(progress, 0, 1);
+
+        if (typeof gsap.parseEase !== 'function') {
+          return normalizedProgress;
+        }
+
+        const ease = gsap.parseEase(easeName);
+
+        return typeof ease === 'function' ? ease(normalizedProgress) : normalizedProgress;
+      };
+
+      const interpolateBetweenPoses = (
+        from: GavelPose,
+        to: GavelPose,
+        progress: number
+      ): GavelPose => {
+        return {
+          x: lerp(from.x, to.x, progress),
+          y: lerp(from.y, to.y, progress),
+          rotation: lerp(from.rotation, to.rotation, progress),
+        };
+      };
+
+      const normalizeRange = (progress: number, start: number, end: number): number => {
+        if (end <= start) {
+          return progress >= end ? 1 : 0;
+        }
+
+        return clamp((progress - start) / (end - start), 0, 1);
+      };
+
+      const setCastShadowScrubState = (
+        pose: GavelPose,
+        fromPhase: CastShadowPhase,
+        toPhase: CastShadowPhase,
+        phaseProgress: number
+      ): void => {
+        if (!castShadow || !geometry) {
+          return;
+        }
+
+        const castShadowEffect = impactEffects.castShadow;
+        const from = castShadowEffect[fromPhase];
+        const to = castShadowEffect[toPhase];
+
+        gsap.set(castShadow, {
+          x: pose.x,
+          y: pose.y,
+          rotation: pose.rotation + castShadowEffect.rotationOffsetDeg,
+
+          xPercent: castShadowEffect.xPercent,
+          yPercent: castShadowEffect.yPercent,
+
+          scaleX: lerp(from.scaleX, to.scaleX, phaseProgress),
+          scaleY: lerp(from.scaleY, to.scaleY, phaseProgress),
+          opacity: lerp(from.opacity, to.opacity, phaseProgress),
+
+          transformOrigin: geometry.transformOrigin,
+          force3D: QUICK_TUNING.performance.force3D,
+        });
+      };
+
+      const playScrubImpactReaction = (): void => {
+        killImpactReactionTimeline();
+        setImpactReactionDefaults();
+        positionDustAtContact();
+
+        const targetEffect = impactEffects.target;
+        const dustEffect = impactEffects.dust;
+
+        const timeline = gsap.timeline({
+          defaults: {
+            overwrite: 'auto',
+          },
+
+          onComplete: () => {
+            if (impactReactionTimeline === timeline) {
+              impactReactionTimeline = null;
+            }
+
+            const isStillScrubbing = scrubProgressValue > 0.001 && scrubProgressValue < 0.999;
+
+            setWillChange(isStillScrubbing);
+          },
+
+          onInterrupt: () => {
+            if (impactReactionTimeline === timeline) {
+              impactReactionTimeline = null;
+            }
+          },
+        });
+
+        impactReactionTimeline = timeline;
+
+        /*
+         * Marble target response:
+         * short compression, smaller recoil, controlled settle.
+         */
+        timeline.to(
+          target,
+          {
+            x: targetEffect.compressionXpx,
+            y: targetEffect.compressionYpx,
+            rotation: targetEffect.compressionRotationDeg,
+            scaleX: targetEffect.compressionScaleX,
+            scaleY: targetEffect.compressionScaleY,
+
+            transformOrigin: targetEffect.transformOrigin,
+
+            duration: duration(targetEffect.compressionDurationSeconds),
+            ease: targetEffect.compressionEase,
+          },
+          0
+        );
+
+        timeline.to(
+          target,
+          {
+            x: targetEffect.recoilXpx,
+            y: targetEffect.recoilYpx,
+            rotation: targetEffect.recoilRotationDeg,
+            scaleX: targetEffect.recoilScaleX,
+            scaleY: targetEffect.recoilScaleY,
+
+            duration: duration(targetEffect.recoilDurationSeconds),
+            ease: targetEffect.recoilEase,
+          },
+          duration(targetEffect.compressionDurationSeconds)
+        );
+
+        timeline.to(
+          target,
+          {
+            x: 0,
+            y: 0,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+
+            duration: duration(targetEffect.settleDurationSeconds),
+            ease: targetEffect.settleEase,
+          },
+          duration(targetEffect.compressionDurationSeconds + targetEffect.recoilDurationSeconds)
+        );
+
+        /*
+         * Wide grounding shadow reacts at the same collision frame.
+         */
+        timeline.to(
+          shadow,
+          {
+            x: shadowReaction.translateXpx,
+            y: shadowReaction.translateYpx,
+            scaleX: shadowReaction.scaleX,
+            scaleY: shadowReaction.scaleY,
+            opacity: shadowReaction.opacity ?? 1,
+
+            transformOrigin: shadowReaction.transformOrigin,
+
+            duration: duration(shadowReaction.compressionDurationSeconds),
+            ease: shadowReaction.compressionEase,
+          },
+          0
+        );
+
+        timeline.to(
+          shadow,
+          {
+            x: 0,
+            y: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+
+            duration: duration(shadowReaction.recoveryDurationSeconds),
+            ease: shadowReaction.recoveryEase,
+          },
+          duration(shadowReaction.compressionDurationSeconds)
+        );
+
+        /*
+         * Dust remains time-based so it never scrubs backward.
+         */
+        if (dust) {
+          timeline.set(
+            dust,
+            {
+              xPercent: dustEffect.xPercent,
+              yPercent: dustEffect.startYPercent,
+              scale: dustEffect.startScale,
+              opacity: dustEffect.startOpacity,
+              visibility: 'visible',
+            },
+            0
+          );
+
+          timeline.to(
+            dust,
+            {
+              yPercent: dustEffect.peakYPercent,
+              scale: dustEffect.peakScale,
+              opacity: dustEffect.peakOpacity,
+
+              duration: duration(dustEffect.revealDurationSeconds),
+              ease: dustEffect.revealEase,
+            },
+            0
+          );
+
+          timeline.to(
+            dust,
+            {
+              yPercent: dustEffect.endYPercent,
+              scale: dustEffect.endScale,
+              opacity: 0,
+
+              duration: duration(dustEffect.fadeDurationSeconds),
+              ease: dustEffect.fadeEase,
+            },
+            duration(dustEffect.revealDurationSeconds)
+          );
+
+          timeline.set(
+            dust,
+            {
+              visibility: 'hidden',
+            },
+            duration(dustEffect.revealDurationSeconds + dustEffect.fadeDurationSeconds)
+          );
+        }
+      };
+
+      const resetScrubImpactReaction = (): void => {
+        killImpactReactionTimeline();
+        setImpactReactionDefaults();
       };
 
       const ensureGeometry = (): boolean => {
@@ -1887,7 +2305,157 @@ export function initGavel(): void {
         setWillChange(false);
       };
 
+      const setScrubProgress = (rawProgress: number, suppressImpactReaction = false): void => {
+        scrubModeActive = true;
+
+        if (!ensureGeometry() || !geometry) {
+          return;
+        }
+
+        killActiveTimeline();
+
+        const scrubConfig = QUICK_TUNING.interaction.mobileScrub;
+        const progress = clamp(rawProgress, 0, 1);
+
+        scrubProgressValue = progress;
+        desiredState = progress >= scrubConfig.contactProgress ? 'impact' : 'rest';
+
+        const anticipationPose: GavelPose = {
+          x: geometry.rest.x + motionConfig.anticipationXpx,
+          y: geometry.rest.y + motionConfig.anticipationYpx,
+          rotation: geometry.rest.rotation + motionConfig.anticipationRotationDeltaDeg,
+        };
+
+        const followThroughPose: GavelPose = {
+          x: geometry.impact.x + motionConfig.overshootXpx,
+          y: geometry.impact.y + motionConfig.overshootYpx,
+          rotation: geometry.impact.rotation + motionConfig.overshootRotationDeltaDeg,
+        };
+
+        let pose = geometry.rest;
+
+        let castShadowFromPhase: CastShadowPhase = 'rest';
+        let castShadowToPhase: CastShadowPhase = 'rest';
+        let castShadowPhaseProgress = 0;
+
+        if (progress <= scrubConfig.anticipationEndProgress) {
+          const phaseProgress = easeProgress(
+            motionConfig.anticipationEase,
+            normalizeRange(progress, 0, scrubConfig.anticipationEndProgress)
+          );
+
+          pose = interpolateBetweenPoses(geometry.rest, anticipationPose, phaseProgress);
+
+          castShadowFromPhase = 'rest';
+          castShadowToPhase = 'anticipation';
+          castShadowPhaseProgress = phaseProgress;
+        } else if (progress <= scrubConfig.contactProgress) {
+          const phaseProgress = easeProgress(
+            motionConfig.strikeEase,
+            normalizeRange(
+              progress,
+              scrubConfig.anticipationEndProgress,
+              scrubConfig.contactProgress
+            )
+          );
+
+          pose = interpolateBetweenPoses(anticipationPose, geometry.impact, phaseProgress);
+
+          castShadowFromPhase = 'anticipation';
+          castShadowToPhase = 'impact';
+          castShadowPhaseProgress = phaseProgress;
+        } else if (progress <= scrubConfig.followThroughEndProgress) {
+          const phaseProgress = easeProgress(
+            'power2.out',
+            normalizeRange(
+              progress,
+              scrubConfig.contactProgress,
+              scrubConfig.followThroughEndProgress
+            )
+          );
+
+          pose = interpolateBetweenPoses(geometry.impact, followThroughPose, phaseProgress);
+
+          castShadowFromPhase = 'impact';
+          castShadowToPhase = 'impact';
+          castShadowPhaseProgress = 1;
+        } else if (progress <= scrubConfig.settleEndProgress) {
+          const phaseProgress = easeProgress(
+            motionConfig.settleEase,
+            normalizeRange(
+              progress,
+              scrubConfig.followThroughEndProgress,
+              scrubConfig.settleEndProgress
+            )
+          );
+
+          pose = interpolateBetweenPoses(followThroughPose, geometry.impact, phaseProgress);
+
+          castShadowFromPhase = 'impact';
+          castShadowToPhase = 'settle';
+          castShadowPhaseProgress = phaseProgress;
+        } else {
+          pose = geometry.impact;
+
+          castShadowFromPhase = 'settle';
+          castShadowToPhase = 'settle';
+          castShadowPhaseProgress = 1;
+        }
+
+        gsap.set(gavel, {
+          x: pose.x,
+          y: pose.y,
+          rotation: pose.rotation,
+
+          transformOrigin: geometry.transformOrigin,
+          force3D: QUICK_TUNING.performance.force3D,
+        });
+
+        setCastShadowScrubState(
+          pose,
+          castShadowFromPhase,
+          castShadowToPhase,
+          castShadowPhaseProgress
+        );
+
+        const movingForward = progress > previousScrubProgress + 0.0001;
+
+        if (suppressImpactReaction) {
+          scrubImpactTriggered = progress >= scrubConfig.contactProgress;
+
+          if (progress < scrubConfig.contactProgress) {
+            resetScrubImpactReaction();
+          } else {
+            /*
+             * A page loaded directly inside the impact hold should not
+             * emit dust or replay a collision.
+             */
+            setImpactReactionDefaults();
+          }
+        } else {
+          if (movingForward && !scrubImpactTriggered && progress >= scrubConfig.contactProgress) {
+            scrubImpactTriggered = true;
+            playScrubImpactReaction();
+          }
+
+          if (scrubImpactTriggered && progress < scrubConfig.reactionResetProgress) {
+            scrubImpactTriggered = false;
+            resetScrubImpactReaction();
+          }
+        }
+
+        previousScrubProgress = progress;
+
+        const isInsideScrub = progress > 0.001 && progress < 0.999;
+
+        setWillChange(isInsideScrub || Boolean(impactReactionTimeline));
+      };
+
       const animateToImpact = (skipAnticipation = false): void => {
+        scrubModeActive = false;
+        scrubImpactTriggered = false;
+        killImpactReactionTimeline();
+
         desiredState = 'impact';
 
         if (!ensureGeometry() || !geometry) {
@@ -1985,13 +2553,18 @@ export function initGavel(): void {
           rotation: geometry.impact.rotation + motionConfig.overshootRotationDeltaDeg,
         };
 
+        /*
+         * Strike to exact contact first.
+         * The target reaction starts on this exact frame.
+         */
         timeline.to(gavel, {
-          ...overshootPose,
+          x: geometry.impact.x,
+          y: geometry.impact.y,
+          rotation: geometry.impact.rotation,
 
           transformOrigin: geometry.transformOrigin,
 
           duration: duration(strikeDuration),
-
           ease: motionConfig.strikeEase,
 
           force3D: QUICK_TUNING.performance.force3D,
@@ -2001,10 +2574,9 @@ export function initGavel(): void {
           timeline.to(
             castShadow,
             {
-              ...getCastShadowVars(overshootPose, 'impact'),
+              ...getCastShadowVars(geometry.impact, 'impact'),
 
               duration: duration(strikeDuration),
-
               ease: motionConfig.strikeEase,
             },
             '<'
@@ -2013,23 +2585,47 @@ export function initGavel(): void {
 
         const contactTime = timeline.duration();
 
+        /*
+         * Subtle physical follow-through after contact.
+         * It is intentionally much smaller than the previous penetration.
+         */
+        const followThroughDuration = Math.min(0.045, motionConfig.settleDurationSeconds * 0.35);
+
+        const finalSettleDuration = Math.max(
+          0.055,
+          motionConfig.settleDurationSeconds - followThroughDuration
+        );
+
+        timeline.to(
+          gavel,
+          {
+            ...overshootPose,
+
+            transformOrigin: geometry.transformOrigin,
+
+            duration: duration(followThroughDuration),
+            ease: 'power2.out',
+
+            force3D: QUICK_TUNING.performance.force3D,
+          },
+          contactTime
+        );
+
         timeline.to(
           gavel,
           {
             x: geometry.impact.x,
             y: geometry.impact.y,
-
             rotation: geometry.impact.rotation,
 
             transformOrigin: geometry.transformOrigin,
 
-            duration: duration(motionConfig.settleDurationSeconds),
-
+            duration: duration(finalSettleDuration),
             ease: motionConfig.settleEase,
 
             force3D: QUICK_TUNING.performance.force3D,
           },
-          contactTime
+          contactTime + duration(followThroughDuration)
         );
 
         const targetEffect = impactEffects.target;
@@ -2128,20 +2724,29 @@ export function initGavel(): void {
         );
 
         /*
-         * Gavel cast shadow:
-         * denser and tighter at contact, then settles while the gavel remains down.
+         * Gavel cast shadow follows the same post-contact path.
          */
         if (castShadow) {
           timeline.to(
             castShadow,
             {
-              ...getCastShadowVars(geometry.impact, 'settle'),
+              ...getCastShadowVars(overshootPose, 'impact'),
 
-              duration: duration(motionConfig.settleDurationSeconds),
-
-              ease: motionConfig.settleEase,
+              duration: duration(followThroughDuration),
+              ease: 'power2.out',
             },
             contactTime
+          );
+
+          timeline.to(
+            castShadow,
+            {
+              ...getCastShadowVars(geometry.impact, 'settle'),
+
+              duration: duration(finalSettleDuration),
+              ease: motionConfig.settleEase,
+            },
+            contactTime + duration(followThroughDuration)
           );
         }
 
@@ -2204,6 +2809,10 @@ export function initGavel(): void {
       };
 
       const animateToRest = (): void => {
+        scrubModeActive = false;
+        scrubImpactTriggered = false;
+        killImpactReactionTimeline();
+
         desiredState = 'rest';
 
         if (!ensureGeometry() || !geometry) {
@@ -2327,6 +2936,10 @@ export function initGavel(): void {
       };
 
       const setRest = (): void => {
+        scrubModeActive = false;
+        scrubImpactTriggered = false;
+        killImpactReactionTimeline();
+
         desiredState = 'rest';
 
         if (!ensureGeometry() || !geometry) {
@@ -2351,6 +2964,10 @@ export function initGavel(): void {
       };
 
       const setImpact = (): void => {
+        scrubModeActive = false;
+        scrubImpactTriggered = false;
+        killImpactReactionTimeline();
+
         desiredState = 'impact';
 
         if (!ensureGeometry() || !geometry) {
@@ -2389,11 +3006,12 @@ export function initGavel(): void {
         cancelAnimationFrame(resizeFrame);
 
         resizeFrame = requestAnimationFrame(() => {
-          const preservedProgress = getProgress();
+          const preservedProgress = scrubModeActive ? scrubProgressValue : getProgress();
 
           const preservedState = desiredState;
 
           killActiveTimeline();
+          killImpactReactionTimeline();
 
           geometry = calculateGeometry({
             component,
@@ -2404,6 +3022,19 @@ export function initGavel(): void {
           });
 
           if (!geometry) {
+            return;
+          }
+
+          setReactionDefaults();
+          renderDebug(component, gavel, target, geometry);
+
+          if (scrubModeActive) {
+            previousScrubProgress = preservedProgress;
+            scrubImpactTriggered =
+              preservedProgress >= QUICK_TUNING.interaction.mobileScrub.contactProgress;
+
+            setScrubProgress(preservedProgress, true);
+
             return;
           }
 
@@ -2420,10 +3051,6 @@ export function initGavel(): void {
             force3D: QUICK_TUNING.performance.force3D,
           });
 
-          setReactionDefaults();
-
-          renderDebug(component, gavel, target, geometry);
-
           if (preservedState === 'impact' && preservedProgress < 0.995) {
             animateToImpact(true);
           } else if (preservedState === 'rest' && preservedProgress > 0.005) {
@@ -2438,6 +3065,7 @@ export function initGavel(): void {
         cancelAnimationFrame(resizeFrame);
 
         killActiveTimeline();
+        killImpactReactionTimeline();
 
         removeDebug(component, gavel, target);
 
@@ -2482,6 +3110,7 @@ export function initGavel(): void {
 
         setRest,
         setImpact,
+        setScrubProgress,
 
         refresh,
 
@@ -2701,44 +3330,72 @@ export function initGavel(): void {
 
         registerInstance(instance);
 
-        let initialStateApplied = false;
+        const { mobileScrub } = QUICK_TUNING.interaction;
+
+        const scrubProxy = {
+          progress: 0,
+        };
+
+        /*
+         * Initial refreshes and responsive recalculations should position
+         * the gavel correctly without producing a dust burst.
+         */
+        let suppressScrubImpactReaction = true;
+        let releaseSuppressionFrame = 0;
+
+        const releaseImpactSuppression = (): void => {
+          cancelAnimationFrame(releaseSuppressionFrame);
+
+          releaseSuppressionFrame = requestAnimationFrame(() => {
+            suppressScrubImpactReaction = false;
+          });
+        };
+
+        controller.setScrubProgress(0, true);
+
+        const scrubTween = gsap.to(scrubProxy, {
+          progress: 1,
+          paused: true,
+          ease: 'none',
+
+          onUpdate: () => {
+            controller.setScrubProgress(scrubProxy.progress, suppressScrubImpactReaction);
+          },
+        });
 
         const scrollTrigger = ScrollTrigger.create({
           trigger: component,
 
-          start: QUICK_TUNING.interaction.mobileStart,
+          start: mobileScrub.start,
+          end: mobileScrub.end,
 
-          end: 'bottom top',
+          animation: scrubTween,
+          scrub: mobileScrub.smoothingSeconds,
 
           invalidateOnRefresh: true,
 
-          onEnter: () => {
-            controller.moveToImpact();
-          },
-
-          onLeaveBack: () => {
-            controller.moveToRest();
+          onRefreshInit: () => {
+            suppressScrubImpactReaction = true;
+            controller.refresh();
           },
 
           onRefresh: (self: any) => {
-            if (initialStateApplied) {
-              return;
-            }
-
-            initialStateApplied = true;
-
-            if (self.scroll() >= self.start) {
-              controller.setImpact();
-            } else {
-              controller.setRest();
-            }
+            /*
+             * Snap the internal physical state to the measured scroll
+             * position. ScrollTrigger continues with smooth scrub after
+             * this initial synchronization.
+             */
+            controller.setScrubProgress(self.progress, true);
+            releaseImpactSuppression();
           },
         });
 
         const resizeObserver =
           typeof ResizeObserver !== 'undefined'
             ? new ResizeObserver(() => {
+                suppressScrubImpactReaction = true;
                 controller.refresh();
+                ScrollTrigger.refresh();
               })
             : null;
 
@@ -2749,6 +3406,9 @@ export function initGavel(): void {
         });
 
         return () => {
+          cancelAnimationFrame(releaseSuppressionFrame);
+
+          scrubTween.kill();
           scrollTrigger.kill();
           resizeObserver?.disconnect();
 
