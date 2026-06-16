@@ -1,0 +1,87 @@
+/*
+ * ============================================================
+ * PLAN STAMP: VISUAL PLACEMENT
+ * ============================================================
+ *
+ * These variables control placement, size, and stacking.
+ * They do not change the animation behavior.
+ */
+
+[data-plan-stamp-slot='true'] {
+  --plan-stamp-width: 6rem;
+
+  --plan-stamp-right: 0%;
+  --plan-stamp-bottom: 0%;
+
+  --plan-stamp-position-x: 10%;
+  --plan-stamp-position-y: -30%;
+
+  --plan-stamp-base-rotation: -15deg;
+  --plan-stamp-z-index: 100;
+
+  position: absolute;
+  right: var(--plan-stamp-right);
+  bottom: var(--plan-stamp-bottom);
+
+  width: var(--plan-stamp-width);
+  z-index: var(--plan-stamp-z-index);
+
+  overflow: visible;
+  pointer-events: none;
+
+  transform: translate(var(--plan-stamp-position-x), var(--plan-stamp-position-y))
+    rotate(var(--plan-stamp-base-rotation));
+
+  transform-origin: 50% 50%;
+}
+
+/*
+ * GSAP animates only the inner image.
+ * The wrapper keeps the permanent position and rotation.
+ */
+
+[data-plan-stamp-mark='true'] {
+  position: relative;
+  inset: auto;
+
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+
+  z-index: 1;
+
+  pointer-events: none;
+  user-select: none;
+
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+
+/*
+ * Prevent the movement from being clipped.
+ */
+
+.plan_list,
+.plan_item,
+.plan_item-inner,
+[data-plan-stamp-slot='true'] {
+  overflow: visible;
+}
+
+/*
+ * Override the original placement rules from .plan_stamping.
+ * Placement now belongs to the wrapper.
+ */
+
+.plan_stamping[data-plan-stamp-mark='true'] {
+  position: relative;
+
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+
+  width: 100%;
+  transform: none;
+}

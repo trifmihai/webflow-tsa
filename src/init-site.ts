@@ -1,5 +1,6 @@
 import { initAccordions } from './components/accordions';
-import { initGavel } from './components/animations/govel';
+import { initGavel } from './components/animations/gavel';
+import { initPlanStamp } from './components/animations/stamp';
 import { initBlogToc } from './components/blog-toc';
 import { initCallPopover } from './components/call-popover';
 import { initHeroAvatarHover } from './components/hero-avatars';
@@ -15,6 +16,7 @@ import { onDomReady } from './utils/dom';
 export function initSite(): void {
   initNavbar();
   initTeamCards();
+  initPlanStamp();
   initCallPopover();
   onDomReady(initGavel);
   onDomReady(initAccordions);
