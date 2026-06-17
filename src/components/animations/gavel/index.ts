@@ -320,8 +320,8 @@ const QUICK_TUNING = {
        * Shorter scrub:
        *   end: 'bottom 68%'
        */
-      start: 'top 92%',
-      end: 'bottom 56%',
+      start: 'top 82%',
+      end: 'bottom 48%',
 
       /*
        * Scroll-follow smoothing in seconds.
@@ -329,7 +329,7 @@ const QUICK_TUNING = {
        * 0.7  = recommended
        * 1    = softer and more cinematic
        */
-      smoothingSeconds: 0.7,
+      smoothingSeconds: 1,
 
       /*
        * Normalized motion map.

@@ -1,5 +1,6 @@
 @import './styles/globals.css';
 @import './components/animations/gavel/gavel.css';
+@import './components/animations/overlay/overlay.css';
 @import './components/animations/stamp/stamp.css';
 @import './components/navbar/mobile-menu.css';
 @import './components/call-popover/call-popover.css';

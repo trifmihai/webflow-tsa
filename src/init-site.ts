@@ -1,5 +1,6 @@
 import { initAccordions } from './components/accordions';
 import { initGavel } from './components/animations/gavel';
+import { initTsaStatueShine } from './components/animations/overlay';
 import { initPlanStamp } from './components/animations/stamp';
 import { initBlogToc } from './components/blog-toc';
 import { initCallPopover } from './components/call-popover';
@@ -19,6 +20,7 @@ export function initSite(): void {
   initPlanStamp();
   initCallPopover();
   onDomReady(initGavel);
+  onDomReady(initTsaStatueShine);
   onDomReady(initAccordions);
   onDomReady(initPracticeTextReels);
   onDomReady(initReadingTime);
