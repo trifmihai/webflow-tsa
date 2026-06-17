@@ -11,6 +11,7 @@ import { initReadingTime } from './components/reading-time';
 import { initRelatedArticlesEmptyState } from './components/related-articles';
 import { initResourcesFilters } from './components/resources-filter';
 import { initTeamCards } from './components/team-card';
+import { initBenefitExperienceRive } from './features/benefit-experience-rive/benefit-experience-rive';
 // import { initTextReveal } from './components/text-reveal';
 import { onDomReady } from './utils/dom';
 
@@ -28,5 +29,6 @@ export function initSite(): void {
   initBlogToc();
   onDomReady(initHeroAvatarHover);
   onDomReady(initRelatedArticlesEmptyState);
+  onDomReady(initBenefitExperienceRive);
   // onDomReady(initTextReveal);
 }
