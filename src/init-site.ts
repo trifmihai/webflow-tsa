@@ -10,9 +10,9 @@ import { initReadingTime } from './components/reading-time';
 import { initRelatedArticlesEmptyState } from './components/related-articles';
 import { initResourcesFilters } from './components/resources-filter';
 import { initTeamCards } from './components/team-card';
-// import { initTextReveal } from './components/text-reveal';
 import { initBenefitExperienceRive } from './features/benefit-experience-rive/benefit-experience-rive';
 import { onDomReady } from './utils/dom';
+// import { initTextReveal } from './components/text-reveal';
 
 export function initSite(): void {
   initNavbar();
