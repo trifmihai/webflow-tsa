@@ -1,3 +1,87 @@
 [data-benefit-experience-rive] {
+  isolation: isolate;
+  overflow: hidden;
   position: relative;
+}
+
+[data-benefit-experience-rive-fallback] {
+  display: block;
+  height: 100%;
+  inset: 0;
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 1;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 160ms ease;
+  user-select: none;
+  width: 100%;
+  z-index: 1;
+}
+
+[data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+  display: none;
+  height: 100%;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 160ms ease;
+  width: 100%;
+  z-index: 2;
+}
+
+[data-benefit-experience-rive].is-rive-eligible .rive_canvas.is-benefit-1 {
+  display: block;
+}
+
+[data-benefit-experience-rive-canvas] {
+  display: block;
+  height: 100%;
+  touch-action: pan-y;
+  width: 100%;
+}
+
+[data-benefit-experience-rive].is-rive-ready .rive_canvas.is-benefit-1 {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+[data-benefit-experience-rive].is-rive-ready [data-benefit-experience-rive-fallback] {
+  opacity: 0;
+}
+
+[data-benefit-experience-rive].is-rive-error .rive_canvas.is-benefit-1 {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-benefit-experience-rive].is-rive-error [data-benefit-experience-rive-fallback] {
+  opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  [data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+    display: none;
+  }
+
+  [data-benefit-experience-rive-fallback] {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-benefit-experience-rive-fallback],
+  [data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+    transition: none;
+  }
+
+  [data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+    display: none;
+  }
+
+  [data-benefit-experience-rive-fallback] {
+    opacity: 1;
+  }
 }
