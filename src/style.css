@@ -13,6 +13,7 @@
 @import './components/team-card/team-card.css';
 @import './components/blog-toc/blog-toc.css';
 @import './components/footer-map/footer-map.css';
+@import './features/benefit-experience-rive/benefit-experience-rive.css';
 
 /* Keep this late tablet override separate to preserve the original cascade order. */
 @import './components/team-card/team-card-tablet.css';
