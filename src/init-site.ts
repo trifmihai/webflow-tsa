@@ -1,4 +1,5 @@
 import { initAccordions } from './components/accordions';
+import { initBenefitShine } from './components/animations/benefit-shine';
 import { initGavel } from './components/animations/gavel';
 import { initTsaStatueShine } from './components/animations/overlay';
 import { initPlanStamp } from './components/animations/stamp';
@@ -11,7 +12,7 @@ import { initReadingTime } from './components/reading-time';
 import { initRelatedArticlesEmptyState } from './components/related-articles';
 import { initResourcesFilters } from './components/resources-filter';
 import { initTeamCards } from './components/team-card';
-import { initBenefitExperienceRive } from './features/benefit-experience-rive/benefit-experience-rive';
+import { initBenefitRive } from './features/benefit-rive/benefit-rive';
 // import { initTextReveal } from './components/text-reveal';
 import { onDomReady } from './utils/dom';
 
@@ -22,6 +23,7 @@ export function initSite(): void {
   initCallPopover();
   onDomReady(initGavel);
   onDomReady(initTsaStatueShine);
+  onDomReady(initBenefitShine);
   onDomReady(initAccordions);
   onDomReady(initPracticeTextReels);
   onDomReady(initReadingTime);
@@ -29,6 +31,6 @@ export function initSite(): void {
   initBlogToc();
   onDomReady(initHeroAvatarHover);
   onDomReady(initRelatedArticlesEmptyState);
-  onDomReady(initBenefitExperienceRive);
+  onDomReady(initBenefitRive);
   // onDomReady(initTextReveal);
 }

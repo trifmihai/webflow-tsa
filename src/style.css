@@ -1,6 +1,7 @@
 @import './styles/globals.css';
 @import './components/animations/gavel/gavel.css';
 @import './components/animations/overlay/overlay.css';
+@import './components/animations/benefit-shine/benefit-shine.css';
 @import './components/animations/stamp/stamp.css';
 @import './components/navbar/mobile-menu.css';
 @import './components/call-popover/call-popover.css';
@@ -14,7 +15,7 @@
 @import './components/team-card/team-card.css';
 @import './components/blog-toc/blog-toc.css';
 @import './components/footer-map/footer-map.css';
-@import './features/benefit-experience-rive/benefit-experience-rive.css';
+@import './features/benefit-rive/benefit-rive.css';
 
 /* Keep this late tablet override separate to preserve the original cascade order. */
 @import './components/team-card/team-card-tablet.css';
