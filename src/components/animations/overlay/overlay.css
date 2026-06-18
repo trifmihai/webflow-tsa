@@ -1,0 +1,112 @@
+/* =========================================================
+   TSA FOOTER STATUE LOCAL GOLD SHINE
+   ========================================================= */
+
+[data-tsa-statue-shine='component'] {
+  isolation: isolate;
+}
+
+/*
+  Original marble statue.
+*/
+.footer-cta_lady-justice[data-tsa-statue-shine='trigger'] {
+  z-index: 99;
+}
+
+/*
+  Gold overlay.
+
+  It inherits the exact Webflow dimensions, position and
+  transforms from .footer-cta_lady-justice.
+*/
+.footer-cta_lady-justice.is-overlay[data-tsa-statue-shine='overlay'] {
+  --tsa-statue-shine-x: 50%;
+  --tsa-statue-shine-y: 50%;
+
+  /*
+    Spotlight size.
+
+    Reduce these values for a smaller, more precise highlight.
+    Increase them for a broader glow.
+  */
+  --tsa-statue-shine-radius-x: clamp(3.25rem, 4.5vw, 4.75rem);
+  --tsa-statue-shine-radius-y: clamp(4rem, 5.5vw, 6rem);
+
+  z-index: 100;
+
+  opacity: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+  user-select: none;
+
+  /*
+    Soft local reveal centered on the cursor.
+
+    The center is fully visible, then progressively feathers
+    into complete transparency.
+  */
+  -webkit-mask-image: radial-gradient(
+    ellipse var(--tsa-statue-shine-radius-x) var(--tsa-statue-shine-radius-y) at
+      var(--tsa-statue-shine-x) var(--tsa-statue-shine-y),
+    rgb(0 0 0 / 100%) 0%,
+    rgb(0 0 0 / 98%) 24%,
+    rgb(0 0 0 / 82%) 43%,
+    rgb(0 0 0 / 52%) 61%,
+    rgb(0 0 0 / 20%) 79%,
+    transparent 100%
+  );
+
+  mask-image: radial-gradient(
+    ellipse var(--tsa-statue-shine-radius-x) var(--tsa-statue-shine-radius-y) at
+      var(--tsa-statue-shine-x) var(--tsa-statue-shine-y),
+    rgb(0 0 0 / 100%) 0%,
+    rgb(0 0 0 / 98%) 24%,
+    rgb(0 0 0 / 82%) 43%,
+    rgb(0 0 0 / 52%) 61%,
+    rgb(0 0 0 / 20%) 79%,
+    transparent 100%
+  );
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+
+  -webkit-mask-position: center;
+  mask-position: center;
+
+  filter: saturate(1.12) brightness(1.04) drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%))
+    drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
+
+  mix-blend-mode: normal;
+
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+
+  will-change:
+    opacity,
+    visibility,
+    -webkit-mask-image,
+    mask-image;
+}
+
+/*
+  Avoid displaying the complete gold asset in browsers that
+  cannot render a feathered CSS mask.
+*/
+@supports not (
+  (-webkit-mask-image: radial-gradient(circle, #000, transparent)) or
+    (mask-image: radial-gradient(circle, #000, transparent))
+) {
+  .footer-cta_lady-justice.is-overlay[data-tsa-statue-shine='overlay'] {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-cta_lady-justice.is-overlay[data-tsa-statue-shine='overlay'] {
+    will-change: auto;
+  }
+}

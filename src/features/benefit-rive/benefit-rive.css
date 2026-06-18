@@ -1,0 +1,116 @@
+[data-benefit-rive],
+[data-benefit-experience-rive] {
+  --benefit-rive-object-fit: contain;
+  --benefit-rive-object-position: center bottom;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+[data-benefit-rive='country'],
+.benefits_cell.is-visual.is-country,
+.benefits_visual-frame.is-country,
+.benefits_visual-placeholder.is-country {
+  overflow: visible !important;
+}
+
+[data-benefit-rive-fallback],
+[data-benefit-experience-rive-fallback],
+[data-benefit-rive] [data-benefit-rive-fallback],
+[data-benefit-experience-rive] [data-benefit-experience-rive-fallback] {
+  display: block;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+  user-select: none;
+  z-index: 1;
+}
+
+[data-benefit-rive-mount],
+[data-benefit-rive] [data-benefit-rive-mount],
+[data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+  background: transparent;
+  box-sizing: border-box;
+  display: none;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  min-height: 0;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 160ms ease;
+  z-index: 2;
+}
+
+[data-benefit-rive].is-rive-eligible [data-benefit-rive-mount],
+[data-benefit-experience-rive].is-rive-eligible .rive_canvas.is-benefit-1 {
+  display: block;
+}
+
+[data-benefit-rive-canvas],
+[data-benefit-experience-rive-canvas] {
+  background: transparent;
+  box-sizing: border-box;
+  display: block;
+  height: 100%;
+  margin: 0;
+  max-height: none;
+  max-width: none;
+  min-height: 0;
+  min-width: 0;
+  touch-action: pan-y;
+  width: 100%;
+}
+
+[data-benefit-rive].is-rive-visual-ready [data-benefit-rive-mount],
+[data-benefit-experience-rive].is-rive-visual-ready .rive_canvas.is-benefit-1 {
+  opacity: 1;
+}
+
+[data-benefit-rive].is-rive-visual-ready.is-rive-playback-state-machine [data-benefit-rive-mount],
+[data-benefit-rive].is-rive-visual-ready[data-rive-state-machine] [data-benefit-rive-mount],
+[data-benefit-experience-rive].is-rive-visual-ready .rive_canvas.is-benefit-1 {
+  pointer-events: auto;
+}
+
+[data-benefit-rive].is-rive-visual-ready.is-rive-playback-animation [data-benefit-rive-mount] {
+  pointer-events: none;
+}
+
+[data-benefit-rive].is-rive-visual-ready [data-benefit-rive-fallback],
+[data-benefit-experience-rive].is-rive-visual-ready [data-benefit-experience-rive-fallback] {
+  opacity: 0;
+}
+
+[data-benefit-rive].is-rive-error [data-benefit-rive-mount],
+[data-benefit-experience-rive].is-rive-error .rive_canvas.is-benefit-1 {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-benefit-rive].is-rive-error [data-benefit-rive-fallback],
+[data-benefit-experience-rive].is-rive-error [data-benefit-experience-rive-fallback] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-benefit-rive-fallback],
+  [data-benefit-rive-mount],
+  [data-benefit-experience-rive-fallback],
+  [data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+    transition: none;
+  }
+
+  [data-benefit-rive] [data-benefit-rive-mount],
+  [data-benefit-experience-rive] .rive_canvas.is-benefit-1 {
+    display: none;
+  }
+
+  [data-benefit-rive-fallback],
+  [data-benefit-experience-rive-fallback] {
+    opacity: 1;
+  }
+}
