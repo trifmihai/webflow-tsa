@@ -56,6 +56,30 @@
   will-change: opacity;
 }
 
+[data-tsa-benefit-shine-id='definitive-bg'] {
+  -webkit-mask-image: radial-gradient(
+    ellipse var(--tsa-benefit-shine-radius-x) var(--tsa-benefit-shine-radius-y) at
+      var(--tsa-benefit-shine-x) var(--tsa-benefit-shine-y),
+    #000 0%,
+    #000 32%,
+    rgb(0 0 0 / 94%) 48%,
+    rgb(0 0 0 / 72%) 66%,
+    rgb(0 0 0 / 35%) 84%,
+    transparent 100%
+  );
+
+  mask-image: radial-gradient(
+    ellipse var(--tsa-benefit-shine-radius-x) var(--tsa-benefit-shine-radius-y) at
+      var(--tsa-benefit-shine-x) var(--tsa-benefit-shine-y),
+    #000 0%,
+    #000 32%,
+    rgb(0 0 0 / 94%) 48%,
+    rgb(0 0 0 / 72%) 66%,
+    rgb(0 0 0 / 35%) 84%,
+    transparent 100%
+  );
+}
+
 @supports not (
   (-webkit-mask-image: radial-gradient(circle, #000, transparent)) or
     (mask-image: radial-gradient(circle, #000, transparent))

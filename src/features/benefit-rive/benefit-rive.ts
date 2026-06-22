@@ -7,6 +7,7 @@ import {
   type LoopEvent,
   Rive,
   type RiveParameters,
+  type ViewModelInstanceBoolean,
   type ViewModelInstanceNumber,
 } from '@rive-app/webgl2';
 
@@ -22,10 +23,12 @@ const LEGACY_FALLBACK_SELECTOR = '[data-benefit-experience-rive-fallback]';
 const ROOT_QUERY = `${ROOT_SELECTOR}, ${LEGACY_ROOT_SELECTOR}`;
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const DEFAULT_STATE_MACHINE_QUERY = '(min-width: 992px)';
 const PRELOAD_ROOT_MARGIN = '400px 0px';
 const RENDER_VISIBILITY_THRESHOLD = 0.01;
 const DEFAULT_VIEWPORT_THRESHOLD = 0.35;
 const DEFAULT_BOUNDARY_PROPERTY = 'pulseBoundary';
+const CURSOR_PROPERTIES_ATTRIBUTE = 'data-rive-cursor-properties';
 const LAYOUT_PARITY_TOLERANCE = 0.5;
 const VISUAL_READY_FRAME_COUNT = 4;
 const VISUAL_READY_MIN_STABILIZATION_MS = 120;
@@ -38,9 +41,16 @@ type PlaybackMode = 'state-machine' | 'animation';
 type DevicePolicy = 'fine-pointer' | 'all';
 type ActivationMode = 'internal' | 'hover-or-viewport';
 
+type ResponsiveStateMachineConfig = {
+  desktopName: string | null;
+  mobileName: string | null;
+  query: string;
+};
+
 type StateMachineConfig = {
   artboardName: string;
   mode: 'state-machine';
+  responsiveStateMachine?: ResponsiveStateMachineConfig;
   stateMachineName: string;
 };
 
@@ -68,6 +78,11 @@ type RectSnapshot = {
   left: number;
   top: number;
   width: number;
+};
+
+type PointerCursorSubscription = {
+  callback: EventCallback;
+  property: ViewModelInstanceBoolean;
 };
 
 const DEFAULT_LAYOUT_CONFIG: ResolvedLayoutConfig = {
@@ -141,16 +156,23 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   root.classList.toggle('is-rive-playback-state-machine', config.mode === 'state-machine');
   root.classList.toggle('is-rive-playback-animation', config.mode === 'animation');
 
+  const pointerCursorPropertyNames = getCursorPropertyNames(root);
   const finePointerQuery = window.matchMedia(FINE_POINTER_QUERY);
   const reducedMotionQuery = window.matchMedia(REDUCED_MOTION_QUERY);
   const devicePolicy = getDevicePolicy(root);
   const activationMode = getActivationMode(root, config);
   const trigger = getTriggerElement(root, key);
+  const responsiveStateMachineQuery =
+    config.mode === 'state-machine' && config.responsiveStateMachine
+      ? window.matchMedia(config.responsiveStateMachine.query)
+      : null;
 
   let rive: Rive | null = null;
   let boundaryProperty: ViewModelInstanceNumber | null = null;
   let boundaryCallback: EventCallback | null = null;
   let loopCallback: EventCallback | null = null;
+  const pointerCursorSubscriptions: PointerCursorSubscription[] = [];
+  const missingCursorPropertyNames = new Set<string>();
   let resizeFrame = 0;
   let layoutParityFrame = 0;
   let prematureFadeFrame = 0;
@@ -185,6 +207,10 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   let didWarnLayoutParityMismatch = false;
   let didWarnPrematureFallbackFade = false;
   let isCleanedUp = false;
+  let activeStateMachineName =
+    config.mode === 'state-machine'
+      ? resolveStateMachineName(config, responsiveStateMachineQuery)
+      : null;
 
   const syncMountToFallbackGeometry = (): boolean => {
     return syncMountToFallbackGeometryBox(root, mount, fallback);
@@ -622,6 +648,73 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     stopRequestedFromBoundaryValue = null;
   };
 
+  const warnMissingCursorProperty = (propertyName: string): void => {
+    if (!isDevelopmentHost() || missingCursorPropertyNames.has(propertyName)) return;
+
+    missingCursorPropertyNames.add(propertyName);
+    // eslint-disable-next-line no-console -- Development-only cursor configuration diagnostic.
+    console.warn(`Benefit Rive: View Model Boolean "${propertyName}" was not found.`);
+  };
+
+  const syncPointerCursor = (): void => {
+    const shouldUsePointerCursor =
+      config.mode === 'state-machine' &&
+      finePointerQuery.matches &&
+      pointerCursorSubscriptions.some(({ property }) => property.value);
+
+    canvas.style.cursor = shouldUsePointerCursor ? 'pointer' : '';
+  };
+
+  const clearPointerCursorObservers = (): void => {
+    pointerCursorSubscriptions.forEach(({ property, callback }) => {
+      try {
+        property.off(callback);
+      } catch {
+        // Rive can dispose bound view model values during instance cleanup.
+      }
+    });
+    pointerCursorSubscriptions.length = 0;
+    canvas.style.cursor = '';
+  };
+
+  const setupPointerCursorObservers = (instance: Rive): void => {
+    clearPointerCursorObservers();
+
+    if (config.mode !== 'state-machine' || pointerCursorPropertyNames.length === 0) return;
+
+    const { viewModelInstance } = instance;
+
+    if (!viewModelInstance) return;
+
+    pointerCursorPropertyNames.forEach((propertyName) => {
+      let property: ViewModelInstanceBoolean | null = null;
+
+      try {
+        property = viewModelInstance.boolean(propertyName);
+      } catch {
+        property = null;
+      }
+
+      if (!property) {
+        warnMissingCursorProperty(propertyName);
+        return;
+      }
+
+      const callback: EventCallback = (): void => {
+        syncPointerCursor();
+      };
+
+      try {
+        property.on(callback);
+        pointerCursorSubscriptions.push({ property, callback });
+      } catch {
+        // Ignore invalid or already disposed values; the cursor simply stays default.
+      }
+    });
+
+    syncPointerCursor();
+  };
+
   const stopAndResetToIdle = (paintFrame = true): void => {
     if (!rive || config.mode !== 'animation') return;
 
@@ -880,6 +973,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     prematureFadeFrame = 0;
     removeFallbackImageListeners(true);
     clearBoundaryState();
+    clearPointerCursorObservers();
 
     if (rive) {
       rive.cleanup();
@@ -911,6 +1005,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     cancelIdleFrames();
     removeFallbackImageListeners(true);
     clearBoundaryState();
+    clearPointerCursorObservers();
     instance.cleanup();
     rive = null;
     isRiveLoaded = false;
@@ -923,8 +1018,18 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     root.classList.add('is-rive-error');
   };
 
-  const applyLoadSuccess = (instance: Rive): void => {
+  const applyLoadSuccess = (instance: Rive, mountedStateMachineName: string | null): void => {
     if (rive !== instance) return;
+
+    if (config.mode === 'state-machine' && mountedStateMachineName !== activeStateMachineName) {
+      cleanupRiveInstance();
+
+      if (isEligible() && isNearViewport) {
+        mountRive();
+      }
+
+      return;
+    }
 
     isRiveLoaded = true;
     isVisualReady = false;
@@ -935,6 +1040,8 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       resolveBoundaryProperty();
       instance.stop(config.animationName);
       isPlaying = false;
+    } else {
+      setupPointerCursorObservers(instance);
     }
 
     root.classList.remove('is-rive-loading', 'is-rive-error');
@@ -942,6 +1049,39 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     root.classList.remove('is-rive-visual-ready');
     schedulePrematureFallbackFadeCheck();
     startVisualWarmup(instance);
+  };
+
+  const resetActiveStateMachine = (): void => {
+    if (config.mode !== 'state-machine' || !rive || !isRiveLoaded || !activeStateMachineName) {
+      return;
+    }
+
+    const instance = rive;
+
+    cancelWarmup();
+    cancelIdleFrames();
+    stopRendering(true);
+    clearPointerCursorObservers();
+    isPausedForHidden = false;
+
+    try {
+      instance.reset({
+        artboard: config.artboardName,
+        stateMachines: activeStateMachineName,
+        autoplay: true,
+        autoBind: true,
+      });
+      instance.setupRiveListeners({ isTouchScrollEnabled: true });
+      setupPointerCursorObservers(instance);
+    } catch {
+      applyLoadError(instance);
+      return;
+    }
+
+    syncMountToFallbackGeometry();
+    instance.resizeDrawingSurfaceToCanvas();
+    syncPlayback();
+    scheduleLayoutParityCheck();
   };
 
   const mountRive = (): void => {
@@ -963,6 +1103,8 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     setupFallbackImageListeners();
     syncMountToFallbackGeometry();
 
+    const mountedStateMachineName = config.mode === 'state-machine' ? activeStateMachineName : null;
+
     const layout = new Layout({
       fit: layoutConfig.fit,
       alignment: layoutConfig.alignment,
@@ -976,7 +1118,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       autoplay: config.mode === 'state-machine',
       autoBind: true,
       useOffscreenRenderer: true,
-      onLoad: (): void => applyLoadSuccess(instance),
+      onLoad: (): void => applyLoadSuccess(instance, mountedStateMachineName),
       onLoadError: (): void => applyLoadError(instance),
     };
 
@@ -986,7 +1128,12 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       params.isTouchScrollEnabled = true;
       params.dispatchPointerExit = false;
     } else {
-      params.stateMachines = config.stateMachineName;
+      if (!mountedStateMachineName) {
+        applyErrorState(root);
+        return;
+      }
+
+      params.stateMachines = mountedStateMachineName;
       params.shouldDisableRiveListeners = false;
       params.isTouchScrollEnabled = true;
       params.dispatchPointerExit = true;
@@ -1037,6 +1184,36 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     }
 
     syncPlayback();
+    syncPointerCursor();
+  };
+
+  const handleResponsiveStateMachineChange = (): void => {
+    if (config.mode !== 'state-machine' || !responsiveStateMachineQuery) return;
+
+    const nextStateMachineName = resolveStateMachineName(config, responsiveStateMachineQuery);
+
+    if (nextStateMachineName === activeStateMachineName) return;
+
+    activeStateMachineName = nextStateMachineName;
+
+    if (!rive) return;
+
+    if (!isEligible()) {
+      cleanupRiveInstance();
+      return;
+    }
+
+    if (!isRiveLoaded) {
+      cleanupRiveInstance();
+
+      if (isNearViewport) {
+        mountRive();
+      }
+
+      return;
+    }
+
+    resetActiveStateMachine();
   };
 
   const handlePointerEnter = (): void => {
@@ -1125,6 +1302,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     resizeObserver.disconnect();
     finePointerQuery.removeEventListener('change', syncEligibility);
     reducedMotionQuery.removeEventListener('change', syncEligibility);
+    responsiveStateMachineQuery?.removeEventListener('change', handleResponsiveStateMachineChange);
     document.removeEventListener('visibilitychange', handleDocumentVisibility);
     trigger?.removeEventListener('pointerenter', handlePointerEnter);
     trigger?.removeEventListener('pointerleave', handlePointerLeave);
@@ -1146,6 +1324,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
 
   finePointerQuery.addEventListener('change', syncEligibility);
   reducedMotionQuery.addEventListener('change', syncEligibility);
+  responsiveStateMachineQuery?.addEventListener('change', handleResponsiveStateMachineChange);
   document.addEventListener('visibilitychange', handleDocumentVisibility);
   trigger?.addEventListener('pointerenter', handlePointerEnter);
   trigger?.addEventListener('pointerleave', handlePointerLeave);
@@ -1248,11 +1427,32 @@ function prepareCanvas(mount: HTMLElement): HTMLCanvasElement {
   return canvas;
 }
 
+function getOptionalAttribute(root: HTMLElement, attributeName: string): string | null {
+  return root.getAttribute(attributeName)?.trim() || null;
+}
+
+function getCursorPropertyNames(root: HTMLElement): string[] {
+  const value = root.getAttribute(CURSOR_PROPERTIES_ATTRIBUTE);
+
+  if (!value) return [];
+
+  return Array.from(
+    new Set(
+      value
+        .split(',')
+        .map((propertyName) => propertyName.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 function getPlaybackConfig(root: HTMLElement): PlaybackConfig | null {
-  const explicitPlayback = root.getAttribute('data-rive-playback')?.trim();
-  const animationName = root.getAttribute('data-rive-animation')?.trim();
-  const stateMachineName = root.getAttribute('data-rive-state-machine')?.trim();
-  const artboardName = root.getAttribute('data-rive-artboard')?.trim();
+  const explicitPlayback = getOptionalAttribute(root, 'data-rive-playback');
+  const animationName = getOptionalAttribute(root, 'data-rive-animation');
+  const stateMachineName = getOptionalAttribute(root, 'data-rive-state-machine');
+  const desktopStateMachineName = getOptionalAttribute(root, 'data-rive-state-machine-desktop');
+  const mobileStateMachineName = getOptionalAttribute(root, 'data-rive-state-machine-mobile');
+  const artboardName = getOptionalAttribute(root, 'data-rive-artboard');
   let mode: PlaybackMode | null = null;
 
   if (explicitPlayback === 'animation' || explicitPlayback === 'state-machine') {
@@ -1280,11 +1480,37 @@ function getPlaybackConfig(root: HTMLElement): PlaybackConfig | null {
 
   if (!stateMachineName) return null;
 
+  const hasResponsiveStateMachine = Boolean(desktopStateMachineName || mobileStateMachineName);
+
   return {
     artboardName,
     mode,
+    ...(hasResponsiveStateMachine
+      ? {
+          responsiveStateMachine: {
+            desktopName: desktopStateMachineName,
+            mobileName: mobileStateMachineName,
+            query:
+              getOptionalAttribute(root, 'data-rive-state-machine-query') ??
+              DEFAULT_STATE_MACHINE_QUERY,
+          },
+        }
+      : {}),
     stateMachineName,
   };
+}
+
+function resolveStateMachineName(
+  config: StateMachineConfig,
+  mediaQuery: MediaQueryList | null
+): string {
+  if (!config.responsiveStateMachine || !mediaQuery) return config.stateMachineName;
+
+  const responsiveStateMachineName = mediaQuery.matches
+    ? config.responsiveStateMachine.desktopName
+    : config.responsiveStateMachine.mobileName;
+
+  return responsiveStateMachineName ?? config.stateMachineName;
 }
 
 function getDevicePolicy(root: HTMLElement): DevicePolicy {

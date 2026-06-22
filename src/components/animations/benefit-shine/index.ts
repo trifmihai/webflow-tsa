@@ -32,8 +32,11 @@ type LegacyMediaQueryList = MediaQueryList & {
   removeListener?: (listener: () => void) => void;
 };
 
+type BenefitShineCoordinateMode = 'overlay' | 'trigger';
+
 type BenefitShineSettings = {
   activeOpacity: number;
+  coordinateMode: BenefitShineCoordinateMode;
   enterDuration: number;
   exitDuration: number;
   followSpeed: number;
@@ -75,7 +78,7 @@ type BenefitShineComponentController = {
   previousFrameTime: number;
 };
 
-const BENEFIT_SHINE_VERSION = '1.0.0';
+const BENEFIT_SHINE_VERSION = '1.2.0';
 
 const BENEFIT_SHINE_SELECTORS = {
   component: '[data-tsa-benefit-shine="component"]',
@@ -85,6 +88,7 @@ const BENEFIT_SHINE_SELECTORS = {
 
 const DEFAULT_BENEFIT_SHINE_SETTINGS: BenefitShineSettings = {
   activeOpacity: 0.82,
+  coordinateMode: 'overlay',
   enterDuration: 0.26,
   exitDuration: 0.3,
   followSpeed: 22,
@@ -97,7 +101,14 @@ const DEFAULT_BENEFIT_SHINE_SETTINGS: BenefitShineSettings = {
 };
 
 const BENEFIT_SHINE_SETTINGS: Record<string, Partial<BenefitShineSettings>> = {
-  'definitive-logo': {},
+  'definitive-logo': {
+    activeOpacity: 0.88,
+    coordinateMode: 'trigger',
+  },
+  'definitive-bg': {
+    activeOpacity: 1,
+    coordinateMode: 'trigger',
+  },
   'definitive-text': {},
   'definitive-accent': {},
 };
@@ -294,10 +305,14 @@ function setInitialPosition(
 }
 
 function calculateOverlayPointerPosition(
+  controller: BenefitShineComponentController,
   overlay: BenefitShineOverlayController,
   event: PointerEvent
 ): { xPercent: number; yPercent: number } | null {
-  const rect = overlay.element.getBoundingClientRect();
+  const rect =
+    overlay.settings.coordinateMode === 'trigger'
+      ? controller.trigger.getBoundingClientRect()
+      : overlay.element.getBoundingClientRect();
 
   if (rect.width <= 1 || rect.height <= 1) {
     return null;
@@ -419,7 +434,7 @@ function updateOverlayTargets(
   let shouldAnimate = false;
 
   controller.overlays.forEach((overlay) => {
-    const position = calculateOverlayPointerPosition(overlay, event);
+    const position = calculateOverlayPointerPosition(controller, overlay, event);
 
     if (!position) {
       return;

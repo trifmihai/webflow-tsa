@@ -3,7 +3,7 @@
   --benefit-rive-object-fit: contain;
   --benefit-rive-object-position: center bottom;
   isolation: isolate;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
