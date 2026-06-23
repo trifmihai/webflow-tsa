@@ -66,14 +66,16 @@ const STATUE_SHINE_SELECTORS = {
   overlay: '[data-tsa-statue-shine="overlay"]',
 } as const;
 
+const OVERLAY_ACTIVE_OPACITY_PROPERTY = '--tsa-overlay-active-opacity';
+
 /*
   Main tuning controls.
 */
 const STATUE_SHINE_CONFIG = {
   /*
-    Final opacity of the gold overlay inside the masked area.
+    Final opacity of the overlay inside the masked area.
   */
-  activeOpacity: 0.82,
+  activeOpacity: 1,
 
   /*
     Opacity transition speeds.
@@ -112,6 +114,25 @@ function getRuntimeGsap(): StatueShineGsap | null {
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+function getOverlayActiveOpacity(element: HTMLElement): number {
+  const rawOpacity = window
+    .getComputedStyle(element)
+    .getPropertyValue(OVERLAY_ACTIVE_OPACITY_PROPERTY)
+    .trim();
+
+  if (!rawOpacity) {
+    return STATUE_SHINE_CONFIG.activeOpacity;
+  }
+
+  const activeOpacity = Number(rawOpacity);
+
+  if (!Number.isFinite(activeOpacity)) {
+    return STATUE_SHINE_CONFIG.activeOpacity;
+  }
+
+  return clamp(activeOpacity, 0, 1);
 }
 
 function addMediaQueryChangeListener(query: MediaQueryList, listener: () => void): void {
@@ -256,13 +277,15 @@ function setInitialPosition(
 function showStatueShine(controller: StatueShineController): void {
   killCurrentAnimation(controller);
 
+  const activeOpacity = getOverlayActiveOpacity(controller.overlay);
+
   controller.gsap.set(controller.overlay, {
     visibility: 'visible',
   });
 
   if (controller.reducedMotionQuery.matches) {
     controller.gsap.set(controller.overlay, {
-      opacity: STATUE_SHINE_CONFIG.activeOpacity,
+      opacity: activeOpacity,
     });
 
     return;
@@ -279,7 +302,7 @@ function showStatueShine(controller: StatueShineController): void {
   timeline.to(
     controller.overlay,
     {
-      opacity: STATUE_SHINE_CONFIG.activeOpacity,
+      opacity: activeOpacity,
       duration: STATUE_SHINE_CONFIG.enterDuration,
       ease: 'power2.out',
     },

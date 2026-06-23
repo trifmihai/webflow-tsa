@@ -1,0 +1,215 @@
+/* =========================================================
+   TSA SHARED OVERLAY FILTER PRESETS
+   ========================================================= */
+
+/*
+  Hover wrapper:
+  data-tsa-overlay-trigger
+
+  Overlay image:
+  data-tsa-overlay-filter="gold"
+  data-tsa-overlay-filter="white-glow"
+  data-tsa-overlay-filter="soft-neon"
+  data-tsa-overlay-filter="premium-white"
+  data-tsa-overlay-filter="solid-white"
+  data-tsa-overlay-filter="solid-glow"
+  data-tsa-overlay-filter="base-neon"
+  data-tsa-overlay-filter="strong-neon"
+*/
+
+/* =========================================================
+   SHARED OVERLAY BEHAVIOUR
+   ========================================================= */
+
+[data-tsa-overlay-trigger] {
+  isolation: isolate;
+}
+
+[data-tsa-overlay-trigger] [data-tsa-overlay-filter] {
+  filter: var(--tsa-overlay-filter);
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, normal);
+
+  opacity: var(--tsa-overlay-rest-opacity, 0);
+
+  pointer-events: none;
+  backface-visibility: hidden;
+
+  transition-property: opacity;
+  transition-duration: var(--tsa-overlay-exit-duration, 280ms);
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+
+  will-change: opacity;
+}
+
+/* JavaScript or Rive-controlled active state */
+
+[data-tsa-overlay-trigger].is-active [data-tsa-overlay-filter],
+[data-tsa-overlay-trigger][data-tsa-overlay-active='true'] [data-tsa-overlay-filter] {
+  opacity: var(--tsa-overlay-active-opacity, 1);
+
+  transition-duration: var(--tsa-overlay-enter-duration, 520ms);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Real mouse and trackpad hover only */
+
+@media (hover: hover) and (pointer: fine) {
+  [data-tsa-overlay-trigger]:hover [data-tsa-overlay-filter],
+  [data-tsa-overlay-trigger]:focus-within [data-tsa-overlay-filter] {
+    opacity: var(--tsa-overlay-active-opacity, 1);
+
+    transition-duration: var(--tsa-overlay-enter-duration, 520ms);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* =========================================================
+   GOLD
+   ========================================================= */
+
+[data-tsa-overlay-filter='gold'] {
+  --tsa-overlay-filter: saturate(1.12) brightness(1.04)
+    drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%)) drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
+
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 0.82;
+
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+
+/* =========================================================
+   WHITE GLOW
+   ========================================================= */
+
+[data-tsa-overlay-filter='white-glow'] {
+  --tsa-overlay-filter: grayscale(1) brightness(2.8) contrast(1.2)
+    drop-shadow(0 0 2px rgb(255 255 255 / 95%)) drop-shadow(0 0 6px rgb(255 255 255 / 90%))
+    drop-shadow(0 0 16px rgb(255 255 255 / 75%)) drop-shadow(0 0 30px rgb(255 255 255 / 40%));
+
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+
+/* =========================================================
+   SOFT NEON
+   ========================================================= */
+
+[data-tsa-overlay-filter='soft-neon'] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%)
+    drop-shadow(0 0 1px rgb(255 255 255 / 90%)) drop-shadow(0 0 4px rgb(255 255 255 / 70%))
+    drop-shadow(0 0 10px rgb(255 255 255 / 40%)) drop-shadow(0 0 18px rgb(255 255 255 / 18%));
+
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 0.92;
+
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+
+/* =========================================================
+   PREMIUM WHITE
+   Solid white core with restrained reflected light
+   ========================================================= */
+
+[data-tsa-overlay-filter='premium-white'] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%)
+    drop-shadow(0 1px 1px rgb(24 29 36 / 16%)) drop-shadow(0 0 0 rgb(255 255 255 / 96%))
+    drop-shadow(0 0 2px rgb(255 255 255 / 82%)) drop-shadow(0 0 5px rgb(255 255 255 / 46%))
+    drop-shadow(0 0 10px rgb(255 255 255 / 22%)) drop-shadow(0 0 17px rgb(255 255 255 / 9%));
+
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 0.98;
+
+  --tsa-overlay-enter-duration: 560ms;
+  --tsa-overlay-exit-duration: 260ms;
+}
+
+/* =========================================================
+   SOLID WHITE
+   Crisp and prominent without visible glow
+   ========================================================= */
+
+[data-tsa-overlay-filter='solid-white'] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) contrast(1.18)
+    drop-shadow(0 1px 0 rgb(18 23 30 / 22%)) drop-shadow(0 1.5px 1px rgb(18 23 30 / 12%))
+    drop-shadow(0 0 0.5px rgb(255 255 255 / 100%));
+
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+
+  --tsa-overlay-enter-duration: 500ms;
+  --tsa-overlay-exit-duration: 240ms;
+}
+
+/* =========================================================
+   SOLID GLOW
+   Crisp white core with a soft, controlled halo
+   ========================================================= */
+
+[data-tsa-overlay-filter='solid-glow'] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) contrast(1.14)
+    drop-shadow(0 1px 0 rgb(18 23 30 / 18%)) drop-shadow(0 1.5px 1px rgb(18 23 30 / 10%))
+    drop-shadow(0 0 0.65px rgb(255 255 255 / 100%)) drop-shadow(0 0 2px rgb(255 255 255 / 92%))
+    drop-shadow(0 0 5px rgb(255 255 255 / 58%)) drop-shadow(0 0 11px rgb(255 255 255 / 16%));
+
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 260ms;
+}
+
+/* =========================================================
+   BASE NEON
+   ========================================================= */
+
+[data-tsa-overlay-filter='base-neon'] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%)
+    drop-shadow(0 0 2px rgb(255 255 255 / 98%)) drop-shadow(0 0 6px rgb(255 255 255 / 95%))
+    drop-shadow(0 0 14px rgb(255 255 255 / 78%)) drop-shadow(0 0 28px rgb(255 255 255 / 48%));
+
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+
+/* =========================================================
+   STRONG NEON
+   ========================================================= */
+
+[data-tsa-overlay-filter='strong-neon'] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%)
+    drop-shadow(0 0 3px rgb(255 255 255 / 100%)) drop-shadow(0 0 8px rgb(255 255 255 / 100%))
+    drop-shadow(0 0 18px rgb(255 255 255 / 90%)) drop-shadow(0 0 36px rgb(255 255 255 / 60%))
+    drop-shadow(0 0 60px rgb(255 255 255 / 35%));
+
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tsa-overlay-trigger] [data-tsa-overlay-filter] {
+    transition-duration: 1ms;
+  }
+}

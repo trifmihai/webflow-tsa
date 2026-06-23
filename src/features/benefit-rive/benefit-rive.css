@@ -23,6 +23,7 @@
   pointer-events: none;
   transition: opacity 160ms ease;
   user-select: none;
+  visibility: visible;
   z-index: 1;
 }
 
@@ -85,6 +86,7 @@
 }
 
 [data-benefit-rive].is-rive-error [data-benefit-rive-mount],
+[data-benefit-rive].is-rive-unavailable [data-benefit-rive-mount],
 [data-benefit-experience-rive].is-rive-error .rive_canvas.is-benefit-1 {
   display: none;
   opacity: 0;
@@ -92,8 +94,23 @@
 }
 
 [data-benefit-rive].is-rive-error [data-benefit-rive-fallback],
+[data-benefit-rive].is-rive-unavailable [data-benefit-rive-fallback],
 [data-benefit-experience-rive].is-rive-error [data-benefit-experience-rive-fallback] {
   opacity: 1;
+  visibility: visible;
+}
+
+[data-benefit-rive][data-rive-fallback-mode='error-only'] [data-benefit-rive-fallback] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+[data-benefit-rive][data-rive-fallback-mode='error-only'].is-rive-error
+  [data-benefit-rive-fallback],
+[data-benefit-rive][data-rive-fallback-mode='error-only'].is-rive-unavailable
+  [data-benefit-rive-fallback] {
+  opacity: 1;
+  visibility: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -112,5 +129,6 @@
   [data-benefit-rive-fallback],
   [data-benefit-experience-rive-fallback] {
     opacity: 1;
+    visibility: visible;
   }
 }

@@ -1,5 +1,6 @@
 @import './styles/globals.css';
 @import './components/animations/gavel/gavel.css';
+@import './components/animations/overlay-filters/overlay-filters.css';
 @import './components/animations/overlay/overlay.css';
 @import './components/animations/benefit-shine/benefit-shine.css';
 @import './components/animations/stamp/stamp.css';

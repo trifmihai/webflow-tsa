@@ -202,6 +202,105 @@
   }
 }
 
+/* src/components/animations/overlay-filters/overlay-filters.css */
+[data-tsa-overlay-trigger] {
+  isolation: isolate;
+}
+[data-tsa-overlay-trigger] [data-tsa-overlay-filter] {
+  filter: var(--tsa-overlay-filter);
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, normal);
+  opacity: var(--tsa-overlay-rest-opacity, 0);
+  pointer-events: none;
+  backface-visibility: hidden;
+  transition-property: opacity;
+  transition-duration: var(--tsa-overlay-exit-duration, 280ms);
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  will-change: opacity;
+}
+[data-tsa-overlay-trigger].is-active [data-tsa-overlay-filter],
+[data-tsa-overlay-trigger][data-tsa-overlay-active=true] [data-tsa-overlay-filter] {
+  opacity: var(--tsa-overlay-active-opacity, 1);
+  transition-duration: var(--tsa-overlay-enter-duration, 520ms);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  [data-tsa-overlay-trigger]:hover [data-tsa-overlay-filter],
+  [data-tsa-overlay-trigger]:focus-within [data-tsa-overlay-filter] {
+    opacity: var(--tsa-overlay-active-opacity, 1);
+    transition-duration: var(--tsa-overlay-enter-duration, 520ms);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+[data-tsa-overlay-filter=gold] {
+  --tsa-overlay-filter: saturate(1.12) brightness(1.04) drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%)) drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 0.82;
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+[data-tsa-overlay-filter=white-glow] {
+  --tsa-overlay-filter: grayscale(1) brightness(2.8) contrast(1.2) drop-shadow(0 0 2px rgb(255 255 255 / 95%)) drop-shadow(0 0 6px rgb(255 255 255 / 90%)) drop-shadow(0 0 16px rgb(255 255 255 / 75%)) drop-shadow(0 0 30px rgb(255 255 255 / 40%));
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+[data-tsa-overlay-filter=soft-neon] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 0 1px rgb(255 255 255 / 90%)) drop-shadow(0 0 4px rgb(255 255 255 / 70%)) drop-shadow(0 0 10px rgb(255 255 255 / 40%)) drop-shadow(0 0 18px rgb(255 255 255 / 18%));
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 0.92;
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+[data-tsa-overlay-filter=premium-white] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 1px 1px rgb(24 29 36 / 16%)) drop-shadow(0 0 0 rgb(255 255 255 / 96%)) drop-shadow(0 0 2px rgb(255 255 255 / 82%)) drop-shadow(0 0 5px rgb(255 255 255 / 46%)) drop-shadow(0 0 10px rgb(255 255 255 / 22%)) drop-shadow(0 0 17px rgb(255 255 255 / 9%));
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 0.98;
+  --tsa-overlay-enter-duration: 560ms;
+  --tsa-overlay-exit-duration: 260ms;
+}
+[data-tsa-overlay-filter=solid-white] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) contrast(1.18) drop-shadow(0 1px 0 rgb(18 23 30 / 22%)) drop-shadow(0 1.5px 1px rgb(18 23 30 / 12%)) drop-shadow(0 0 0.5px rgb(255 255 255 / 100%));
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+  --tsa-overlay-enter-duration: 500ms;
+  --tsa-overlay-exit-duration: 240ms;
+}
+[data-tsa-overlay-filter=solid-glow] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) contrast(1.14) drop-shadow(0 1px 0 rgb(18 23 30 / 18%)) drop-shadow(0 1.5px 1px rgb(18 23 30 / 10%)) drop-shadow(0 0 0.65px rgb(255 255 255 / 100%)) drop-shadow(0 0 2px rgb(255 255 255 / 92%)) drop-shadow(0 0 5px rgb(255 255 255 / 58%)) drop-shadow(0 0 11px rgb(255 255 255 / 16%));
+  --tsa-overlay-mix-blend-mode: normal;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 260ms;
+}
+[data-tsa-overlay-filter=base-neon] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 0 2px rgb(255 255 255 / 98%)) drop-shadow(0 0 6px rgb(255 255 255 / 95%)) drop-shadow(0 0 14px rgb(255 255 255 / 78%)) drop-shadow(0 0 28px rgb(255 255 255 / 48%));
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+[data-tsa-overlay-filter=strong-neon] {
+  --tsa-overlay-filter: brightness(0) saturate(100%) invert(100%) drop-shadow(0 0 3px rgb(255 255 255 / 100%)) drop-shadow(0 0 8px rgb(255 255 255 / 100%)) drop-shadow(0 0 18px rgb(255 255 255 / 90%)) drop-shadow(0 0 36px rgb(255 255 255 / 60%)) drop-shadow(0 0 60px rgb(255 255 255 / 35%));
+  --tsa-overlay-mix-blend-mode: screen;
+  --tsa-overlay-rest-opacity: 0;
+  --tsa-overlay-active-opacity: 1;
+  --tsa-overlay-enter-duration: 520ms;
+  --tsa-overlay-exit-duration: 280ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-tsa-overlay-trigger] [data-tsa-overlay-filter] {
+    transition-duration: 1ms;
+  }
+}
+
 /* src/components/animations/overlay/overlay.css */
 [data-tsa-statue-shine=component] {
   isolation: isolate;
@@ -214,6 +313,8 @@
   --tsa-statue-shine-y: 50%;
   --tsa-statue-shine-radius-x: clamp(3.25rem, 4.5vw, 4.75rem);
   --tsa-statue-shine-radius-y: clamp(4rem, 5.5vw, 6rem);
+  --tsa-overlay-default-filter: grayscale(1) brightness(2.8) contrast(1.2) drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.4));
+  --tsa-overlay-default-mix-blend-mode: screen;
   z-index: 100;
   opacity: 0;
   visibility: hidden;
@@ -243,8 +344,8 @@
   mask-size: 100% 100%;
   -webkit-mask-position: center;
   mask-position: center;
-  filter: saturate(1.12) brightness(1.04) drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%)) drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
-  mix-blend-mode: normal;
+  filter: var(--tsa-overlay-filter, var(--tsa-overlay-default-filter));
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, var(--tsa-overlay-default-mix-blend-mode));
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
   will-change:
@@ -265,11 +366,15 @@
 }
 
 /* src/components/animations/benefit-shine/benefit-shine.css */
-[data-tsa-benefit-shine=overlay] {
+[data-tsa-benefit-shine=overlay],
+[data-tsa-benefit-shine=footer-logo],
+[data-tsa-footer-logo=overlay] {
   --tsa-benefit-shine-x: 50%;
   --tsa-benefit-shine-y: 50%;
   --tsa-benefit-shine-radius-x: clamp(3.25rem, 4.5vw, 4.75rem);
   --tsa-benefit-shine-radius-y: clamp(4rem, 5.5vw, 6rem);
+  --tsa-overlay-default-filter: saturate(1.12) brightness(1.04) drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%)) drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
+  --tsa-overlay-default-mix-blend-mode: normal;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -298,11 +403,21 @@
   mask-size: 100% 100%;
   -webkit-mask-position: center;
   mask-position: center;
-  filter: saturate(1.12) brightness(1.04) drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%)) drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
-  mix-blend-mode: normal;
+  filter: var(--tsa-overlay-filter, var(--tsa-overlay-default-filter));
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, var(--tsa-overlay-default-mix-blend-mode));
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
   will-change: opacity;
+}
+[data-tsa-benefit-shine=footer-logo][data-tsa-overlay-filter],
+[data-tsa-footer-logo=overlay][data-tsa-overlay-filter] {
+  filter: var(--tsa-overlay-filter, var(--tsa-overlay-default-filter));
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, var(--tsa-overlay-default-mix-blend-mode));
+}
+.footer-cta_logo.hide-tablet.is-no-filter.is-overlay[data-tsa-benefit-shine=footer-logo][data-tsa-overlay-filter],
+.footer-cta_logo.hide-tablet.is-no-filter.is-overlay[data-tsa-footer-logo=overlay][data-tsa-overlay-filter] {
+  filter: var(--tsa-overlay-filter, var(--tsa-overlay-default-filter));
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, var(--tsa-overlay-default-mix-blend-mode));
 }
 [data-tsa-benefit-shine-id=definitive-bg] {
   -webkit-mask-image:
@@ -325,12 +440,16 @@
       transparent 100%);
 }
 @supports not ((-webkit-mask-image: radial-gradient(circle, #000, transparent)) or (mask-image: radial-gradient(circle, #000, transparent))) {
-  [data-tsa-benefit-shine=overlay] {
+  [data-tsa-benefit-shine=overlay],
+  [data-tsa-benefit-shine=footer-logo],
+  [data-tsa-footer-logo=overlay] {
     display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-tsa-benefit-shine=overlay] {
+  [data-tsa-benefit-shine=overlay],
+  [data-tsa-benefit-shine=footer-logo],
+  [data-tsa-footer-logo=overlay] {
     will-change: auto;
   }
 }
@@ -2039,6 +2158,7 @@ body.tsa-nav-is-locked {
   pointer-events: none;
   transition: opacity 160ms ease;
   user-select: none;
+  visibility: visible;
   z-index: 1;
 }
 [data-benefit-rive-mount],
@@ -2093,14 +2213,26 @@ body.tsa-nav-is-locked {
   opacity: 0;
 }
 [data-benefit-rive].is-rive-error [data-benefit-rive-mount],
+[data-benefit-rive].is-rive-unavailable [data-benefit-rive-mount],
 [data-benefit-experience-rive].is-rive-error .rive_canvas.is-benefit-1 {
   display: none;
   opacity: 0;
   pointer-events: none;
 }
 [data-benefit-rive].is-rive-error [data-benefit-rive-fallback],
+[data-benefit-rive].is-rive-unavailable [data-benefit-rive-fallback],
 [data-benefit-experience-rive].is-rive-error [data-benefit-experience-rive-fallback] {
   opacity: 1;
+  visibility: visible;
+}
+[data-benefit-rive][data-rive-fallback-mode=error-only] [data-benefit-rive-fallback] {
+  opacity: 0;
+  visibility: hidden;
+}
+[data-benefit-rive][data-rive-fallback-mode=error-only].is-rive-error [data-benefit-rive-fallback],
+[data-benefit-rive][data-rive-fallback-mode=error-only].is-rive-unavailable [data-benefit-rive-fallback] {
+  opacity: 1;
+  visibility: visible;
 }
 @media (prefers-reduced-motion: reduce) {
   [data-benefit-rive-fallback],
@@ -2116,6 +2248,7 @@ body.tsa-nav-is-locked {
   [data-benefit-rive-fallback],
   [data-benefit-experience-rive-fallback] {
     opacity: 1;
+    visibility: visible;
   }
 }
 

@@ -14,7 +14,7 @@
 }
 
 /*
-  Gold overlay.
+  Visual overlay.
 
   It inherits the exact Webflow dimensions, position and
   transforms from .footer-cta_lady-justice.
@@ -31,6 +31,10 @@
   */
   --tsa-statue-shine-radius-x: clamp(3.25rem, 4.5vw, 4.75rem);
   --tsa-statue-shine-radius-y: clamp(4rem, 5.5vw, 6rem);
+  --tsa-overlay-default-filter: grayscale(1) brightness(2.8) contrast(1.2)
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 0 16px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.4));
+  --tsa-overlay-default-mix-blend-mode: screen;
 
   z-index: 100;
 
@@ -77,10 +81,9 @@
   -webkit-mask-position: center;
   mask-position: center;
 
-  filter: saturate(1.12) brightness(1.04) drop-shadow(0 0 0.3rem rgb(223 187 116 / 20%))
-    drop-shadow(0 0 0.8rem rgb(199 159 84 / 10%));
+  filter: var(--tsa-overlay-filter, var(--tsa-overlay-default-filter));
 
-  mix-blend-mode: normal;
+  mix-blend-mode: var(--tsa-overlay-mix-blend-mode, var(--tsa-overlay-default-mix-blend-mode));
 
   -webkit-user-drag: none;
   -webkit-touch-callout: none;

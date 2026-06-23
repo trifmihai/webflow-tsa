@@ -78,13 +78,20 @@ type BenefitShineComponentController = {
   previousFrameTime: number;
 };
 
-const BENEFIT_SHINE_VERSION = '1.2.0';
+const BENEFIT_SHINE_VERSION = '1.5.0';
 
 const BENEFIT_SHINE_SELECTORS = {
   component: '[data-tsa-benefit-shine="component"]',
-  trigger: '[data-tsa-benefit-shine="trigger"]',
-  overlay: '[data-tsa-benefit-shine="overlay"]',
+  benefitTrigger: '[data-tsa-benefit-shine="trigger"]',
+  stampTrigger: '[data-tsa-stamp-shine="trigger"]',
+  statueTrigger: '[data-tsa-statue-shine="trigger"]',
+  trigger:
+    '[data-tsa-benefit-shine="trigger"], [data-tsa-stamp-shine="trigger"], [data-tsa-statue-shine="trigger"]',
+  overlay:
+    '[data-tsa-benefit-shine="overlay"], [data-tsa-benefit-shine="footer-logo"], [data-tsa-footer-logo="overlay"]',
 } as const;
+
+const OVERLAY_ACTIVE_OPACITY_PROPERTY = '--tsa-overlay-active-opacity';
 
 const DEFAULT_BENEFIT_SHINE_SETTINGS: BenefitShineSettings = {
   activeOpacity: 0.82,
@@ -111,6 +118,12 @@ const BENEFIT_SHINE_SETTINGS: Record<string, Partial<BenefitShineSettings>> = {
   },
   'definitive-text': {},
   'definitive-accent': {},
+  'stamp-overlay': {
+    coordinateMode: 'trigger',
+  },
+  'footer-logo': {
+    coordinateMode: 'trigger',
+  },
 };
 
 const POSITION_SETTLE_THRESHOLD = 0.015;
@@ -149,6 +162,25 @@ function removeMediaQueryChangeListener(query: MediaQueryList, listener: () => v
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+function getOverlayActiveOpacity(element: HTMLElement, fallbackOpacity: number): number {
+  const rawOpacity = window
+    .getComputedStyle(element)
+    .getPropertyValue(OVERLAY_ACTIVE_OPACITY_PROPERTY)
+    .trim();
+
+  if (!rawOpacity) {
+    return fallbackOpacity;
+  }
+
+  const activeOpacity = Number(rawOpacity);
+
+  if (!Number.isFinite(activeOpacity)) {
+    return fallbackOpacity;
+  }
+
+  return clamp(activeOpacity, 0, 1);
 }
 
 function supportsRadialMask(): boolean {
@@ -487,9 +519,30 @@ function hideAllOverlays(controller: BenefitShineComponentController): void {
   });
 }
 
+function getBenefitShineOverlayId(element: HTMLElement): string {
+  const explicitId = element.getAttribute('data-tsa-benefit-shine-id')?.trim();
+
+  if (explicitId) {
+    return explicitId;
+  }
+
+  if (element.getAttribute('data-tsa-footer-logo')?.trim() === 'overlay') {
+    return 'footer-logo';
+  }
+
+  const role = element.getAttribute('data-tsa-benefit-shine')?.trim();
+
+  if (role && role !== 'overlay') {
+    return role;
+  }
+
+  return 'default';
+}
+
 function prepareOverlay(element: HTMLElement): BenefitShineOverlayController {
-  const overlayId = element.getAttribute('data-tsa-benefit-shine-id')?.trim() || 'default';
+  const overlayId = getBenefitShineOverlayId(element);
   const settings = getBenefitShineSettings(overlayId);
+  settings.activeOpacity = getOverlayActiveOpacity(element, settings.activeOpacity);
 
   element.setAttribute('aria-hidden', 'true');
   element.style.setProperty('--tsa-benefit-shine-radius-x', settings.radiusX);
@@ -531,6 +584,52 @@ function clearOverlayInlineProperties(overlay: BenefitShineOverlayController): v
   overlay.element.style.removeProperty('--tsa-benefit-shine-radius-y');
 }
 
+function getMatchingTrigger(component: HTMLElement, selector: string): HTMLElement | null {
+  return component.matches(selector) ? component : component.querySelector<HTMLElement>(selector);
+}
+
+function getBenefitShineTrigger(component: HTMLElement): HTMLElement | null {
+  return (
+    getMatchingTrigger(component, BENEFIT_SHINE_SELECTORS.benefitTrigger) ??
+    getMatchingTrigger(component, BENEFIT_SHINE_SELECTORS.stampTrigger) ??
+    getMatchingTrigger(component, BENEFIT_SHINE_SELECTORS.statueTrigger)
+  );
+}
+
+function findImplicitBenefitShineComponent(overlay: HTMLElement): BenefitShineComponent | null {
+  let candidate = overlay.parentElement;
+
+  while (candidate && candidate !== document.body) {
+    if (candidate.matches(BENEFIT_SHINE_SELECTORS.component)) {
+      return null;
+    }
+
+    const trigger = getMatchingTrigger(candidate, BENEFIT_SHINE_SELECTORS.trigger);
+
+    if (trigger) {
+      return candidate as BenefitShineComponent;
+    }
+
+    candidate = candidate.parentElement;
+  }
+
+  return null;
+}
+
+function getImplicitBenefitShineComponents(): BenefitShineComponent[] {
+  const components = new Set<BenefitShineComponent>();
+
+  document.querySelectorAll<HTMLElement>(BENEFIT_SHINE_SELECTORS.overlay).forEach((overlay) => {
+    const component = findImplicitBenefitShineComponent(overlay);
+
+    if (component) {
+      components.add(component);
+    }
+  });
+
+  return Array.from(components);
+}
+
 function initializeBenefitShineComponent(component: BenefitShineComponent): void {
   if (component.dataset.tsaBenefitShineReady === BENEFIT_SHINE_VERSION) {
     return;
@@ -538,7 +637,7 @@ function initializeBenefitShineComponent(component: BenefitShineComponent): void
 
   component.__tsaBenefitShineCleanup?.();
 
-  const trigger = component.querySelector<HTMLElement>(BENEFIT_SHINE_SELECTORS.trigger);
+  const trigger = getBenefitShineTrigger(component);
   const overlayElements = Array.from(
     component.querySelectorAll<HTMLElement>(BENEFIT_SHINE_SELECTORS.overlay)
   );
@@ -694,6 +793,10 @@ function initializeBenefitShineComponent(component: BenefitShineComponent): void
 }
 
 export function initBenefitShine(): void {
+  getImplicitBenefitShineComponents().forEach((component) => {
+    initializeBenefitShineComponent(component);
+  });
+
   document
     .querySelectorAll<BenefitShineComponent>(BENEFIT_SHINE_SELECTORS.component)
     .forEach((component) => {

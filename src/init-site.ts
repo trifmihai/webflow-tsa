@@ -2,6 +2,7 @@ import { initAccordions } from './components/accordions';
 import { initBenefitShine } from './components/animations/benefit-shine';
 import { initGavel } from './components/animations/gavel';
 import { initTsaStatueShine } from './components/animations/overlay';
+import { initOverlayFilterPresets } from './components/animations/overlay-filters';
 import { initPlanStamp } from './components/animations/stamp';
 import { initBlogToc } from './components/blog-toc';
 import { initCallPopover } from './components/call-popover';
@@ -22,6 +23,7 @@ export function initSite(): void {
   initPlanStamp();
   initCallPopover();
   onDomReady(initGavel);
+  onDomReady(initOverlayFilterPresets);
   onDomReady(initTsaStatueShine);
   onDomReady(initBenefitShine);
   onDomReady(initAccordions);

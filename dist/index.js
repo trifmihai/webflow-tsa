@@ -9000,12 +9000,16 @@
 
   // src/components/animations/benefit-shine/index.ts
   init_live_reload();
-  var BENEFIT_SHINE_VERSION = "1.2.0";
+  var BENEFIT_SHINE_VERSION = "1.5.0";
   var BENEFIT_SHINE_SELECTORS = {
     component: '[data-tsa-benefit-shine="component"]',
-    trigger: '[data-tsa-benefit-shine="trigger"]',
-    overlay: '[data-tsa-benefit-shine="overlay"]'
+    benefitTrigger: '[data-tsa-benefit-shine="trigger"]',
+    stampTrigger: '[data-tsa-stamp-shine="trigger"]',
+    statueTrigger: '[data-tsa-statue-shine="trigger"]',
+    trigger: '[data-tsa-benefit-shine="trigger"], [data-tsa-stamp-shine="trigger"], [data-tsa-statue-shine="trigger"]',
+    overlay: '[data-tsa-benefit-shine="overlay"], [data-tsa-benefit-shine="footer-logo"], [data-tsa-footer-logo="overlay"]'
   };
+  var OVERLAY_ACTIVE_OPACITY_PROPERTY = "--tsa-overlay-active-opacity";
   var DEFAULT_BENEFIT_SHINE_SETTINGS = {
     activeOpacity: 0.82,
     coordinateMode: "overlay",
@@ -9029,7 +9033,13 @@
       coordinateMode: "trigger"
     },
     "definitive-text": {},
-    "definitive-accent": {}
+    "definitive-accent": {},
+    "stamp-overlay": {
+      coordinateMode: "trigger"
+    },
+    "footer-logo": {
+      coordinateMode: "trigger"
+    }
   };
   var POSITION_SETTLE_THRESHOLD = 0.015;
   var MAX_FRAME_DELTA_SECONDS = 0.05;
@@ -9059,6 +9069,17 @@
   }
   function clamp(value, minimum, maximum) {
     return Math.min(Math.max(value, minimum), maximum);
+  }
+  function getOverlayActiveOpacity(element, fallbackOpacity) {
+    const rawOpacity = window.getComputedStyle(element).getPropertyValue(OVERLAY_ACTIVE_OPACITY_PROPERTY).trim();
+    if (!rawOpacity) {
+      return fallbackOpacity;
+    }
+    const activeOpacity = Number(rawOpacity);
+    if (!Number.isFinite(activeOpacity)) {
+      return fallbackOpacity;
+    }
+    return clamp(activeOpacity, 0, 1);
   }
   function supportsRadialMask() {
     if (typeof CSS === "undefined" || typeof CSS.supports !== "function") {
@@ -9294,9 +9315,24 @@
       hideOverlay(controller, overlay);
     });
   }
+  function getBenefitShineOverlayId(element) {
+    const explicitId = element.getAttribute("data-tsa-benefit-shine-id")?.trim();
+    if (explicitId) {
+      return explicitId;
+    }
+    if (element.getAttribute("data-tsa-footer-logo")?.trim() === "overlay") {
+      return "footer-logo";
+    }
+    const role = element.getAttribute("data-tsa-benefit-shine")?.trim();
+    if (role && role !== "overlay") {
+      return role;
+    }
+    return "default";
+  }
   function prepareOverlay(element) {
-    const overlayId = element.getAttribute("data-tsa-benefit-shine-id")?.trim() || "default";
+    const overlayId = getBenefitShineOverlayId(element);
     const settings = getBenefitShineSettings(overlayId);
+    settings.activeOpacity = getOverlayActiveOpacity(element, settings.activeOpacity);
     element.setAttribute("aria-hidden", "true");
     element.style.setProperty("--tsa-benefit-shine-radius-x", settings.radiusX);
     element.style.setProperty("--tsa-benefit-shine-radius-y", settings.radiusY);
@@ -9329,12 +9365,42 @@
     overlay.element.style.removeProperty("--tsa-benefit-shine-radius-x");
     overlay.element.style.removeProperty("--tsa-benefit-shine-radius-y");
   }
+  function getMatchingTrigger(component, selector) {
+    return component.matches(selector) ? component : component.querySelector(selector);
+  }
+  function getBenefitShineTrigger(component) {
+    return getMatchingTrigger(component, BENEFIT_SHINE_SELECTORS.benefitTrigger) ?? getMatchingTrigger(component, BENEFIT_SHINE_SELECTORS.stampTrigger) ?? getMatchingTrigger(component, BENEFIT_SHINE_SELECTORS.statueTrigger);
+  }
+  function findImplicitBenefitShineComponent(overlay) {
+    let candidate = overlay.parentElement;
+    while (candidate && candidate !== document.body) {
+      if (candidate.matches(BENEFIT_SHINE_SELECTORS.component)) {
+        return null;
+      }
+      const trigger = getMatchingTrigger(candidate, BENEFIT_SHINE_SELECTORS.trigger);
+      if (trigger) {
+        return candidate;
+      }
+      candidate = candidate.parentElement;
+    }
+    return null;
+  }
+  function getImplicitBenefitShineComponents() {
+    const components = /* @__PURE__ */ new Set();
+    document.querySelectorAll(BENEFIT_SHINE_SELECTORS.overlay).forEach((overlay) => {
+      const component = findImplicitBenefitShineComponent(overlay);
+      if (component) {
+        components.add(component);
+      }
+    });
+    return Array.from(components);
+  }
   function initializeBenefitShineComponent(component) {
     if (component.dataset.tsaBenefitShineReady === BENEFIT_SHINE_VERSION) {
       return;
     }
     component.__tsaBenefitShineCleanup?.();
-    const trigger = component.querySelector(BENEFIT_SHINE_SELECTORS.trigger);
+    const trigger = getBenefitShineTrigger(component);
     const overlayElements = Array.from(
       component.querySelectorAll(BENEFIT_SHINE_SELECTORS.overlay)
     );
@@ -9456,6 +9522,9 @@
     component.__tsaBenefitShineCleanup = cleanup;
   }
   function initBenefitShine() {
+    getImplicitBenefitShineComponents().forEach((component) => {
+      initializeBenefitShineComponent(component);
+    });
     document.querySelectorAll(BENEFIT_SHINE_SELECTORS.component).forEach((component) => {
       initializeBenefitShineComponent(component);
     });
@@ -10286,7 +10355,7 @@
       let activePresetName = QUICK_TUNING.activePreset;
       const instances = [];
       const globalCleanup = [];
-      const clamp3 = (value, min, max) => {
+      const clamp4 = (value, min, max) => {
         return Math.min(Math.max(value, min), max);
       };
       const lerp = (start, end, progress) => {
@@ -10613,7 +10682,7 @@
             return desiredState === "impact" ? 1 : 0;
           }
           const projection = (currentVector.x * axis.x + currentVector.y * axis.y + currentVector.rotation * axis.rotation) / axisLengthSquared;
-          return clamp3(projection, 0, 1);
+          return clamp4(projection, 0, 1);
         };
         const interpolatePose = (progress) => {
           if (!geometry) {
@@ -10716,7 +10785,7 @@
           impactReactionTimeline = null;
         };
         const easeProgress = (easeName, progress) => {
-          const normalizedProgress = clamp3(progress, 0, 1);
+          const normalizedProgress = clamp4(progress, 0, 1);
           if (typeof gsap.parseEase !== "function") {
             return normalizedProgress;
           }
@@ -10734,7 +10803,7 @@
           if (end <= start) {
             return progress >= end ? 1 : 0;
           }
-          return clamp3((progress - start) / (end - start), 0, 1);
+          return clamp4((progress - start) / (end - start), 0, 1);
         };
         const setCastShadowScrubState = (pose, fromPhase, toPhase, phaseProgress) => {
           if (!castShadow || !geometry) {
@@ -10926,7 +10995,7 @@
           }
           killActiveTimeline();
           const scrubConfig = QUICK_TUNING.interaction.mobileScrub;
-          const progress = clamp3(rawProgress, 0, 1);
+          const progress = clamp4(rawProgress, 0, 1);
           scrubProgressValue = progress;
           desiredState = progress >= scrubConfig.contactProgress ? "impact" : "rest";
           const anticipationPose = {
@@ -11092,7 +11161,7 @@
               );
             }
           }
-          const remainingDistance = clamp3(1 - currentProgress, 0, 1);
+          const remainingDistance = clamp4(1 - currentProgress, 0, 1);
           const strikeDuration = lerp(
             motionConfig.strikeMinDurationSeconds,
             motionConfig.strikeMaxDurationSeconds,
@@ -11843,11 +11912,12 @@
     trigger: '[data-tsa-statue-shine="trigger"]',
     overlay: '[data-tsa-statue-shine="overlay"]'
   };
+  var OVERLAY_ACTIVE_OPACITY_PROPERTY2 = "--tsa-overlay-active-opacity";
   var STATUE_SHINE_CONFIG = {
     /*
-      Final opacity of the gold overlay inside the masked area.
+      Final opacity of the overlay inside the masked area.
     */
-    activeOpacity: 0.82,
+    activeOpacity: 1,
     /*
       Opacity transition speeds.
     */
@@ -11880,6 +11950,17 @@
   }
   function clamp2(value, minimum, maximum) {
     return Math.min(Math.max(value, minimum), maximum);
+  }
+  function getOverlayActiveOpacity2(element) {
+    const rawOpacity = window.getComputedStyle(element).getPropertyValue(OVERLAY_ACTIVE_OPACITY_PROPERTY2).trim();
+    if (!rawOpacity) {
+      return STATUE_SHINE_CONFIG.activeOpacity;
+    }
+    const activeOpacity = Number(rawOpacity);
+    if (!Number.isFinite(activeOpacity)) {
+      return STATUE_SHINE_CONFIG.activeOpacity;
+    }
+    return clamp2(activeOpacity, 0, 1);
   }
   function addMediaQueryChangeListener2(query, listener) {
     if (typeof query.addEventListener === "function") {
@@ -11970,12 +12051,13 @@
   }
   function showStatueShine(controller) {
     killCurrentAnimation(controller);
+    const activeOpacity = getOverlayActiveOpacity2(controller.overlay);
     controller.gsap.set(controller.overlay, {
       visibility: "visible"
     });
     if (controller.reducedMotionQuery.matches) {
       controller.gsap.set(controller.overlay, {
-        opacity: STATUE_SHINE_CONFIG.activeOpacity
+        opacity: activeOpacity
       });
       return;
     }
@@ -11988,7 +12070,7 @@
     timeline.to(
       controller.overlay,
       {
-        opacity: STATUE_SHINE_CONFIG.activeOpacity,
+        opacity: activeOpacity,
         duration: STATUE_SHINE_CONFIG.enterDuration,
         ease: "power2.out"
       },
@@ -12201,6 +12283,55 @@
     }
     document.querySelectorAll(STATUE_SHINE_SELECTORS.component).forEach((component) => {
       initializeStatueShineComponent(component, gsap);
+    });
+  }
+
+  // src/components/animations/overlay-filters/index.ts
+  init_live_reload();
+  var OVERLAY_FILTER_ATTRIBUTE = "data-tsa-overlay-filter";
+  var OVERLAY_FILTER_ASSIGNMENTS = [
+    {
+      selector: '[data-tsa-statue-shine="overlay"]',
+      preset: "base-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine="overlay"]',
+      preset: "strong-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine-id="definitive-logo"]',
+      preset: "strong-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine-id="definitive-bg"]',
+      preset: "strong-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine-id="definitive-text"]',
+      preset: "strong-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine-id="definitive-accent"]',
+      preset: "strong-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine-id="stamp-overlay"]',
+      preset: "soft-neon"
+    },
+    {
+      selector: '[data-tsa-benefit-shine="footer-logo"]',
+      preset: "strong-neon"
+    },
+    {
+      selector: '[data-tsa-footer-logo="overlay"]',
+      preset: "solid-glow"
+    }
+  ];
+  function initOverlayFilterPresets() {
+    OVERLAY_FILTER_ASSIGNMENTS.forEach(({ selector, preset }) => {
+      document.querySelectorAll(selector).forEach((element) => {
+        element.setAttribute(OVERLAY_FILTER_ATTRIBUTE, preset);
+      });
     });
   }
 
@@ -13983,7 +14114,7 @@
         if (!itemCount) return 0;
         return (value % itemCount + itemCount) % itemCount;
       }
-      function clamp3(value, min, max) {
+      function clamp4(value, min, max) {
         return Math.min(Math.max(value, min), max);
       }
       function getCssNumberVariable(name, fallback) {
@@ -14269,7 +14400,7 @@
       function getNeighborIndex(baseIndex, direction) {
         const items = getAllItems();
         if (!items.length || direction === 0) return baseIndex;
-        return clamp3(baseIndex + direction, 0, items.length - 1);
+        return clamp4(baseIndex + direction, 0, items.length - 1);
       }
       function getDragStepDistance(baseIndex, direction) {
         const neighborIndex = getNeighborIndex(baseIndex, direction);
@@ -14285,7 +14416,7 @@
         return sign * (maxNaturalDistance + extraDistance * PRACTICE_TEXT_REEL_SETTINGS.dragResistance);
       }
       function getDragProgress(deltaY, stepDistance) {
-        return clamp3(Math.abs(deltaY) / stepDistance, 0, 1);
+        return clamp4(Math.abs(deltaY) / stepDistance, 0, 1);
       }
       function beginDrag(event) {
         if (!canDrag()) return;
@@ -14963,9 +15094,13 @@
   var FINE_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
   var REDUCED_MOTION_QUERY2 = "(prefers-reduced-motion: reduce)";
   var DEFAULT_STATE_MACHINE_QUERY = "(min-width: 992px)";
-  var PRELOAD_ROOT_MARGIN = "400px 0px";
+  var DEFAULT_PRELOAD_ROOT_MARGIN_PX = 400;
+  var PRELOAD_ROOT_MARGIN = `${DEFAULT_PRELOAD_ROOT_MARGIN_PX}px 0px`;
   var RENDER_VISIBILITY_THRESHOLD = 0.01;
   var DEFAULT_VIEWPORT_THRESHOLD = 0.35;
+  var DEFAULT_NEARBY_PRELOAD_VIEWPORTS = 1.5;
+  var MIN_NEARBY_PRELOAD_VIEWPORTS = 0.5;
+  var MAX_NEARBY_PRELOAD_VIEWPORTS = 3;
   var DEFAULT_BOUNDARY_PROPERTY = "pulseBoundary";
   var CURSOR_PROPERTIES_ATTRIBUTE = "data-rive-cursor-properties";
   var LAYOUT_PARITY_TOLERANCE = 0.5;
@@ -15003,6 +15138,7 @@
     "top-right": { alignment: import_webgl2.Alignment.TopRight, objectPosition: "right top" }
   };
   var didWarnBoundaryFallback = false;
+  var malformedAttributeWarnings = /* @__PURE__ */ new WeakMap();
   function initBenefitRive() {
     document.querySelectorAll(ROOT_QUERY).forEach(initBenefitRiveRoot);
   }
@@ -15015,9 +15151,13 @@
     const key = getBenefitKey(root);
     const layoutConfig = getResolvedLayoutConfig(root);
     const fallback = getFallbackElement(root, key);
+    const fallbackMode = getFallbackMode(root);
     const mount = getMountElement(root, key);
+    const preloadMode = getPreloadMode(root);
+    const nearbyPreloadViewports = getNearbyPreloadViewports(root);
+    const minScrollPreloadViewports = getPreloadMinScrollViewports(root);
     applyLayoutCssVariables(root, layoutConfig);
-    prepareFallbackImage(fallback);
+    prepareFallbackImage(fallback, fallbackMode);
     if (!mount) {
       applyErrorState(root);
       return;
@@ -15061,6 +15201,11 @@
     const idleResetCancelResolvers = [];
     const idleResizeFrameIds = [];
     const idleResizeCancelResolvers = [];
+    let preloadObserver = null;
+    let preloadResizeFrame = 0;
+    let preloadScrollFrame = 0;
+    let preloadScrollCallback = null;
+    let isWithinPreloadArea = false;
     let isNearViewport = false;
     let isRiveLoaded = false;
     let isVisualReady = false;
@@ -15078,6 +15223,7 @@
     let didWarnPrematureFallbackFade = false;
     let isCleanedUp = false;
     let activeStateMachineName = config.mode === "state-machine" ? resolveStateMachineName(config, responsiveStateMachineQuery) : null;
+    let hasMetPreloadMinScroll = preloadMode !== "nearby" || minScrollPreloadViewports === null || getCurrentScrollY() > 1 || isElementActuallyVisible(root);
     const syncMountToFallbackGeometry = () => {
       return syncMountToFallbackGeometryBox(root, mount, fallback);
     };
@@ -15174,6 +15320,12 @@
     const canRenderNow = () => {
       return document.visibilityState === "visible" && isRenderVisible;
     };
+    const canWarmupOffscreen = () => {
+      return preloadMode === "nearby";
+    };
+    const canWarmupNow = () => {
+      return document.visibilityState === "visible" && (isRenderVisible || canWarmupOffscreen());
+    };
     const performGeometrySyncAndResize = async () => {
       syncMountToFallbackGeometry();
       if (!rive) {
@@ -15257,7 +15409,9 @@
       });
     };
     const schedulePrematureFallbackFadeCheck = () => {
-      if (!isDevelopmentHost2() || didWarnPrematureFallbackFade || !fallback) return;
+      if (fallbackMode === "error-only" || !isDevelopmentHost2() || didWarnPrematureFallbackFade || !fallback) {
+        return;
+      }
       window.cancelAnimationFrame(prematureFadeFrame);
       prematureFadeFrame = window.requestAnimationFrame(() => {
         prematureFadeFrame = 0;
@@ -15270,8 +15424,9 @@
         });
       });
     };
-    const startRenderingIfAllowed = () => {
-      if (!rive || document.visibilityState !== "visible" || !isRenderVisible) return;
+    const startRenderingIfAllowed = (allowOffscreen = false) => {
+      if (!rive || document.visibilityState !== "visible") return;
+      if (!allowOffscreen && !isRenderVisible) return;
       if (isRendering) return;
       rive.startRendering();
       isRendering = true;
@@ -15283,6 +15438,7 @@
       isRendering = false;
     };
     const waitForFallbackImageReadiness = async () => {
+      if (fallbackMode === "error-only") return;
       if (!(fallback instanceof HTMLImageElement)) return;
       if (!fallback.complete) {
         setupFallbackImageListeners();
@@ -15319,7 +15475,7 @@
       }
     };
     const startVisualWarmup = (instance) => {
-      if (isWarmingUp || isVisualReady || !isRiveLoaded || rive !== instance || !canRenderNow() || isCleanedUp) {
+      if (isWarmingUp || isVisualReady || !isRiveLoaded || rive !== instance || !canWarmupNow() || isCleanedUp) {
         return;
       }
       visualReadyToken += 1;
@@ -15327,7 +15483,7 @@
       isWarmingUp = true;
       void (async () => {
         await waitForFallbackImageReadiness();
-        if (token !== visualReadyToken || rive !== instance || !isRiveLoaded || isCleanedUp || !canRenderNow()) {
+        if (token !== visualReadyToken || rive !== instance || !isRiveLoaded || isCleanedUp || !canWarmupNow()) {
           return;
         }
         syncMountToFallbackGeometry();
@@ -15337,12 +15493,12 @@
           isPausedForHidden = false;
         }
         instance.resizeDrawingSurfaceToCanvas();
-        startRenderingIfAllowed();
+        startRenderingIfAllowed(canWarmupOffscreen());
         await Promise.all([
           waitForAnimationFrames(VISUAL_READY_FRAME_COUNT, warmupFrameIds, warmupCancelResolvers),
           waitForWarmupStabilization()
         ]);
-        if (token !== visualReadyToken || rive !== instance || !isRiveLoaded || isCleanedUp || !canRenderNow()) {
+        if (token !== visualReadyToken || rive !== instance || !isRiveLoaded || isCleanedUp || !canWarmupNow()) {
           return;
         }
         syncMountToFallbackGeometry();
@@ -15359,7 +15515,7 @@
       });
     };
     const restartVisualWarmupIfNeeded = () => {
-      if (!rive || !isRiveLoaded || isVisualReady || isWarmingUp || !canRenderNow()) return;
+      if (!rive || !isRiveLoaded || isVisualReady || isWarmingUp || !canWarmupNow()) return;
       startVisualWarmup(rive);
     };
     const unsubscribeBoundaryObserver = () => {
@@ -15541,6 +15697,10 @@
         return;
       }
       if (!isRenderVisible) {
+        if (!isVisualReady && canWarmupOffscreen()) {
+          restartVisualWarmupIfNeeded();
+          return;
+        }
         cancelWarmup();
         stopAndResetToIdle(false);
         return;
@@ -15584,7 +15744,20 @@
     };
     const syncStateMachineRendering = () => {
       if (config.mode !== "state-machine" || !rive || !isRiveLoaded) return;
-      if (document.visibilityState === "hidden" || !isRenderVisible) {
+      if (document.visibilityState === "hidden") {
+        cancelWarmup();
+        if (!isPausedForHidden) {
+          rive.pause();
+          isPausedForHidden = true;
+        }
+        stopRendering(true);
+        return;
+      }
+      if (!isRenderVisible) {
+        if (!isVisualReady && canWarmupOffscreen()) {
+          restartVisualWarmupIfNeeded();
+          return;
+        }
         cancelWarmup();
         if (!isPausedForHidden) {
           rive.pause();
@@ -15637,7 +15810,7 @@
       stopRequestedFromBoundaryValue = null;
       root.classList.remove("is-rive-loading", "is-rive-ready", "is-rive-visual-ready");
       if (clearError) {
-        root.classList.remove("is-rive-error");
+        root.classList.remove("is-rive-error", "is-rive-unavailable");
       }
       canvas.removeAttribute("width");
       canvas.removeAttribute("height");
@@ -15657,18 +15830,17 @@
       isRendering = false;
       isPlaying = false;
       isPausedForHidden = false;
-      root.classList.remove("is-rive-loading", "is-rive-ready", "is-rive-visual-ready");
+      root.classList.remove(
+        "is-rive-loading",
+        "is-rive-ready",
+        "is-rive-unavailable",
+        "is-rive-visual-ready"
+      );
       root.classList.add("is-rive-error");
     };
     const applyLoadSuccess = (instance, mountedStateMachineName) => {
       if (rive !== instance) return;
-      if (config.mode === "state-machine" && mountedStateMachineName !== activeStateMachineName) {
-        cleanupRiveInstance();
-        if (isEligible() && isNearViewport) {
-          mountRive();
-        }
-        return;
-      }
+      const shouldResetMountedStateMachine = config.mode === "state-machine" && mountedStateMachineName !== activeStateMachineName;
       isRiveLoaded = true;
       isVisualReady = false;
       isWarmingUp = false;
@@ -15677,13 +15849,17 @@
         resolveBoundaryProperty();
         instance.stop(config.animationName);
         isPlaying = false;
-      } else {
+      } else if (!shouldResetMountedStateMachine) {
         setupPointerCursorObservers(instance);
       }
-      root.classList.remove("is-rive-loading", "is-rive-error");
+      root.classList.remove("is-rive-loading", "is-rive-error", "is-rive-unavailable");
       root.classList.add("is-rive-ready");
       root.classList.remove("is-rive-visual-ready");
       schedulePrematureFallbackFadeCheck();
+      if (shouldResetMountedStateMachine) {
+        resetActiveStateMachine();
+        return;
+      }
       startVisualWarmup(instance);
     };
     const resetActiveStateMachine = () => {
@@ -15722,7 +15898,7 @@
         return;
       }
       root.classList.add("is-rive-loading");
-      root.classList.remove("is-rive-error", "is-rive-visual-ready");
+      root.classList.remove("is-rive-error", "is-rive-unavailable", "is-rive-visual-ready");
       isCleanedUp = false;
       isRiveLoaded = false;
       isVisualReady = false;
@@ -15776,8 +15952,10 @@
       root.classList.toggle("is-rive-eligible", eligible);
       if (!eligible) {
         cleanupRiveInstance();
+        applyUnavailableState(root);
         return;
       }
+      root.classList.remove("is-rive-unavailable");
       if (isNearViewport) {
         mountRive();
       }
@@ -15802,13 +15980,7 @@
         cleanupRiveInstance();
         return;
       }
-      if (!isRiveLoaded) {
-        cleanupRiveInstance();
-        if (isNearViewport) {
-          mountRive();
-        }
-        return;
-      }
+      if (!isRiveLoaded) return;
       resetActiveStateMachine();
     };
     const handlePointerEnter = () => {
@@ -15822,19 +15994,104 @@
     const handleDocumentVisibility = () => {
       syncPlayback();
     };
-    const preloadObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        isNearViewport = true;
-        preloadObserver.disconnect();
-        syncEligibility();
-      },
-      { rootMargin: PRELOAD_ROOT_MARGIN }
-    );
+    const getPreloadVerticalMarginPx = () => {
+      if (preloadMode !== "nearby") return DEFAULT_PRELOAD_ROOT_MARGIN_PX;
+      return Math.round(getViewportHeight() * nearbyPreloadViewports);
+    };
+    const getPreloadRootMargin = () => {
+      if (preloadMode !== "nearby") return PRELOAD_ROOT_MARGIN;
+      return `${getPreloadVerticalMarginPx()}px 0px`;
+    };
+    const disconnectPreloadObserver = () => {
+      preloadObserver?.disconnect();
+      preloadObserver = null;
+    };
+    const removePreloadScrollGuard = () => {
+      if (preloadScrollCallback) {
+        window.removeEventListener("scroll", preloadScrollCallback);
+      }
+      window.cancelAnimationFrame(preloadScrollFrame);
+      preloadScrollFrame = 0;
+      preloadScrollCallback = null;
+    };
+    const hasSatisfiedPreloadMinScroll = () => {
+      if (hasMetPreloadMinScroll) return true;
+      if (isElementActuallyVisible(root)) {
+        hasMetPreloadMinScroll = true;
+        return true;
+      }
+      if (minScrollPreloadViewports !== null && getCurrentScrollY() >= getViewportHeight() * minScrollPreloadViewports) {
+        hasMetPreloadMinScroll = true;
+        return true;
+      }
+      return false;
+    };
+    const beginPreload = () => {
+      if (isNearViewport) return;
+      isNearViewport = true;
+      disconnectPreloadObserver();
+      removePreloadScrollGuard();
+      syncEligibility();
+    };
+    const checkPreloadScrollGuard = () => {
+      if (!hasSatisfiedPreloadMinScroll()) return;
+      removePreloadScrollGuard();
+      if (isWithinPreloadArea || isElementWithinVerticalViewportMargin(root, getPreloadVerticalMarginPx())) {
+        beginPreload();
+      }
+    };
+    const schedulePreloadScrollGuardCheck = () => {
+      if (preloadScrollFrame) return;
+      preloadScrollFrame = window.requestAnimationFrame(() => {
+        preloadScrollFrame = 0;
+        checkPreloadScrollGuard();
+      });
+    };
+    const ensurePreloadScrollGuard = () => {
+      if (preloadScrollCallback || hasMetPreloadMinScroll) return;
+      preloadScrollCallback = schedulePreloadScrollGuardCheck;
+      window.addEventListener("scroll", preloadScrollCallback, { passive: true });
+    };
+    const handlePreloadIntersection = ([entry]) => {
+      isWithinPreloadArea = Boolean(entry?.isIntersecting);
+      if (!isWithinPreloadArea) return;
+      if (!hasSatisfiedPreloadMinScroll()) {
+        ensurePreloadScrollGuard();
+        return;
+      }
+      beginPreload();
+    };
+    const createPreloadObserver = () => {
+      if (isNearViewport) return;
+      disconnectPreloadObserver();
+      preloadObserver = new IntersectionObserver(handlePreloadIntersection, {
+        rootMargin: getPreloadRootMargin()
+      });
+      preloadObserver.observe(root);
+    };
+    const schedulePreloadObserverRefresh = () => {
+      if (preloadMode !== "nearby" || isNearViewport) return;
+      window.cancelAnimationFrame(preloadResizeFrame);
+      preloadResizeFrame = window.requestAnimationFrame(() => {
+        preloadResizeFrame = 0;
+        createPreloadObserver();
+        if (preloadScrollCallback) {
+          schedulePreloadScrollGuardCheck();
+        }
+      });
+    };
+    const handleViewportResize = () => {
+      scheduleGeometrySyncAndResize();
+      schedulePreloadObserverRefresh();
+    };
     const renderVisibilityObserver = new IntersectionObserver(
       ([entry]) => {
         isRenderVisible = Boolean(entry?.isIntersecting);
         if (!isRenderVisible) {
+          if (canWarmupOffscreen() && !isVisualReady) {
+            syncPlayback();
+            return;
+          }
           cancelWarmup();
           if (config.mode !== "animation") {
             syncPlayback();
@@ -15872,7 +16129,10 @@
       scheduleGeometrySyncAndResize();
     });
     const cleanup = () => {
-      preloadObserver.disconnect();
+      disconnectPreloadObserver();
+      removePreloadScrollGuard();
+      window.cancelAnimationFrame(preloadResizeFrame);
+      preloadResizeFrame = 0;
       renderVisibilityObserver.disconnect();
       mobileActivationObserver.disconnect();
       resizeObserver.disconnect();
@@ -15882,13 +16142,13 @@
       document.removeEventListener("visibilitychange", handleDocumentVisibility);
       trigger?.removeEventListener("pointerenter", handlePointerEnter);
       trigger?.removeEventListener("pointerleave", handlePointerLeave);
-      window.removeEventListener("resize", scheduleGeometrySyncAndResize);
-      window.removeEventListener("orientationchange", scheduleGeometrySyncAndResize);
+      window.removeEventListener("resize", handleViewportResize);
+      window.removeEventListener("orientationchange", handleViewportResize);
       cleanupRiveInstance();
     };
     setupFallbackImageListeners();
     syncMountToFallbackGeometry();
-    preloadObserver.observe(root);
+    createPreloadObserver();
     renderVisibilityObserver.observe(root);
     mobileActivationObserver.observe(root);
     resizeObserver.observe(root);
@@ -15901,8 +16161,8 @@
     document.addEventListener("visibilitychange", handleDocumentVisibility);
     trigger?.addEventListener("pointerenter", handlePointerEnter);
     trigger?.addEventListener("pointerleave", handlePointerLeave);
-    window.addEventListener("resize", scheduleGeometrySyncAndResize);
-    window.addEventListener("orientationchange", scheduleGeometrySyncAndResize);
+    window.addEventListener("resize", handleViewportResize);
+    window.addEventListener("orientationchange", handleViewportResize);
     window.addEventListener("pagehide", cleanup, { once: true });
     syncEligibility();
   }
@@ -15928,12 +16188,16 @@
       (trigger) => trigger.getAttribute("data-benefit-rive-trigger") === key
     ) ?? null;
   }
-  function prepareFallbackImage(fallback) {
+  function prepareFallbackImage(fallback, fallbackMode) {
     if (!fallback) return;
     fallback.setAttribute("aria-hidden", "true");
     if (!(fallback instanceof HTMLImageElement)) return;
     if (!fallback.hasAttribute("alt")) {
       fallback.alt = "";
+    }
+    if (fallbackMode === "error-only") {
+      fallback.setAttribute("loading", "lazy");
+      fallback.setAttribute("fetchpriority", "low");
     }
     const hasUsableSource = Boolean(
       fallback.currentSrc.trim() || fallback.getAttribute("src")?.trim()
@@ -15974,9 +16238,12 @@
   function getPlaybackConfig(root) {
     const explicitPlayback = getOptionalAttribute(root, "data-rive-playback");
     const animationName = getOptionalAttribute(root, "data-rive-animation");
-    const stateMachineName = getOptionalAttribute(root, "data-rive-state-machine");
-    const desktopStateMachineName = getOptionalAttribute(root, "data-rive-state-machine-desktop");
-    const mobileStateMachineName = getOptionalAttribute(root, "data-rive-state-machine-mobile");
+    const stateMachineName = getValidatedRiveAttribute(root, "data-rive-state-machine");
+    const desktopStateMachineName = getValidatedRiveAttribute(
+      root,
+      "data-rive-state-machine-desktop"
+    );
+    const mobileStateMachineName = getValidatedRiveAttribute(root, "data-rive-state-machine-mobile");
     const artboardName = getOptionalAttribute(root, "data-rive-artboard");
     let mode = null;
     if (explicitPlayback === "animation" || explicitPlayback === "state-machine") {
@@ -16006,7 +16273,7 @@
         responsiveStateMachine: {
           desktopName: desktopStateMachineName,
           mobileName: mobileStateMachineName,
-          query: getOptionalAttribute(root, "data-rive-state-machine-query") ?? DEFAULT_STATE_MACHINE_QUERY
+          query: getValidatedRiveAttribute(root, "data-rive-state-machine-query") ?? DEFAULT_STATE_MACHINE_QUERY
         }
       } : {},
       stateMachineName
@@ -16016,6 +16283,27 @@
     if (!config.responsiveStateMachine || !mediaQuery) return config.stateMachineName;
     const responsiveStateMachineName = mediaQuery.matches ? config.responsiveStateMachine.desktopName : config.responsiveStateMachine.mobileName;
     return responsiveStateMachineName ?? config.stateMachineName;
+  }
+  function getValidatedRiveAttribute(root, attributeName) {
+    const value = getOptionalAttribute(root, attributeName);
+    if (!value) return null;
+    if (value !== attributeName) return value;
+    warnMalformedRiveAttribute(root, attributeName);
+    return null;
+  }
+  function warnMalformedRiveAttribute(root, attributeName) {
+    if (!isDevelopmentHost2()) return;
+    let warnedAttributes = malformedAttributeWarnings.get(root);
+    if (!warnedAttributes) {
+      warnedAttributes = /* @__PURE__ */ new Set();
+      malformedAttributeWarnings.set(root, warnedAttributes);
+    }
+    if (warnedAttributes.has(attributeName)) return;
+    warnedAttributes.add(attributeName);
+    console.warn(
+      `Benefit Rive: ignoring malformed placeholder ${attributeName}="${attributeName}". Replace it with a real Rive value.`,
+      { attributeName, root }
+    );
   }
   function getDevicePolicy(root) {
     return root.getAttribute("data-rive-device")?.trim() === "all" ? "all" : "fine-pointer";
@@ -16032,6 +16320,30 @@
       return DEFAULT_VIEWPORT_THRESHOLD;
     }
     return value;
+  }
+  function getFallbackMode(root) {
+    return root.getAttribute("data-rive-fallback-mode")?.trim() === "error-only" ? "error-only" : "fallback-first";
+  }
+  function getPreloadMode(root) {
+    return root.getAttribute("data-rive-preload")?.trim() === "nearby" ? "nearby" : "default";
+  }
+  function getNearbyPreloadViewports(root) {
+    const attributeValue = getOptionalAttribute(root, "data-rive-preload-viewports");
+    if (!attributeValue) {
+      return DEFAULT_NEARBY_PRELOAD_VIEWPORTS;
+    }
+    const value = Number(attributeValue);
+    if (!Number.isFinite(value)) {
+      return DEFAULT_NEARBY_PRELOAD_VIEWPORTS;
+    }
+    return clamp3(value, MIN_NEARBY_PRELOAD_VIEWPORTS, MAX_NEARBY_PRELOAD_VIEWPORTS);
+  }
+  function getPreloadMinScrollViewports(root) {
+    const attributeValue = getOptionalAttribute(root, "data-rive-preload-min-scroll-viewports");
+    if (!attributeValue) return null;
+    const value = Number(attributeValue);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return clamp3(value, MIN_NEARBY_PRELOAD_VIEWPORTS, MAX_NEARBY_PRELOAD_VIEWPORTS);
   }
   function getResolvedLayoutConfig(root) {
     const fitValue = root.getAttribute("data-rive-fit")?.trim().toLowerCase();
@@ -16088,6 +16400,26 @@
     mount.style.right = "auto";
     mount.style.bottom = "auto";
   }
+  function getViewportHeight() {
+    return Math.max(window.innerHeight || document.documentElement.clientHeight || 0, 0);
+  }
+  function getViewportWidth() {
+    return Math.max(window.innerWidth || document.documentElement.clientWidth || 0, 0);
+  }
+  function getCurrentScrollY() {
+    return Math.max(window.scrollY, document.documentElement.scrollTop, document.body.scrollTop, 0);
+  }
+  function isElementActuallyVisible(element) {
+    const rect = element.getBoundingClientRect();
+    return rect.bottom > 0 && rect.top < getViewportHeight() && rect.right > 0 && rect.left < getViewportWidth();
+  }
+  function isElementWithinVerticalViewportMargin(element, marginPx) {
+    const rect = element.getBoundingClientRect();
+    return rect.bottom >= -marginPx && rect.top <= getViewportHeight() + marginPx && rect.right >= 0 && rect.left <= getViewportWidth();
+  }
+  function clamp3(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
   function isPendingImage(element) {
     return element instanceof HTMLImageElement && !element.complete;
   }
@@ -16124,8 +16456,22 @@
     }
   }
   function applyErrorState(root) {
-    root.classList.remove("is-rive-loading", "is-rive-ready", "is-rive-visual-ready");
+    root.classList.remove(
+      "is-rive-loading",
+      "is-rive-ready",
+      "is-rive-unavailable",
+      "is-rive-visual-ready"
+    );
     root.classList.add("is-rive-error");
+  }
+  function applyUnavailableState(root) {
+    root.classList.remove(
+      "is-rive-loading",
+      "is-rive-ready",
+      "is-rive-error",
+      "is-rive-visual-ready"
+    );
+    root.classList.add("is-rive-unavailable");
   }
 
   // src/init-site.ts
@@ -16135,6 +16481,7 @@
     initPlanStamp();
     initCallPopover();
     onDomReady(initGavel);
+    onDomReady(initOverlayFilterPresets);
     onDomReady(initTsaStatueShine);
     onDomReady(initBenefitShine);
     onDomReady(initAccordions);
