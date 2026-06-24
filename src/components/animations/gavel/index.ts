@@ -648,12 +648,12 @@ const QUICK_TUNING = {
 
       playback: 'timed' as GavelMobilePlaybackMode,
 
-      start: 'top 84%',
-      end: 'bottom 24%',
+      start: 'top 82%',
+      end: 'bottom 46%',
 
-      scrubSmoothingSeconds: 0.28,
-      scrubImpactThreshold: 0.91,
-      scrubResetThreshold: 0.56,
+      scrubSmoothingSeconds: 0.1,
+      scrubImpactThreshold: 0.84,
+      scrubResetThreshold: 0.64,
 
       entryDelaySeconds: 0.08,
 
