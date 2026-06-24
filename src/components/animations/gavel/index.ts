@@ -60,6 +60,8 @@ type GavelGeometryConfig = {
   targetContactXPercent: number;
   targetContactYPercent: number;
 
+  visualScale: number;
+
   impactRotationDeg: number;
 
   impactFineTuneXpx: number;
@@ -165,6 +167,13 @@ type GavelReactionConfig = {
 type GavelDeviceProfile = {
   pivotXPercent: number;
   pivotYPercent: number;
+
+  /*
+   * Visual scale applied to both the gavel and its cast shadow.
+   * 1 = original size
+   * 1.08 = 8% larger
+   */
+  visualScale?: number;
 
   restRotationDeg: number;
   impactRotationDeg: number;
@@ -634,7 +643,7 @@ const QUICK_TUNING = {
    * D = Editorial pendulum
    * E = Snap verdict
    */
-  activePreset: 'B' as GavelPresetName,
+  activePreset: 'C' as GavelPresetName,
 
   interaction: {
     desktopMinWidthPx: 992,
@@ -648,38 +657,68 @@ const QUICK_TUNING = {
 
       playback: 'timed' as GavelMobilePlaybackMode,
 
-      start: 'top 72%',
-      end: 'bottom 12%',
+      start: 'top 82%',
+      end: 'bottom 18%',
 
-      scrubSmoothingSeconds: 0.35,
-      scrubImpactThreshold: 0.95,
-      scrubResetThreshold: 0.42,
+      /*
+       * Ignored while playback is "timed".
+       * Retained only because the current type requires them.
+       */
+      scrubSmoothingSeconds: 0.24,
+      scrubImpactThreshold: 0.92,
+      scrubResetThreshold: 0.62,
 
-      entryDelaySeconds: 0.22,
+      entryDelaySeconds: 0.08,
 
-      replayMode: 'once' as GavelReplayMode,
+      /*
+       * Rearm after the component leaves the active viewport range.
+       */
+      replayMode: 'once-per-entry' as GavelReplayMode,
 
       initialState: 'rest' as GavelMobileInitialState,
-      finalState: 'hold-impact' as GavelMobileFinalState,
 
-      holdAtImpactSeconds: 0.85,
-      autoReturnDelaySeconds: 0.85,
+      /*
+       * The gavel returns automatically, making the next playback
+       * visually reliable even before the section is entered again.
+       */
+      finalState: 'auto-return' as GavelMobileFinalState,
 
-      resetWhenFullyOutside: false,
+      /*
+       * Hold after impact before beginning the return.
+       */
+      holdAtImpactSeconds: 0.4,
+      autoReturnDelaySeconds: 0,
+
+      /*
+       * Reset and rearm whenever the component fully leaves
+       * through either side of the active ScrollTrigger range.
+       */
+      resetWhenFullyOutside: true,
       resetPosition: 'either' as GavelMobileResetPosition,
 
-      resetDelaySeconds: 0.08,
-      resetDurationSeconds: 0.3,
-      resetEase: 'power2.out',
+      resetDelaySeconds: 0,
+      resetDurationSeconds: 0.2,
+      resetEase: 'power3.out',
 
       playOnInitialLoadIfVisible: true,
+
+      /*
+       * Play when scrolling down into the section.
+       */
       playOnEnter: true,
-      playOnEnterBack: false,
+
+      /*
+       * Also play when scrolling upward into the section.
+       */
+      playOnEnterBack: true,
 
       finishCurrentAnimationOnLeave: true,
       reverseOnLeave: false,
 
-      minimumReplayIntervalSeconds: 1.4,
+      /*
+       * Prevent rapid viewport oscillations from replaying it immediately.
+       */
+      minimumReplayIntervalSeconds: 0.8,
 
       refreshSilently: true,
       preventRefreshPlayback: true,
@@ -1431,9 +1470,60 @@ const QUICK_TUNING = {
 
       mobileViewport: {
         playback: 'timed',
-        replayMode: 'once',
-        finalState: 'hold-impact',
+
+        start: 'top 82%',
+        end: 'bottom 18%',
+
+        /*
+         * Play once each time the component genuinely leaves
+         * and later enters the trigger area again.
+         */
+        replayMode: 'once-per-entry',
+
+        initialState: 'rest',
+        finalState: 'auto-return',
+
         entryDelaySeconds: 0.04,
+
+        /*
+         * Stay briefly on the target, then lift automatically.
+         *
+         * The controller adds these two values together before returning.
+         */
+        holdAtImpactSeconds: 0.1,
+        autoReturnDelaySeconds: 0,
+
+        /*
+         * Rearm only after the component leaves the active area.
+         */
+        resetWhenFullyOutside: true,
+        resetPosition: 'either',
+
+        resetDelaySeconds: 0,
+        resetDurationSeconds: 0.2,
+        resetEase: 'power3.out',
+
+        playOnInitialLoadIfVisible: true,
+
+        /*
+         * Downward entry.
+         */
+        playOnEnter: true,
+
+        /*
+         * Upward re-entry.
+         */
+        playOnEnterBack: true,
+
+        finishCurrentAnimationOnLeave: true,
+        reverseOnLeave: false,
+
+        minimumReplayIntervalSeconds: 0.8,
+
+        refreshSilently: true,
+        preventRefreshPlayback: true,
+
+        markers: false,
       },
 
       /*
@@ -1487,10 +1577,12 @@ const QUICK_TUNING = {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
-        restRotationDeg: -34,
-        impactRotationDeg: 1.2,
+        visualScale: 1.09,
 
-        impactFineTuneXpx: 0,
+        restRotationDeg: -34,
+        impactRotationDeg: -3,
+
+        impactFineTuneXpx: 20,
         impactFineTuneYpx: 0,
 
         restFineTuneXpx: 20,
@@ -1514,7 +1606,7 @@ const QUICK_TUNING = {
           overshootXpx: 0.18,
           overshootYpx: 0.5,
 
-          settleDurationSeconds: 0.2,
+          settleDurationSeconds: 0,
           settleEase: 'expo.out',
 
           liftDurationSeconds: 0.38,
@@ -1645,13 +1737,13 @@ const QUICK_TUNING = {
         },
 
         dust: {
-          anchorOffsetXpx: 0,
+          anchorOffsetXpx: -20,
           anchorOffsetYpx: 0,
 
           xPercent: -50,
 
           startOpacity: 0,
-          peakOpacity: 0.16,
+          peakOpacity: 0.1,
 
           startScale: 0.76,
           peakScale: 1.08,
@@ -2450,7 +2542,6 @@ export function initGavel(): void {
       deviceProfile: GavelDeviceProfile
     ): GavelGeometryConfig => {
       const shared = QUICK_TUNING.assetGeometry;
-
       const isDesktop = mode === 'desktop';
 
       return {
@@ -2463,11 +2554,9 @@ export function initGavel(): void {
           : shared.mobileAuthoredOriginYPercent,
 
         pivotXPercent: deviceProfile.pivotXPercent,
-
         pivotYPercent: deviceProfile.pivotYPercent,
 
         contactXPercent: shared.contactXPercent,
-
         contactYPercent: shared.contactYPercent,
 
         targetContactXPercent: isDesktop
@@ -2476,14 +2565,14 @@ export function initGavel(): void {
 
         targetContactYPercent: shared.targetContactYPercent,
 
+        visualScale: deviceProfile.visualScale ?? 1,
+
         impactRotationDeg: deviceProfile.impactRotationDeg,
 
         impactFineTuneXpx: deviceProfile.impactFineTuneXpx,
-
         impactFineTuneYpx: deviceProfile.impactFineTuneYpx,
 
         restFineTuneXpx: deviceProfile.restFineTuneXpx,
-
         restFineTuneYpx: deviceProfile.restFineTuneYpx,
       };
     };
