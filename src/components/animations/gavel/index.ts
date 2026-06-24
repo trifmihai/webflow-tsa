@@ -648,29 +648,29 @@ const QUICK_TUNING = {
 
       playback: 'timed' as GavelMobilePlaybackMode,
 
-      start: 'top 82%',
-      end: 'bottom 46%',
+      start: 'top 72%',
+      end: 'bottom 12%',
 
-      scrubSmoothingSeconds: 0.1,
-      scrubImpactThreshold: 0.84,
-      scrubResetThreshold: 0.64,
+      scrubSmoothingSeconds: 0.35,
+      scrubImpactThreshold: 0.95,
+      scrubResetThreshold: 0.42,
 
-      entryDelaySeconds: 0.08,
+      entryDelaySeconds: 0.22,
 
-      replayMode: 'once-per-entry' as GavelReplayMode,
+      replayMode: 'once' as GavelReplayMode,
 
       initialState: 'rest' as GavelMobileInitialState,
       finalState: 'hold-impact' as GavelMobileFinalState,
 
-      holdAtImpactSeconds: 0.6,
-      autoReturnDelaySeconds: 0.6,
+      holdAtImpactSeconds: 0.85,
+      autoReturnDelaySeconds: 0.85,
 
       resetWhenFullyOutside: false,
       resetPosition: 'either' as GavelMobileResetPosition,
 
-      resetDelaySeconds: 0,
-      resetDurationSeconds: 0.2,
-      resetEase: 'power3.out',
+      resetDelaySeconds: 0.08,
+      resetDurationSeconds: 0.3,
+      resetEase: 'power2.out',
 
       playOnInitialLoadIfVisible: true,
       playOnEnter: true,
@@ -679,7 +679,7 @@ const QUICK_TUNING = {
       finishCurrentAnimationOnLeave: true,
       reverseOnLeave: false,
 
-      minimumReplayIntervalSeconds: 0.8,
+      minimumReplayIntervalSeconds: 1.4,
 
       refreshSilently: true,
       preventRefreshPlayback: true,
