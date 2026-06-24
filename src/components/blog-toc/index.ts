@@ -4,12 +4,14 @@
 ?============================================
 */
 
+const TOC_VIEWPORT_BOTTOM_GAP = 32;
+
 export function initBlogToc(): void {
   document.addEventListener('DOMContentLoaded', () => {
     const wrappers = document.querySelectorAll<HTMLElement>('.cms-page_toc-list-wrapper');
 
     wrappers.forEach((wrapper) => {
-      const list = wrapper.querySelector('.blog-post_toc-list');
+      const list = wrapper.querySelector<HTMLElement>('.blog-post_toc-list');
 
       if (!list) return;
 
@@ -19,10 +21,19 @@ export function initBlogToc(): void {
 
       let frame: number | null = null;
 
+      const updateTocAvailableHeight = () => {
+        const listTop = list.getBoundingClientRect().top;
+        const availableHeight = Math.max(0, window.innerHeight - listTop - TOC_VIEWPORT_BOTTOM_GAP);
+
+        list.style.setProperty('--toc-available-height', `${availableHeight}px`);
+      };
+
       const updateTocState = () => {
         if (frame) cancelAnimationFrame(frame);
 
         frame = requestAnimationFrame(() => {
+          updateTocAvailableHeight();
+
           const links = Array.from(wrapper.querySelectorAll<HTMLElement>(linkSelector));
           const activeLink = wrapper.querySelector<HTMLElement>(activeSelectors.join(', '));
 

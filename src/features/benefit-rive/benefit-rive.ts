@@ -24,11 +24,12 @@ const ROOT_QUERY = `${ROOT_SELECTOR}, ${LEGACY_ROOT_SELECTOR}`;
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const DEFAULT_STATE_MACHINE_QUERY = '(min-width: 992px)';
-const DEFAULT_PRELOAD_ROOT_MARGIN_PX = 400;
-const PRELOAD_ROOT_MARGIN = `${DEFAULT_PRELOAD_ROOT_MARGIN_PX}px 0px`;
+const MOBILE_PRELOAD_QUERY = '(max-width: 991px)';
+const DEFAULT_DESKTOP_PRELOAD_ROOT_MARGIN_PX = 400;
 const RENDER_VISIBILITY_THRESHOLD = 0.01;
 const DEFAULT_VIEWPORT_THRESHOLD = 0.35;
-const DEFAULT_NEARBY_PRELOAD_VIEWPORTS = 1.5;
+const DEFAULT_DESKTOP_NEARBY_PRELOAD_VIEWPORTS = 1.5;
+const DEFAULT_MOBILE_PRELOAD_VIEWPORTS = 2.5;
 const MIN_NEARBY_PRELOAD_VIEWPORTS = 0.5;
 const MAX_NEARBY_PRELOAD_VIEWPORTS = 3;
 const DEFAULT_BOUNDARY_PROPERTY = 'pulseBoundary';
@@ -145,7 +146,6 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   const fallbackMode = getFallbackMode(root);
   const mount = getMountElement(root, key);
   const preloadMode = getPreloadMode(root);
-  const nearbyPreloadViewports = getNearbyPreloadViewports(root);
   const minScrollPreloadViewports = getPreloadMinScrollViewports(root);
 
   applyLayoutCssVariables(root, layoutConfig);
@@ -169,6 +169,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
 
   const pointerCursorPropertyNames = getCursorPropertyNames(root);
   const finePointerQuery = window.matchMedia(FINE_POINTER_QUERY);
+  const mobilePreloadQuery = window.matchMedia(MOBILE_PRELOAD_QUERY);
   const reducedMotionQuery = window.matchMedia(REDUCED_MOTION_QUERY);
   const devicePolicy = getDevicePolicy(root);
   const activationMode = getActivationMode(root, config);
@@ -1292,14 +1293,21 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   };
 
   const getPreloadVerticalMarginPx = (): number => {
-    if (preloadMode !== 'nearby') return DEFAULT_PRELOAD_ROOT_MARGIN_PX;
+    if (preloadMode !== 'nearby') {
+      if (!mobilePreloadQuery.matches) return DEFAULT_DESKTOP_PRELOAD_ROOT_MARGIN_PX;
 
-    return Math.round(getViewportHeight() * nearbyPreloadViewports);
+      return Math.max(
+        DEFAULT_DESKTOP_PRELOAD_ROOT_MARGIN_PX,
+        Math.round(getViewportHeight() * DEFAULT_MOBILE_PRELOAD_VIEWPORTS)
+      );
+    }
+
+    return Math.round(
+      getViewportHeight() * getNearbyPreloadViewports(root, mobilePreloadQuery.matches)
+    );
   };
 
   const getPreloadRootMargin = (): string => {
-    if (preloadMode !== 'nearby') return PRELOAD_ROOT_MARGIN;
-
     return `${getPreloadVerticalMarginPx()}px 0px`;
   };
 
@@ -1399,7 +1407,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   };
 
   const schedulePreloadObserverRefresh = (): void => {
-    if (preloadMode !== 'nearby' || isNearViewport) return;
+    if (isNearViewport) return;
 
     window.cancelAnimationFrame(preloadResizeFrame);
     preloadResizeFrame = window.requestAnimationFrame(() => {
@@ -1414,6 +1422,10 @@ function initBenefitRiveRoot(root: HTMLElement): void {
 
   const handleViewportResize = (): void => {
     scheduleGeometrySyncAndResize();
+    schedulePreloadObserverRefresh();
+  };
+
+  const handlePreloadMediaChange = (): void => {
     schedulePreloadObserverRefresh();
   };
 
@@ -1483,6 +1495,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     mobileActivationObserver.disconnect();
     resizeObserver.disconnect();
     finePointerQuery.removeEventListener('change', syncEligibility);
+    mobilePreloadQuery.removeEventListener('change', handlePreloadMediaChange);
     reducedMotionQuery.removeEventListener('change', syncEligibility);
     responsiveStateMachineQuery?.removeEventListener('change', handleResponsiveStateMachineChange);
     document.removeEventListener('visibilitychange', handleDocumentVisibility);
@@ -1505,6 +1518,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   }
 
   finePointerQuery.addEventListener('change', syncEligibility);
+  mobilePreloadQuery.addEventListener('change', handlePreloadMediaChange);
   reducedMotionQuery.addEventListener('change', syncEligibility);
   responsiveStateMachineQuery?.addEventListener('change', handleResponsiveStateMachineChange);
   document.addEventListener('visibilitychange', handleDocumentVisibility);
@@ -1767,17 +1781,20 @@ function getPreloadMode(root: HTMLElement): PreloadMode {
   return root.getAttribute('data-rive-preload')?.trim() === 'nearby' ? 'nearby' : 'default';
 }
 
-function getNearbyPreloadViewports(root: HTMLElement): number {
+function getNearbyPreloadViewports(root: HTMLElement, useMobileDefault: boolean): number {
   const attributeValue = getOptionalAttribute(root, 'data-rive-preload-viewports');
+  const defaultValue = useMobileDefault
+    ? DEFAULT_MOBILE_PRELOAD_VIEWPORTS
+    : DEFAULT_DESKTOP_NEARBY_PRELOAD_VIEWPORTS;
 
   if (!attributeValue) {
-    return DEFAULT_NEARBY_PRELOAD_VIEWPORTS;
+    return defaultValue;
   }
 
   const value = Number(attributeValue);
 
   if (!Number.isFinite(value)) {
-    return DEFAULT_NEARBY_PRELOAD_VIEWPORTS;
+    return defaultValue;
   }
 
   return clamp(value, MIN_NEARBY_PRELOAD_VIEWPORTS, MAX_NEARBY_PRELOAD_VIEWPORTS);

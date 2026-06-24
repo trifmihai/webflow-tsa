@@ -1,16 +1,22 @@
 [data-gavel-component] {
   position: relative;
+  isolation: isolate;
 }
 
 [data-gavel-component] [data-gavel],
 [data-gavel-component] [data-gavel-cast-shadow],
 [data-gavel-component] [data-gavel-impact-dust],
+[data-gavel-component] [data-gavel-contact-shadow],
 [data-gavel-component] [data-gavel-resonance],
 [data-gavel-component] [data-gavel-target],
 [data-gavel-component] [data-gavel-shadow] {
   pointer-events: none;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+[data-gavel-component] [data-gavel-shadow] {
+  z-index: 1;
 }
 
 .practice-cta_strike-group {
@@ -36,13 +42,15 @@
 }
 
 .practice-cta_govel-shadow {
-  z-index: 98;
-  opacity: 0.8;
+  z-index: 4;
+  opacity: 0.07;
+  filter: brightness(0) saturate(0) blur(3px);
+  mix-blend-mode: multiply;
   transform: translate(3%, 6%) rotate(-14deg);
 }
 
 .practice-cta_govel {
-  z-index: 999;
+  z-index: 5;
   transform: rotate(-22deg);
 }
 
@@ -57,7 +65,8 @@
   left: 0;
   right: auto;
   bottom: auto;
-  z-index: 1000;
+  /* Keep impact dust below the hammer layer and above the target image. */
+  z-index: 4;
 
   display: block;
   width: 8.5rem;
@@ -66,8 +75,44 @@
 
   opacity: 0;
   visibility: hidden;
+  filter: brightness(0) saturate(0);
+  mix-blend-mode: multiply;
   transform: translate(-50%, -28%) scale(0.7);
   transform-origin: center bottom;
+}
+
+[data-gavel-contact-shadow] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  z-index: 3;
+
+  display: block;
+  width: 4.25rem;
+  height: 0.65rem;
+
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(45 42 38 / 20%) 0%,
+    rgb(45 42 38 / 8%) 42%,
+    transparent 74%
+  );
+
+  filter: blur(2px);
+  mix-blend-mode: multiply;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transform: translate(-50%, -50%) scale(0.78, 0.7);
+  transform-origin: center center;
+
+  pointer-events: none;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /*
@@ -82,7 +127,7 @@
   left: 0;
   right: auto;
   bottom: auto;
-  z-index: 100;
+  z-index: 6;
 
   display: block;
   width: 5.75rem;
@@ -102,7 +147,7 @@
   position: absolute;
   bottom: 0;
   left: 62%;
-  z-index: 99;
+  z-index: 2;
 
   width: 12.5rem;
   transform-origin: bottom center;
@@ -159,6 +204,18 @@
   color: #30a46c;
 }
 
+.tsa-gavel-debug-marker.is-contact-shadow-anchor {
+  color: #8e4ec6;
+}
+
+.tsa-gavel-debug-marker.is-dust-anchor {
+  color: #ad5700;
+}
+
+.tsa-gavel-debug-marker.is-resonance-anchor {
+  color: #0090a1;
+}
+
 .tsa-gavel-debug-line {
   position: absolute;
   height: 2px;
@@ -201,22 +258,41 @@
   }
 
   .practice-cta_govel {
-    transform: rotate(-26deg);
+    transform: rotate(-20deg);
   }
 
   .practice-cta_dust {
+    position: absolute;
     top: 0;
     left: 0;
     right: auto;
     bottom: auto;
 
     width: 68%;
-    filter: none;
+    filter: brightness(0) saturate(0);
+    mix-blend-mode: multiply;
     transform: translate(-50%, -28%) scale(0.7);
+  }
+
+  [data-gavel-contact-shadow] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: auto;
+
+    width: clamp(3.25rem, 13vw, 4.25rem);
+    height: clamp(0.5rem, 2.1vw, 0.65rem);
   }
 
   .tsa-gavel-resonance,
   [data-gavel-resonance] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: auto;
+
     width: clamp(4.25rem, 18vw, 5.5rem);
     height: clamp(1rem, 4.5vw, 1.3rem);
   }
@@ -224,7 +300,7 @@
   .practice-cta_hit {
     position: relative;
     inset: auto;
-    z-index: 99;
+    z-index: 2;
 
     display: block;
     width: 100%;
@@ -240,6 +316,7 @@
   [data-gavel-component] [data-gavel],
   [data-gavel-component] [data-gavel-cast-shadow],
   [data-gavel-component] [data-gavel-impact-dust],
+  [data-gavel-component] [data-gavel-contact-shadow],
   [data-gavel-component] [data-gavel-resonance],
   [data-gavel-component] [data-gavel-target],
   [data-gavel-component] [data-gavel-shadow] {
@@ -247,6 +324,7 @@
   }
 
   .practice-cta_dust,
+  [data-gavel-contact-shadow],
   .tsa-gavel-resonance,
   [data-gavel-resonance] {
     display: none !important;

@@ -301,6 +301,11 @@
     mask-image: none;
   }
 
+  .practice-text-reel_component.is-initialized:not(.is-static-list) .practice-text-reel_mask {
+    cursor: auto;
+    touch-action: pan-y pinch-zoom;
+  }
+
   .practice-text-reel_track {
     align-items: stretch;
     display: flex;

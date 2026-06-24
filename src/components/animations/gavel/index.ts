@@ -12,6 +12,33 @@ type GavelPose = {
 type GavelMode = 'desktop' | 'mobile';
 type GavelDesiredState = 'rest' | 'impact';
 type GavelPresetName = 'A' | 'B' | 'C' | 'D' | 'E';
+type GavelMobilePlaybackMode = 'timed' | 'scrub';
+type GavelReplayMode = 'once' | 'once-per-entry' | 'on-enter-and-enter-back' | 'manual';
+type GavelMobileInitialState = 'rest' | 'impact';
+type GavelMobileFinalState = 'hold-impact' | 'auto-return' | 'return-on-leave';
+type GavelMobileResetPosition = 'above' | 'below' | 'either';
+type GavelMobileEntryDirection = 'above' | 'below';
+type GavelMobileEntryState =
+  | 'uninitialized'
+  | 'ready'
+  | 'waiting'
+  | 'playing'
+  | 'scrubbing'
+  | 'holding'
+  | 'returning'
+  | 'completed'
+  | 'outside'
+  | 'destroyed';
+type GavelAnimationPhase =
+  | 'rest'
+  | 'anticipation'
+  | 'strike'
+  | 'contact'
+  | 'follow-through'
+  | 'settle'
+  | 'impact-hold'
+  | 'lift'
+  | 'killed';
 
 type GavelBox = {
   left: number;
@@ -42,7 +69,52 @@ type GavelGeometryConfig = {
   restFineTuneYpx: number;
 };
 
+type GavelMobileViewportConfig = {
+  enabled: boolean;
+
+  playback: GavelMobilePlaybackMode;
+
+  start: string;
+  end: string;
+
+  scrubSmoothingSeconds: number;
+  scrubImpactThreshold: number;
+  scrubResetThreshold: number;
+
+  entryDelaySeconds: number;
+
+  replayMode: GavelReplayMode;
+
+  initialState: GavelMobileInitialState;
+  finalState: GavelMobileFinalState;
+
+  holdAtImpactSeconds: number;
+  autoReturnDelaySeconds: number;
+
+  resetWhenFullyOutside: boolean;
+  resetPosition: GavelMobileResetPosition;
+
+  resetDelaySeconds: number;
+  resetDurationSeconds: number;
+  resetEase: string;
+
+  playOnInitialLoadIfVisible: boolean;
+  playOnEnter: boolean;
+  playOnEnterBack: boolean;
+
+  finishCurrentAnimationOnLeave: boolean;
+  reverseOnLeave: boolean;
+
+  minimumReplayIntervalSeconds: number;
+
+  refreshSilently: boolean;
+  preventRefreshPlayback: boolean;
+
+  markers: boolean;
+};
+
 type GavelMotionConfig = {
+  anticipationEnabled?: boolean;
   anticipationDurationSeconds: number;
   anticipationRotationDeltaDeg: number;
   anticipationXpx: number;
@@ -50,23 +122,29 @@ type GavelMotionConfig = {
   anticipationEase: string;
   anticipationMaxProgress: number;
 
+  strikeDurationSeconds?: number;
   strikeMinDurationSeconds: number;
   strikeMaxDurationSeconds: number;
   strikeEase: string;
 
+  followThroughEnabled?: boolean;
+  followThroughDurationSeconds?: number;
   overshootRotationDeltaDeg: number;
   overshootXpx: number;
   overshootYpx: number;
 
+  settleEnabled?: boolean;
   settleDurationSeconds: number;
   settleEase: string;
 
+  liftDurationSeconds?: number;
   liftMinDurationSeconds: number;
   liftMaxDurationSeconds: number;
   liftEase: string;
 };
 
 type GavelReactionConfig = {
+  enabled?: boolean;
   translateXpx: number;
   translateYpx: number;
 
@@ -101,6 +179,8 @@ type GavelDeviceProfile = {
 };
 
 type GavelTargetImpactEffectConfig = {
+  enabled?: boolean;
+
   compressionXpx: number;
   compressionYpx: number;
   compressionRotationDeg: number;
@@ -108,6 +188,8 @@ type GavelTargetImpactEffectConfig = {
   compressionScaleY: number;
   compressionDurationSeconds: number;
   compressionEase: string;
+
+  recoilEnabled?: boolean;
 
   recoilXpx: number;
   recoilYpx: number;
@@ -122,6 +204,12 @@ type GavelTargetImpactEffectConfig = {
   transformOrigin: string;
 };
 
+type GavelDeviceTargetImpactEffectConfig = Record<GavelMode, GavelTargetImpactEffectConfig>;
+
+type GavelTargetImpactEffectPresetConfig =
+  | GavelTargetImpactEffectConfig
+  | GavelDeviceTargetImpactEffectConfig;
+
 type GavelCastShadowPhaseConfig = {
   scaleX: number;
   scaleY: number;
@@ -129,9 +217,15 @@ type GavelCastShadowPhaseConfig = {
 };
 
 type GavelCastShadowEffectConfig = {
+  enabled?: boolean;
+
   xPercent: number;
   yPercent: number;
   rotationOffsetDeg: number;
+
+  filterEnabled?: boolean;
+  cssFilter?: string;
+  mixBlendMode?: string;
 
   rest: GavelCastShadowPhaseConfig;
   anticipation: GavelCastShadowPhaseConfig;
@@ -140,6 +234,8 @@ type GavelCastShadowEffectConfig = {
 };
 
 type GavelDustEffectConfig = {
+  enabled?: boolean;
+
   anchorOffsetXpx: number;
   anchorOffsetYpx: number;
 
@@ -147,14 +243,26 @@ type GavelDustEffectConfig = {
 
   startOpacity: number;
   peakOpacity: number;
+  endOpacity?: number;
 
   startScale: number;
   peakScale: number;
   endScale: number;
 
+  startScaleX?: number;
+  startScaleY?: number;
+  peakScaleX?: number;
+  peakScaleY?: number;
+  endScaleX?: number;
+  endScaleY?: number;
+
   startYPercent: number;
   peakYPercent: number;
   endYPercent: number;
+
+  startRotationDeg?: number;
+  peakRotationDeg?: number;
+  endRotationDeg?: number;
 
   revealDurationSeconds: number;
   fadeDurationSeconds: number;
@@ -162,29 +270,127 @@ type GavelDustEffectConfig = {
   revealEase: string;
   fadeEase: string;
 
+  cssFilter?: string;
+  mixBlendMode?: string;
+
   transformOrigin: string;
 };
 
+type GavelContactShadowEffectConfig = {
+  enabled?: boolean;
+
+  anchorOffsetXpx: number;
+  anchorOffsetYpx: number;
+
+  widthRem?: number;
+  heightRem?: number;
+
+  cssFilter?: string;
+  mixBlendMode?: string;
+
+  initialOpacity?: number;
+  initialScaleX?: number;
+  initialScaleY?: number;
+
+  preContactLeadSeconds: number;
+  preContactOpacity: number;
+  preContactScaleX: number;
+  preContactScaleY: number;
+
+  impactOpacity?: number;
+  impactScaleX?: number;
+  impactScaleY?: number;
+
+  contactOpacity: number;
+  contactScaleX: number;
+  contactScaleY: number;
+  contactDurationSeconds: number;
+  contactEase: string;
+
+  recoilOpacity: number;
+  recoilScaleX: number;
+  recoilScaleY: number;
+  recoilDurationSeconds: number;
+  recoilEase: string;
+
+  fadeOpacity: number;
+  fadeScaleX: number;
+  fadeScaleY: number;
+  fadeDurationSeconds: number;
+  fadeEase: string;
+
+  endOpacity?: number;
+  endScaleX?: number;
+  endScaleY?: number;
+
+  transformOrigin?: string;
+};
+
+type GavelResonanceEffectConfig = {
+  enabled: boolean;
+
+  anchorOffsetXpx: number;
+  anchorOffsetYpx: number;
+
+  widthRem?: number;
+  heightRem?: number;
+
+  startOpacity: number;
+  peakOpacity?: number;
+  endOpacity: number;
+
+  startScaleX: number;
+  startScaleY: number;
+
+  peakScaleX?: number;
+  peakScaleY?: number;
+
+  endScaleX: number;
+  endScaleY: number;
+
+  durationSeconds: number;
+  revealDurationSeconds?: number;
+  fadeDurationSeconds?: number;
+  revealEase?: string;
+  fadeEase?: string;
+  ease: string;
+
+  borderColor?: string;
+  borderWidthPx?: number;
+  boxShadow?: string;
+  transformOrigin?: string;
+};
+
 type GavelImpactEffectsConfig = {
-  target: GavelTargetImpactEffectConfig;
+  target: GavelTargetImpactEffectPresetConfig;
+  broadShadow: GavelReactionConfig;
   castShadow: GavelCastShadowEffectConfig;
   dust: GavelDustEffectConfig;
+  contactShadow: GavelContactShadowEffectConfig;
+  resonance: GavelResonanceEffectConfig;
 };
 
 type GavelPreset = {
   label: string;
+  description?: string;
 
+  desktop?: DeepPartial<GavelDeviceProfile>;
+  mobile?: DeepPartial<GavelDeviceProfile>;
+
+  mobileViewport?: DeepPartial<GavelMobileViewportConfig>;
+
+  targetReaction?: GavelReactionConfig;
+  shadowReaction?: GavelReactionConfig;
+  impactEffects?: DeepPartial<GavelImpactEffectsConfig>;
+};
+
+type GavelResolvedPreset = {
+  label: string;
+  description: string;
   desktop: GavelDeviceProfile;
   mobile: GavelDeviceProfile;
-
-  targetReaction: GavelReactionConfig;
-  shadowReaction: GavelReactionConfig;
-
-  /*
-   * Optional per-preset physical impact calibration.
-   * When omitted, the global impactEffects values are used.
-   */
-  impactEffects?: GavelImpactEffectsConfig;
+  mobileViewport: GavelMobileViewportConfig;
+  impactEffects: GavelImpactEffectsConfig;
 };
 
 type GavelGeometry = {
@@ -202,24 +408,65 @@ type GavelGeometry = {
   targetBox: GavelBox;
 };
 
+type GavelDebugEffectAnchors = {
+  contactShadow?: GavelPoint | null;
+  dust?: GavelPoint | null;
+  resonance?: GavelPoint | null;
+  mobileImpactState?: string;
+};
+
+type GavelPlayOptions = {
+  force?: boolean;
+  skipAnticipation?: boolean;
+  manual?: boolean;
+};
+
+type GavelRestOptions = {
+  silent?: boolean;
+};
+
+type GavelResetOptions = {
+  initialState?: GavelMobileInitialState;
+  resetMobileReplay?: boolean;
+};
+
+type GavelStateSnapshot = {
+  mode: GavelMode;
+  desiredState: GavelDesiredState;
+  progress: number;
+  mobileStatus: GavelMobileEntryState | null;
+  hasPlayed: boolean | null;
+  isInside: boolean | null;
+  activePreset: GavelPresetName;
+};
+
 type GavelController = {
-  moveToImpact: () => void;
-  moveToRest: () => void;
+  moveToImpact: (options?: GavelPlayOptions) => void;
+  moveToRest: (options?: GavelRestOptions) => void;
+
+  playImpactSequence: (options?: GavelPlayOptions) => void;
+  playImpactReaction: () => void;
+  resetImpactReaction: () => void;
+  scrubToProgress: (progress: number) => void;
+  replay: (options?: GavelPlayOptions) => void;
+  reset: (options?: GavelResetOptions) => void;
 
   setRest: () => void;
   setImpact: () => void;
 
-  /*
-   * Mobile-only scroll control.
-   * Progress is normalized from 0 (rest) to 1 (impact hold).
-   */
-  setScrubProgress: (progress: number, suppressImpactReaction?: boolean) => void;
-
   refresh: () => void;
+  refreshNow: () => void;
+  scheduleRefresh: () => void;
 
   geometry: () => GavelGeometry | null;
   progress: () => number;
   desiredState: () => GavelDesiredState;
+  isAnimating: () => boolean;
+  activePhase: () => GavelAnimationPhase;
+  state: () => GavelStateSnapshot;
+  setMobileStateReader: (
+    reader: (() => Pick<GavelStateSnapshot, 'mobileStatus' | 'hasPlayed' | 'isInside'>) | null
+  ) => void;
 
   kill: () => void;
 };
@@ -230,15 +477,103 @@ type GavelInstance = {
   controller: GavelController;
 };
 
+type GavelGeneratedEffect = {
+  element: HTMLElement;
+  createdByScript: boolean;
+};
+
+type GavelMobileRuntimeState = {
+  status: GavelMobileEntryState;
+
+  hasPlayed: boolean;
+  isInside: boolean;
+  enteredFrom: GavelMobileEntryDirection | null;
+
+  lastPlayTimestamp: number;
+
+  entryDelayTimer: number | null;
+  returnTimer: number | null;
+  resetTimer: number | null;
+
+  isRefreshing: boolean;
+  isDestroyed: boolean;
+};
+
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends Array<unknown>
+    ? T[K]
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
+};
+
+type GavelPresetDefinition = {
+  label: string;
+  description: string;
+  overrides: DeepPartial<GavelResolvedPreset>;
+};
+
 type GavelScopeElement = HTMLElement & {
   __tsaGavelCleanup?: () => void;
 };
 
-type GavelRuntimeWindow = Window & {
+type TsaGavelGsapVars = Record<string, unknown>;
+
+type TsaGavelGsapTimeline = {
+  to: (target: unknown, vars: TsaGavelGsapVars, position?: number | string) => TsaGavelGsapTimeline;
+  set: (
+    target: unknown,
+    vars: TsaGavelGsapVars,
+    position?: number | string
+  ) => TsaGavelGsapTimeline;
+  call: (
+    callback: () => void,
+    params?: unknown[] | null,
+    position?: number | string
+  ) => TsaGavelGsapTimeline;
+  play: (from?: number) => TsaGavelGsapTimeline;
+  kill: () => void;
+  duration: () => number;
+};
+
+type TsaGavelGsapTween = {
+  kill: () => void;
+};
+
+type TsaGavelGsapMatchMedia = {
+  add: (query: string, callback: () => void | (() => void)) => void;
+  revert: () => void;
+};
+
+type TsaGavelGsapRuntime = {
+  registerPlugin: (plugin: unknown) => void;
+  matchMedia: () => TsaGavelGsapMatchMedia;
+  timeline: (vars?: TsaGavelGsapVars) => TsaGavelGsapTimeline;
+  to: (target: unknown, vars: TsaGavelGsapVars) => TsaGavelGsapTween;
+  set: (target: unknown, vars: TsaGavelGsapVars) => void;
+  getProperty: (target: HTMLElement, property: string) => number | string;
+  parseEase?: (easeName: string) => ((progress: number) => number) | undefined;
+};
+
+type GavelScrollTriggerSelf = {
+  progress: number;
+  isActive?: boolean;
+};
+
+type GavelScrollTriggerInstance = {
+  kill: () => void;
+};
+
+type GavelScrollTrigger = {
+  create: (vars: TsaGavelGsapVars) => GavelScrollTriggerInstance;
+  refresh: () => void;
+};
+
+type GavelRuntimeWindow = Omit<Window, 'gsap' | 'ScrollTrigger'> & {
   Webflow?: Array<() => void>;
 
-  gsap?: any;
-  ScrollTrigger?: any;
+  gsap?: TsaGavelGsapRuntime;
+  ScrollTrigger?: GavelScrollTrigger;
 
   TSA_GAVEL_CONFIG?: unknown;
 
@@ -247,16 +582,23 @@ type GavelRuntimeWindow = Window & {
     lift: (index?: number) => void;
     rest: (index?: number) => void;
     impact: (index?: number) => void;
+    replay: (index?: number) => void;
+    reset: (index?: number) => void;
 
     refresh: (index?: number) => void;
     refreshAll: () => void;
 
     geometry: (index?: number) => GavelGeometry | null;
     progress: (index?: number) => number;
+    desiredState: (index?: number) => GavelDesiredState | null;
+    state: (index?: number) => GavelStateSnapshot | null;
 
     usePreset: (preset: GavelPresetName) => boolean;
+    previewPreset: (preset: GavelPresetName, index?: number) => boolean;
     currentPreset: () => GavelPresetName;
     listPresets: () => GavelPresetName[];
+    describePreset: (preset: GavelPresetName) => GavelPresetDefinition | null;
+    config: () => typeof QUICK_TUNING;
 
     destroyAll: () => void;
   };
@@ -281,76 +623,69 @@ type GavelRuntimeWindow = Window & {
    ========================================================================== */
 
 const QUICK_TUNING = {
-  version: '8.4.0',
+  version: '10.0.0',
 
   /*
    * Varianta încărcată implicit după publicare.
    *
-   * A = Premium restraint
-   * B = Judicial balance
-   * C = Strong judicial impact
-   * D = Smooth editorial
-   * E = Reference judge strike
+   * A = Quiet tap
+   * B = Scroll-cocked reveal
+   * C = Ceremonial slam
+   * D = Editorial pendulum
+   * E = Snap verdict
    */
-  activePreset: 'C' as GavelPresetName,
+  activePreset: 'B' as GavelPresetName,
 
   interaction: {
     desktopMinWidthPx: 992,
 
     /*
-     * Desktop keeps the hover/focus interaction.
-     *
-     * Mobile uses a true scrubbed ScrollTrigger:
-     * 0 = rest
-     * 1 = contact, micro follow-through, settle and impact hold
+     * Mobile/tablet can either play a normal time-based strike on entry
+     * or scrub the hammer pose through ScrollTrigger progress per preset.
      */
-    mobileScrub: {
-      /*
-       * Change only these two values to control the scroll area.
-       *
-       * Earlier start:
-       *   'top 96%'
-       *
-       * Later start:
-       *   'top 82%'
-       *
-       * Longer scrub:
-       *   end: 'bottom 48%'
-       *
-       * Shorter scrub:
-       *   end: 'bottom 68%'
-       */
-      start: 'top 92%',
-      end: 'bottom 56%',
+    mobileViewport: {
+      enabled: true,
 
-      /*
-       * Scroll-follow smoothing in seconds.
-       * 0.45 = tighter
-       * 0.7  = recommended
-       * 1    = softer and more cinematic
-       */
-      smoothingSeconds: 0.7,
+      playback: 'timed' as GavelMobilePlaybackMode,
 
-      /*
-       * Normalized motion map.
-       *
-       * 0.00 -> anticipationEnd: slight lift away from the target
-       * anticipationEnd -> contact: accelerating strike
-       * contact -> followThroughEnd: tiny physical follow-through
-       * followThroughEnd -> settleEnd: return to exact contact
-       * settleEnd -> 1.00: hold at impact
-       */
-      anticipationEndProgress: 0.14,
-      contactProgress: 0.64,
-      followThroughEndProgress: 0.7,
-      settleEndProgress: 0.82,
+      start: 'top 84%',
+      end: 'bottom 24%',
 
-      /*
-       * The target shock is a short real-time event, not scrubbed.
-       * It resets below this point when scrolling upward.
-       */
-      reactionResetProgress: 0.56,
-    },
+      scrubSmoothingSeconds: 0.28,
+      scrubImpactThreshold: 0.91,
+      scrubResetThreshold: 0.56,
+
+      entryDelaySeconds: 0.08,
+
+      replayMode: 'once-per-entry' as GavelReplayMode,
+
+      initialState: 'rest' as GavelMobileInitialState,
+      finalState: 'hold-impact' as GavelMobileFinalState,
+
+      holdAtImpactSeconds: 0.6,
+      autoReturnDelaySeconds: 0.6,
+
+      resetWhenFullyOutside: false,
+      resetPosition: 'either' as GavelMobileResetPosition,
+
+      resetDelaySeconds: 0,
+      resetDurationSeconds: 0.2,
+      resetEase: 'power3.out',
+
+      playOnInitialLoadIfVisible: true,
+      playOnEnter: true,
+      playOnEnterBack: false,
+
+      finishCurrentAnimationOnLeave: true,
+      reverseOnLeave: false,
+
+      minimumReplayIntervalSeconds: 0.8,
+
+      refreshSilently: true,
+      preventRefreshPlayback: true,
+
+      markers: false,
+    } satisfies GavelMobileViewportConfig,
   },
 
   /*
@@ -370,7 +705,7 @@ const QUICK_TUNING = {
     mobileAuthoredOriginYPercent: 80,
 
     desktopTargetContactXPercent: 52,
-    mobileTargetContactXPercent: 54,
+    mobileTargetContactXPercent: 50,
 
     targetContactYPercent: 0,
   },
@@ -391,12 +726,46 @@ const QUICK_TUNING = {
     showImpactContact: true,
     showTargetContact: true,
     showContactLine: true,
+    showDustAnchor: true,
+    showContactShadowAnchor: true,
+    showResonanceAnchor: true,
+    showViewportTrigger: false,
+    showMobileState: true,
     logGeometry: true,
+    logStateChanges: false,
+    logTimelineEvents: false,
+    logPresetChanges: false,
+    markers: false,
   },
 
   performance: {
-    force3D: true,
+    force3D: 'auto',
     temporaryWillChange: true,
+    clearPropsAfterRest: false,
+    clearPropsAfterImpact: false,
+    overwriteMode: 'auto' as 'auto' | boolean,
+
+    refreshOnResize: true,
+    refreshOnImageLoad: true,
+    refreshOnFontReady: true,
+
+    useResizeObserver: true,
+    useVisibilityPause: true,
+
+    skipEffectsWhenDocumentHidden: true,
+  },
+
+  reducedMotion: {
+    mode: 'rest' as 'rest' | 'impact' | 'instant-impact' | 'disabled',
+
+    hideDust: true,
+    hideResonance: true,
+    hideContactShadow: true,
+
+    disableTargetReaction: true,
+    disableShadowReaction: true,
+
+    preserveFocusFeedback: true,
   },
 
   /*
@@ -407,28 +776,82 @@ const QUICK_TUNING = {
    */
   impactEffects: {
     target: {
-      compressionXpx: 0.35,
-      compressionYpx: 1.25,
-      compressionRotationDeg: 0.08,
-      compressionScaleX: 1.002,
-      compressionScaleY: 0.997,
-      compressionDurationSeconds: 0.045,
+      desktop: {
+        enabled: true,
+
+        compressionXpx: 0.08,
+        compressionYpx: 0.85,
+        compressionRotationDeg: 0.018,
+        compressionScaleX: 1.0008,
+        compressionScaleY: 0.9975,
+        compressionDurationSeconds: 0.042,
+        compressionEase: 'power3.out',
+
+        recoilEnabled: true,
+
+        recoilXpx: -0.04,
+        recoilYpx: -0.1,
+        recoilRotationDeg: -0.008,
+        recoilScaleX: 1,
+        recoilScaleY: 1.0002,
+        recoilDurationSeconds: 0.034,
+        recoilEase: 'power2.out',
+
+        settleDurationSeconds: 0.095,
+        settleEase: 'power3.out',
+        transformOrigin: 'bottom center',
+      },
+
+      mobile: {
+        enabled: true,
+
+        compressionXpx: 0.1,
+        compressionYpx: 1.05,
+        compressionRotationDeg: 0.025,
+        compressionScaleX: 1.0012,
+        compressionScaleY: 0.9965,
+        compressionDurationSeconds: 0.045,
+        compressionEase: 'power3.out',
+
+        recoilEnabled: true,
+
+        recoilXpx: -0.05,
+        recoilYpx: -0.12,
+        recoilRotationDeg: -0.01,
+        recoilScaleX: 1,
+        recoilScaleY: 1.0003,
+        recoilDurationSeconds: 0.038,
+        recoilEase: 'power2.out',
+
+        settleDurationSeconds: 0.1,
+        settleEase: 'power3.out',
+        transformOrigin: 'bottom center',
+      },
+    },
+
+    broadShadow: {
+      enabled: true,
+
+      translateXpx: 0,
+      translateYpx: 0.9,
+
+      scaleX: 1.06,
+      scaleY: 0.92,
+
+      opacity: 0.9,
+
+      compressionDurationSeconds: 0.055,
       compressionEase: 'power3.out',
 
-      recoilXpx: -0.14,
-      recoilYpx: -0.2,
-      recoilRotationDeg: -0.035,
-      recoilScaleX: 1,
-      recoilScaleY: 1.0005,
-      recoilDurationSeconds: 0.038,
-      recoilEase: 'power2.out',
+      recoveryDurationSeconds: 0.15,
+      recoveryEase: 'power3.out',
 
-      settleDurationSeconds: 0.085,
-      settleEase: 'power3.out',
-      transformOrigin: 'bottom center',
+      transformOrigin: 'center center',
     },
 
     castShadow: {
+      enabled: true,
+
       /*
        * Gavel-ul și shadow-ul au aceeași cutie și aceeași dimensiune.
        * Shadow-ul primește exact aceeași traiectorie x/y ca gavel-ul.
@@ -441,6 +864,10 @@ const QUICK_TUNING = {
       yPercent: 6,
       rotationOffsetDeg: 8,
 
+      filterEnabled: true,
+      cssFilter: 'brightness(0) saturate(0) blur(3px)',
+      mixBlendMode: 'multiply',
+
       /*
        * Nu scalăm shadow-ul între faze. Schimbarea scalei făcea
        * conturul să alunece și să pară că plutește departe la impact.
@@ -449,136 +876,255 @@ const QUICK_TUNING = {
       rest: {
         scaleX: 1,
         scaleY: 1,
-        opacity: 0.52,
+        opacity: 0.07,
       },
 
       anticipation: {
         scaleX: 1,
         scaleY: 1,
-        opacity: 0.48,
+        opacity: 0.045,
       },
 
       impact: {
         scaleX: 1,
         scaleY: 1,
-        opacity: 0.64,
+        opacity: 0.12,
       },
 
       settle: {
         scaleX: 1,
         scaleY: 1,
-        opacity: 0.58,
+        opacity: 0.085,
       },
     },
 
     dust: {
+      enabled: true,
+
       /*
        * Poziția este calculată dinamic din punctul real de contact.
        * Valorile pozitive pe Y mută praful mai jos.
        * Valorile negative pe X îl mută spre stânga.
        */
-      anchorOffsetXpx: -8,
-      anchorOffsetYpx: 10,
+      anchorOffsetXpx: 0,
+      anchorOffsetYpx: 0,
 
       xPercent: -50,
 
       startOpacity: 0,
-      peakOpacity: 0.16,
+      peakOpacity: 0.09,
+      endOpacity: 0,
 
-      startScale: 0.7,
+      startScale: 0.76,
       peakScale: 0.92,
       endScale: 1.06,
 
-      startYPercent: -28,
-      peakYPercent: -36,
-      endYPercent: -56,
+      startScaleX: 0.76,
+      startScaleY: 0.76,
+      peakScaleX: 0.92,
+      peakScaleY: 0.92,
+      endScaleX: 1.06,
+      endScaleY: 1.06,
+
+      startYPercent: -42,
+      peakYPercent: -52,
+      endYPercent: -66,
+
+      startRotationDeg: 0,
+      peakRotationDeg: 0,
+      endRotationDeg: 0,
 
       revealDurationSeconds: 0.04,
-      fadeDurationSeconds: 0.16,
+      fadeDurationSeconds: 0.15,
 
       revealEase: 'power2.out',
       fadeEase: 'power2.out',
 
+      cssFilter: 'brightness(0) saturate(0)',
+      mixBlendMode: 'multiply',
+
       transformOrigin: 'center bottom',
+    },
+
+    contactShadow: {
+      enabled: true,
+
+      anchorOffsetXpx: 0,
+      anchorOffsetYpx: 0,
+
+      widthRem: 4.25,
+      heightRem: 0.65,
+
+      cssFilter: 'blur(2px)',
+      mixBlendMode: 'multiply',
+
+      initialOpacity: 0,
+      initialScaleX: 0.78,
+      initialScaleY: 0.7,
+
+      preContactLeadSeconds: 0.05,
+      preContactOpacity: 0.05,
+      preContactScaleX: 0.82,
+      preContactScaleY: 0.72,
+
+      impactOpacity: 0.16,
+      impactScaleX: 1,
+      impactScaleY: 0.55,
+
+      contactOpacity: 0.16,
+      contactScaleX: 1,
+      contactScaleY: 0.55,
+      contactDurationSeconds: 0.035,
+      contactEase: 'power2.out',
+
+      recoilOpacity: 0.1,
+      recoilScaleX: 1.06,
+      recoilScaleY: 0.65,
+      recoilDurationSeconds: 0.045,
+      recoilEase: 'power2.out',
+
+      fadeOpacity: 0,
+      fadeScaleX: 0.94,
+      fadeScaleY: 0.72,
+      fadeDurationSeconds: 0.12,
+      fadeEase: 'power3.out',
+
+      endOpacity: 0,
+      endScaleX: 0.94,
+      endScaleY: 0.72,
+
+      transformOrigin: 'center center',
+    },
+
+    resonance: {
+      enabled: true,
+
+      anchorOffsetXpx: 0,
+      anchorOffsetYpx: 0,
+
+      widthRem: 5.75,
+      heightRem: 1.35,
+
+      startOpacity: 0.065,
+      peakOpacity: 0.065,
+      endOpacity: 0,
+
+      startScaleX: 0.72,
+      startScaleY: 0.82,
+
+      peakScaleX: 0.9,
+      peakScaleY: 0.9,
+
+      endScaleX: 1.18,
+      endScaleY: 1,
+
+      durationSeconds: 0.12,
+      revealDurationSeconds: 0.04,
+      fadeDurationSeconds: 0.08,
+      revealEase: 'power2.out',
+      fadeEase: 'power2.out',
+      ease: 'power2.out',
+
+      borderColor: 'rgb(70 70 70 / 14%)',
+      borderWidthPx: 1,
+      boxShadow: 'inset 0 0 0 1px rgb(255 255 255 / 22%)',
+      transformOrigin: 'center center',
     },
   } satisfies GavelImpactEffectsConfig,
 
   presets: {
     A: {
-      label: 'Premium restraint',
+      label: 'Quiet tap',
+      description:
+        'Restrained time-based tap with a quick auto-return; best when the section already has enough visual weight.',
+
+      mobileViewport: {
+        playback: 'timed',
+        replayMode: 'once',
+        finalState: 'auto-return',
+        entryDelaySeconds: 0.05,
+        holdAtImpactSeconds: 0.18,
+        autoReturnDelaySeconds: 0.16,
+      },
 
       desktop: {
-        pivotXPercent: 18,
-        pivotYPercent: 65,
+        pivotXPercent: 17,
+        pivotYPercent: 66,
 
-        restRotationDeg: -22,
-        impactRotationDeg: 2,
+        restRotationDeg: -17,
+        impactRotationDeg: 0.4,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 14,
+        restFineTuneXpx: 6,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.055,
-          anticipationRotationDeltaDeg: -2.5,
-          anticipationXpx: -0.6,
-          anticipationYpx: -0.4,
+          anticipationDurationSeconds: 0.04,
+          anticipationRotationDeltaDeg: -0.8,
+          anticipationXpx: -0.12,
+          anticipationYpx: -0.1,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.18,
+          anticipationMaxProgress: 0.1,
 
-          strikeMinDurationSeconds: 0.11,
-          strikeMaxDurationSeconds: 0.15,
+          strikeDurationSeconds: 0.115,
+          strikeMinDurationSeconds: 0.105,
+          strikeMaxDurationSeconds: 0.13,
           strikeEase: 'power3.in',
 
-          overshootRotationDeltaDeg: 0.35,
-          overshootXpx: 0.4,
-          overshootYpx: 0.7,
+          followThroughDurationSeconds: 0.012,
+          overshootRotationDeltaDeg: 0.02,
+          overshootXpx: 0.02,
+          overshootYpx: 0.06,
 
-          settleDurationSeconds: 0.085,
+          settleDurationSeconds: 0.07,
           settleEase: 'power3.out',
 
-          liftMinDurationSeconds: 0.14,
-          liftMaxDurationSeconds: 0.28,
+          liftDurationSeconds: 0.14,
+          liftMinDurationSeconds: 0.12,
+          liftMaxDurationSeconds: 0.18,
           liftEase: 'power3.out',
         },
       },
 
       mobile: {
-        pivotXPercent: 18,
-        pivotYPercent: 65,
+        pivotXPercent: 17,
+        pivotYPercent: 66,
 
-        restRotationDeg: -26,
-        impactRotationDeg: 1.5,
+        restRotationDeg: -16,
+        impactRotationDeg: 0.4,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 10,
+        restFineTuneXpx: 3,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.065,
-          anticipationRotationDeltaDeg: -2.5,
-          anticipationXpx: -0.5,
-          anticipationYpx: -0.4,
+          anticipationDurationSeconds: 0.045,
+          anticipationRotationDeltaDeg: -0.7,
+          anticipationXpx: -0.1,
+          anticipationYpx: -0.08,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.18,
+          anticipationMaxProgress: 0.1,
 
-          strikeMinDurationSeconds: 0.12,
-          strikeMaxDurationSeconds: 0.16,
+          strikeDurationSeconds: 0.12,
+          strikeMinDurationSeconds: 0.11,
+          strikeMaxDurationSeconds: 0.14,
           strikeEase: 'power3.in',
 
-          overshootRotationDeltaDeg: 0.35,
-          overshootXpx: 0.4,
-          overshootYpx: 0.7,
+          followThroughDurationSeconds: 0.012,
+          overshootRotationDeltaDeg: 0.02,
+          overshootXpx: 0.02,
+          overshootYpx: 0.06,
 
-          settleDurationSeconds: 0.095,
+          settleDurationSeconds: 0.075,
           settleEase: 'power3.out',
 
-          liftMinDurationSeconds: 0.16,
-          liftMaxDurationSeconds: 0.3,
+          liftDurationSeconds: 0.15,
+          liftMinDurationSeconds: 0.13,
+          liftMaxDurationSeconds: 0.19,
           liftEase: 'power3.out',
         },
       },
@@ -615,83 +1161,151 @@ const QUICK_TUNING = {
 
         transformOrigin: 'center center',
       },
+
+      impactEffects: {
+        target: {
+          desktop: {
+            compressionYpx: 0.22,
+            compressionScaleY: 0.9992,
+            recoilEnabled: true,
+            recoilYpx: -0.018,
+            recoilDurationSeconds: 0.022,
+            settleDurationSeconds: 0.06,
+          },
+
+          mobile: {
+            compressionYpx: 0.28,
+            compressionScaleY: 0.999,
+            recoilEnabled: true,
+            recoilYpx: -0.02,
+            recoilDurationSeconds: 0.024,
+            settleDurationSeconds: 0.065,
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 0.28,
+          scaleX: 1.012,
+          scaleY: 0.985,
+          opacity: 0.66,
+          compressionDurationSeconds: 0.035,
+          recoveryDurationSeconds: 0.08,
+        },
+
+        contactShadow: {
+          preContactOpacity: 0.02,
+          contactOpacity: 0.055,
+          recoilOpacity: 0.035,
+          fadeDurationSeconds: 0.07,
+        },
+
+        dust: {
+          enabled: false,
+        },
+
+        resonance: {
+          enabled: false,
+        },
+      },
     },
 
     B: {
-      label: 'Judicial balance',
+      label: 'Scroll-cocked reveal',
+      description:
+        'Recommended mobile showcase: the hammer cocks with scroll, lands at the end of the viewport pass, then releases a polished contact burst.',
+
+      mobileViewport: {
+        playback: 'scrub',
+        start: 'top 92%',
+        end: 'bottom 38%',
+        scrubSmoothingSeconds: 0.32,
+        scrubImpactThreshold: 0.9,
+        scrubResetThreshold: 0.46,
+        replayMode: 'once-per-entry',
+        finalState: 'hold-impact',
+        entryDelaySeconds: 0,
+        minimumReplayIntervalSeconds: 0.25,
+        playOnInitialLoadIfVisible: false,
+      },
 
       desktop: {
-        pivotXPercent: 16,
-        pivotYPercent: 66,
+        pivotXPercent: 18,
+        pivotYPercent: 65,
 
-        restRotationDeg: -20,
-        impactRotationDeg: 1.5,
+        restRotationDeg: -28,
+        impactRotationDeg: 0.8,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 0,
+        restFineTuneXpx: 18,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.07,
-          anticipationRotationDeltaDeg: -3.5,
-          anticipationXpx: -1,
-          anticipationYpx: -0.6,
+          anticipationDurationSeconds: 0.09,
+          anticipationRotationDeltaDeg: -3.2,
+          anticipationXpx: -0.74,
+          anticipationYpx: -0.48,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.2,
+          anticipationMaxProgress: 0.24,
 
-          strikeMinDurationSeconds: 0.13,
-          strikeMaxDurationSeconds: 0.17,
+          strikeDurationSeconds: 0.18,
+          strikeMinDurationSeconds: 0.15,
+          strikeMaxDurationSeconds: 0.2,
           strikeEase: 'power3.in',
 
-          overshootRotationDeltaDeg: 0.7,
-          overshootXpx: 0.8,
-          overshootYpx: 1.1,
+          followThroughDurationSeconds: 0.03,
+          overshootRotationDeltaDeg: 0.12,
+          overshootXpx: 0.12,
+          overshootYpx: 0.28,
 
-          settleDurationSeconds: 0.1,
+          settleDurationSeconds: 0.12,
           settleEase: 'power3.out',
 
+          liftDurationSeconds: 0.22,
           liftMinDurationSeconds: 0.16,
-          liftMaxDurationSeconds: 0.34,
+          liftMaxDurationSeconds: 0.25,
           liftEase: 'power3.out',
         },
       },
 
       mobile: {
-        pivotXPercent: 16,
-        pivotYPercent: 66,
+        pivotXPercent: 18,
+        pivotYPercent: 65,
 
-        restRotationDeg: -24,
-        impactRotationDeg: 1,
+        restRotationDeg: -34,
+        impactRotationDeg: 0.8,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 0,
-        restFineTuneYpx: 0,
+        restFineTuneXpx: 12,
+        restFineTuneYpx: 10,
 
         motion: {
-          anticipationDurationSeconds: 0.08,
-          anticipationRotationDeltaDeg: -3.5,
-          anticipationXpx: -0.9,
-          anticipationYpx: -0.6,
+          anticipationDurationSeconds: 0.11,
+          anticipationRotationDeltaDeg: -3.2,
+          anticipationXpx: -18,
+          anticipationYpx: -12,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.2,
+          anticipationMaxProgress: 0.32,
 
-          strikeMinDurationSeconds: 0.14,
-          strikeMaxDurationSeconds: 0.18,
+          strikeDurationSeconds: 0.2,
+          strikeMinDurationSeconds: 0.17,
+          strikeMaxDurationSeconds: 0.23,
           strikeEase: 'power3.in',
 
-          overshootRotationDeltaDeg: 0.7,
-          overshootXpx: 0.8,
-          overshootYpx: 1.1,
+          followThroughDurationSeconds: 0.034,
+          overshootRotationDeltaDeg: 0.14,
+          overshootXpx: 0.12,
+          overshootYpx: 0.32,
 
-          settleDurationSeconds: 0.11,
+          settleDurationSeconds: 0.13,
           settleEase: 'power3.out',
 
-          liftMinDurationSeconds: 0.18,
-          liftMaxDurationSeconds: 0.36,
+          liftDurationSeconds: 0.23,
+          liftMinDurationSeconds: 0.17,
+          liftMaxDurationSeconds: 0.26,
           liftEase: 'power3.out',
         },
       },
@@ -729,60 +1343,142 @@ const QUICK_TUNING = {
 
         transformOrigin: 'center center',
       },
+
+      impactEffects: {
+        target: {
+          desktop: {
+            compressionYpx: 0.8,
+            compressionScaleY: 0.9972,
+            recoilYpx: -0.08,
+            settleDurationSeconds: 0.115,
+          },
+
+          mobile: {
+            compressionYpx: 1.12,
+            compressionScaleY: 0.9964,
+            recoilYpx: -0.11,
+            settleDurationSeconds: 0.12,
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 1.1,
+          scaleX: 1.085,
+          scaleY: 0.89,
+          opacity: 0.9,
+          compressionDurationSeconds: 0.06,
+          recoveryDurationSeconds: 0.18,
+        },
+
+        castShadow: {
+          xPercent: 3.5,
+          yPercent: 7.5,
+          cssFilter: 'brightness(0) saturate(0) blur(2.25px)',
+
+          rest: {
+            opacity: 0.2,
+          },
+
+          anticipation: {
+            opacity: 0.14,
+          },
+
+          impact: {
+            opacity: 0.28,
+          },
+
+          settle: {
+            opacity: 0.22,
+          },
+        },
+
+        contactShadow: {
+          preContactOpacity: 0.06,
+          contactOpacity: 0.18,
+          contactScaleX: 1.08,
+          recoilOpacity: 0.105,
+          fadeDurationSeconds: 0.16,
+        },
+
+        dust: {
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
+          peakOpacity: 0.12,
+          peakScale: 1.02,
+          endScale: 1.22,
+          startYPercent: -42,
+          peakYPercent: -52,
+          endYPercent: -66,
+          fadeDurationSeconds: 0.18,
+        },
+
+        resonance: {
+          enabled: true,
+          startOpacity: 0.07,
+          peakOpacity: 0.08,
+          endScaleX: 1.32,
+          endScaleY: 1.04,
+          revealDurationSeconds: 0.035,
+          fadeDurationSeconds: 0.11,
+        },
+      },
     },
 
     C: {
-      label: 'Smooth judicial impact',
+      label: 'Ceremonial slam',
+      description:
+        'Largest time-based gesture: a deliberate wind-up, a heavier landing, and the most visible dust and resonance.',
+
+      mobileViewport: {
+        playback: 'timed',
+        replayMode: 'once',
+        finalState: 'hold-impact',
+        entryDelaySeconds: 0.04,
+      },
 
       /*
-       * This remains the stronger TSA preset, but the motion is now
-       * more controlled:
-       *
-       * - smaller anticipation so it does not feel theatrical;
-       * - slightly longer accelerating strike;
-       * - exact contact before follow-through;
-       * - sub-pixel follow-through instead of visible penetration;
-       * - calmer pressure release similar to the stamp animation.
+       * Production TSA preset:
+       * restrained anticipation, accelerating approach, exact contact,
+       * micro follow-through, controlled stabilization and a firm hold.
        */
 
       desktop: {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
-        restRotationDeg: -22,
-        impactRotationDeg: 2,
+        restRotationDeg: -31,
+        impactRotationDeg: 1.2,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 14,
+        restFineTuneXpx: 20,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.095,
-          anticipationRotationDeltaDeg: -3.4,
-          anticipationXpx: -0.9,
-          anticipationYpx: -0.7,
+          anticipationDurationSeconds: 0.12,
+          anticipationRotationDeltaDeg: -5.2,
+          anticipationXpx: -1.1,
+          anticipationYpx: -0.72,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.2,
+          anticipationMaxProgress: 0.32,
 
-          strikeMinDurationSeconds: 0.125,
-          strikeMaxDurationSeconds: 0.17,
+          strikeDurationSeconds: 0.23,
+          strikeMinDurationSeconds: 0.2,
+          strikeMaxDurationSeconds: 0.26,
           strikeEase: 'power4.in',
 
-          /*
-           * These values are now a small post-contact follow-through,
-           * not the end point of the main strike.
-           */
-          overshootRotationDeltaDeg: 0.28,
-          overshootXpx: 0.28,
-          overshootYpx: 0.55,
+          followThroughDurationSeconds: 0.045,
+          overshootRotationDeltaDeg: 0.24,
+          overshootXpx: 0.18,
+          overshootYpx: 0.46,
 
-          settleDurationSeconds: 0.135,
-          settleEase: 'power4.out',
+          settleDurationSeconds: 0.18,
+          settleEase: 'expo.out',
 
-          liftMinDurationSeconds: 0.18,
-          liftMaxDurationSeconds: 0.34,
+          liftDurationSeconds: 0.36,
+          liftMinDurationSeconds: 0.3,
+          liftMaxDurationSeconds: 0.42,
           liftEase: 'power3.out',
         },
       },
@@ -791,55 +1487,54 @@ const QUICK_TUNING = {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
-        /*
-         * Same movement scope as desktop. The mobile authored origin
-         * and layout calibration still handle responsive placement.
-         */
-        restRotationDeg: -22,
-        impactRotationDeg: 2,
+        restRotationDeg: -34,
+        impactRotationDeg: 1.2,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 10,
+        restFineTuneXpx: 20,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.095,
-          anticipationRotationDeltaDeg: -3.4,
-          anticipationXpx: -0.9,
-          anticipationYpx: -0.7,
+          anticipationDurationSeconds: 0.13,
+          anticipationRotationDeltaDeg: -5,
+          anticipationXpx: -1,
+          anticipationYpx: -0.66,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.2,
+          anticipationMaxProgress: 0.32,
 
-          strikeMinDurationSeconds: 0.125,
-          strikeMaxDurationSeconds: 0.17,
+          strikeDurationSeconds: 0.25,
+          strikeMinDurationSeconds: 0.22,
+          strikeMaxDurationSeconds: 0.28,
           strikeEase: 'power4.in',
 
-          overshootRotationDeltaDeg: 0.28,
-          overshootXpx: 0.28,
-          overshootYpx: 0.55,
+          followThroughDurationSeconds: 0.048,
+          overshootRotationDeltaDeg: 0.22,
+          overshootXpx: 0.18,
+          overshootYpx: 0.5,
 
-          settleDurationSeconds: 0.135,
-          settleEase: 'power4.out',
+          settleDurationSeconds: 0.2,
+          settleEase: 'expo.out',
 
-          liftMinDurationSeconds: 0.18,
-          liftMaxDurationSeconds: 0.34,
+          liftDurationSeconds: 0.38,
+          liftMinDurationSeconds: 0.32,
+          liftMaxDurationSeconds: 0.44,
           liftEase: 'power3.out',
         },
       },
 
       targetReaction: {
         translateXpx: 0,
-        translateYpx: 0.9,
+        translateYpx: 0.45,
 
-        scaleX: 1.0015,
-        scaleY: 0.998,
+        scaleX: 1.0008,
+        scaleY: 0.9975,
 
         compressionDurationSeconds: 0.045,
         compressionEase: 'power3.out',
 
-        recoveryDurationSeconds: 0.15,
+        recoveryDurationSeconds: 0.12,
         recoveryEase: 'power3.out',
 
         transformOrigin: 'bottom center',
@@ -847,17 +1542,17 @@ const QUICK_TUNING = {
 
       shadowReaction: {
         translateXpx: 0,
-        translateYpx: 1.15,
+        translateYpx: 0.9,
 
-        scaleX: 1.08,
-        scaleY: 0.9,
+        scaleX: 1.06,
+        scaleY: 0.92,
 
-        opacity: 0.87,
+        opacity: 0.9,
 
         compressionDurationSeconds: 0.055,
         compressionEase: 'power3.out',
 
-        recoveryDurationSeconds: 0.18,
+        recoveryDurationSeconds: 0.15,
         recoveryEase: 'power3.out',
 
         transformOrigin: 'center center',
@@ -865,29 +1560,58 @@ const QUICK_TUNING = {
 
       impactEffects: {
         target: {
-          /*
-           * Marble reads as rigid. The target moves, but it does not
-           * deform like rubber.
-           */
-          compressionXpx: 0.12,
-          compressionYpx: 0.9,
-          compressionRotationDeg: 0.025,
-          compressionScaleX: 1.0008,
-          compressionScaleY: 0.998,
-          compressionDurationSeconds: 0.045,
-          compressionEase: 'power3.out',
+          desktop: {
+            compressionXpx: 0.08,
+            compressionYpx: 1.28,
+            compressionRotationDeg: 0.018,
+            compressionScaleX: 1.001,
+            compressionScaleY: 0.9958,
+            compressionDurationSeconds: 0.05,
+            compressionEase: 'power3.out',
 
-          recoilXpx: -0.06,
-          recoilYpx: -0.12,
-          recoilRotationDeg: -0.012,
-          recoilScaleX: 1,
-          recoilScaleY: 1.0002,
-          recoilDurationSeconds: 0.04,
-          recoilEase: 'power2.out',
+            recoilXpx: -0.04,
+            recoilYpx: -0.14,
+            recoilRotationDeg: -0.008,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0002,
+            recoilDurationSeconds: 0.034,
+            recoilEase: 'power2.out',
 
-          settleDurationSeconds: 0.105,
-          settleEase: 'power4.out',
-          transformOrigin: 'bottom center',
+            settleDurationSeconds: 0.16,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+
+          mobile: {
+            compressionXpx: 0.1,
+            compressionYpx: 1.42,
+            compressionRotationDeg: 0.025,
+            compressionScaleX: 1.0012,
+            compressionScaleY: 0.9952,
+            compressionDurationSeconds: 0.052,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.05,
+            recoilYpx: -0.16,
+            recoilRotationDeg: -0.01,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0003,
+            recoilDurationSeconds: 0.038,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.17,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 1.45,
+          scaleX: 1.12,
+          scaleY: 0.84,
+          opacity: 0.94,
+          compressionDurationSeconds: 0.07,
+          recoveryDurationSeconds: 0.22,
         },
 
         castShadow: {
@@ -898,132 +1622,204 @@ const QUICK_TUNING = {
           rest: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.48,
+            opacity: 0.07,
           },
 
           anticipation: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.43,
+            opacity: 0.045,
           },
 
           impact: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.6,
+            opacity: 0.18,
           },
 
           settle: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.55,
+            opacity: 0.12,
           },
         },
 
         dust: {
-          anchorOffsetXpx: -8,
-          anchorOffsetYpx: 9,
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
 
           xPercent: -50,
 
           startOpacity: 0,
-          peakOpacity: 0.14,
+          peakOpacity: 0.16,
 
-          startScale: 0.72,
-          peakScale: 0.9,
-          endScale: 1.05,
+          startScale: 0.76,
+          peakScale: 1.08,
+          endScale: 1.34,
 
-          startYPercent: -24,
-          peakYPercent: -33,
-          endYPercent: -52,
+          startYPercent: -42,
+          peakYPercent: -54,
+          endYPercent: -76,
 
-          revealDurationSeconds: 0.05,
-          fadeDurationSeconds: 0.18,
+          revealDurationSeconds: 0.04,
+          fadeDurationSeconds: 0.22,
 
           revealEase: 'power2.out',
           fadeEase: 'power2.out',
 
           transformOrigin: 'center bottom',
         },
+
+        contactShadow: {
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
+
+          preContactLeadSeconds: 0.05,
+          preContactOpacity: 0.07,
+          preContactScaleX: 0.82,
+          preContactScaleY: 0.72,
+
+          contactOpacity: 0.22,
+          contactScaleX: 1.16,
+          contactScaleY: 0.46,
+          contactDurationSeconds: 0.035,
+          contactEase: 'power2.out',
+
+          recoilOpacity: 0.12,
+          recoilScaleX: 1.16,
+          recoilScaleY: 0.58,
+          recoilDurationSeconds: 0.045,
+          recoilEase: 'power2.out',
+
+          fadeOpacity: 0,
+          fadeScaleX: 0.94,
+          fadeScaleY: 0.72,
+          fadeDurationSeconds: 0.18,
+          fadeEase: 'power3.out',
+        },
+
+        resonance: {
+          enabled: true,
+
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
+
+          startOpacity: 0.08,
+          peakOpacity: 0.1,
+          endOpacity: 0,
+
+          startScaleX: 0.72,
+          startScaleY: 0.82,
+
+          endScaleX: 1.45,
+          endScaleY: 1.08,
+
+          durationSeconds: 0.18,
+          revealDurationSeconds: 0.05,
+          fadeDurationSeconds: 0.13,
+          ease: 'power2.out',
+        },
       },
     },
 
     D: {
-      label: 'Smooth editorial',
+      label: 'Editorial pendulum',
+      description:
+        'A slow scroll-scrubbed arc: less explosive than B, more cinematic and inspectable on mobile.',
+
+      mobileViewport: {
+        playback: 'scrub',
+        start: 'top 96%',
+        end: 'bottom 12%',
+        scrubSmoothingSeconds: 0.55,
+        scrubImpactThreshold: 0.96,
+        scrubResetThreshold: 0.38,
+        replayMode: 'once-per-entry',
+        finalState: 'hold-impact',
+        entryDelaySeconds: 0,
+        minimumReplayIntervalSeconds: 0.35,
+        playOnInitialLoadIfVisible: false,
+      },
 
       desktop: {
-        pivotXPercent: 15,
-        pivotYPercent: 67,
+        pivotXPercent: 16,
+        pivotYPercent: 66,
 
-        restRotationDeg: -18,
-        impactRotationDeg: 1,
+        restRotationDeg: -24,
+        impactRotationDeg: 0.6,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 0,
+        restFineTuneXpx: 9,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.05,
-          anticipationRotationDeltaDeg: -1.75,
-          anticipationXpx: -0.4,
+          anticipationDurationSeconds: 0.14,
+          anticipationRotationDeltaDeg: -2.6,
+          anticipationXpx: -0.45,
           anticipationYpx: -0.3,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.15,
+          anticipationMaxProgress: 0.26,
 
-          strikeMinDurationSeconds: 0.17,
-          strikeMaxDurationSeconds: 0.22,
+          strikeDurationSeconds: 0.34,
+          strikeMinDurationSeconds: 0.3,
+          strikeMaxDurationSeconds: 0.38,
           strikeEase: 'power2.in',
 
-          overshootRotationDeltaDeg: 0.3,
-          overshootXpx: 0.4,
-          overshootYpx: 0.6,
+          followThroughDurationSeconds: 0.032,
+          overshootRotationDeltaDeg: 0.06,
+          overshootXpx: 0.06,
+          overshootYpx: 0.18,
 
-          settleDurationSeconds: 0.09,
-          settleEase: 'power2.out',
+          settleDurationSeconds: 0.22,
+          settleEase: 'sine.out',
 
-          liftMinDurationSeconds: 0.17,
-          liftMaxDurationSeconds: 0.32,
-          liftEase: 'power2.out',
+          liftDurationSeconds: 0.42,
+          liftMinDurationSeconds: 0.36,
+          liftMaxDurationSeconds: 0.48,
+          liftEase: 'power3.out',
         },
       },
 
       mobile: {
-        pivotXPercent: 15,
-        pivotYPercent: 67,
+        pivotXPercent: 16,
+        pivotYPercent: 66,
 
-        restRotationDeg: -22,
-        impactRotationDeg: 0.5,
+        restRotationDeg: -30,
+        impactRotationDeg: 0.6,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 0,
+        restFineTuneXpx: 8,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.06,
-          anticipationRotationDeltaDeg: -1.75,
-          anticipationXpx: -0.4,
-          anticipationYpx: -0.3,
+          anticipationDurationSeconds: 0.16,
+          anticipationRotationDeltaDeg: -2.5,
+          anticipationXpx: -0.42,
+          anticipationYpx: -0.28,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.15,
+          anticipationMaxProgress: 0.28,
 
-          strikeMinDurationSeconds: 0.18,
-          strikeMaxDurationSeconds: 0.23,
+          strikeDurationSeconds: 0.38,
+          strikeMinDurationSeconds: 0.34,
+          strikeMaxDurationSeconds: 0.44,
           strikeEase: 'power2.in',
 
-          overshootRotationDeltaDeg: 0.3,
-          overshootXpx: 0.4,
-          overshootYpx: 0.6,
+          followThroughDurationSeconds: 0.032,
+          overshootRotationDeltaDeg: 0.06,
+          overshootXpx: 0.06,
+          overshootYpx: 0.18,
 
-          settleDurationSeconds: 0.1,
-          settleEase: 'power2.out',
+          settleDurationSeconds: 0.24,
+          settleEase: 'sine.out',
 
-          liftMinDurationSeconds: 0.18,
-          liftMaxDurationSeconds: 0.34,
-          liftEase: 'power2.out',
+          liftDurationSeconds: 0.48,
+          liftMinDurationSeconds: 0.42,
+          liftMaxDurationSeconds: 0.54,
+          liftEase: 'power3.out',
         },
       },
 
@@ -1060,29 +1856,76 @@ const QUICK_TUNING = {
 
         transformOrigin: 'center center',
       },
+
+      impactEffects: {
+        target: {
+          desktop: {
+            compressionYpx: 0.42,
+            compressionScaleY: 0.9986,
+            recoilYpx: -0.04,
+            compressionDurationSeconds: 0.052,
+            settleDurationSeconds: 0.12,
+          },
+
+          mobile: {
+            compressionYpx: 0.5,
+            compressionScaleY: 0.9982,
+            recoilYpx: -0.045,
+            compressionDurationSeconds: 0.055,
+            settleDurationSeconds: 0.13,
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 0.52,
+          scaleX: 1.03,
+          scaleY: 0.965,
+          opacity: 0.7,
+          compressionDurationSeconds: 0.06,
+          recoveryDurationSeconds: 0.18,
+        },
+
+        contactShadow: {
+          preContactOpacity: 0.032,
+          contactOpacity: 0.08,
+          recoilOpacity: 0.058,
+          fadeDurationSeconds: 0.14,
+        },
+
+        dust: {
+          enabled: false,
+        },
+
+        resonance: {
+          enabled: true,
+          startOpacity: 0.04,
+          peakOpacity: 0.045,
+          endScaleX: 1.22,
+          endScaleY: 1,
+          revealDurationSeconds: 0.06,
+          fadeDurationSeconds: 0.16,
+        },
+      },
     },
 
     E: {
-      label: 'Reference judge strike',
+      label: 'Snap verdict',
+      description:
+        'Fastest time-based option: a sharp decisive hit with very little atmosphere and a clear mobile change.',
 
-      /*
-       * Reproduces the single-hit mechanics visible in the uploaded
-       * 24 FPS judge-gavel reference:
-       *
-       * - almost no visible anticipation;
-       * - short accelerating strike;
-       * - exact contact with practically no penetration;
-       * - no cartoon bounce;
-       * - firm hold at impact until the interaction reverses;
-       * - fast initial lift followed by a controlled settle.
-       */
+      mobileViewport: {
+        playback: 'timed',
+        replayMode: 'once',
+        finalState: 'hold-impact',
+        entryDelaySeconds: 0,
+      },
 
       desktop: {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
-        restRotationDeg: -22,
-        impactRotationDeg: 0.8,
+        restRotationDeg: -26,
+        impactRotationDeg: 1.6,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
@@ -1092,29 +1935,28 @@ const QUICK_TUNING = {
 
         motion: {
           anticipationDurationSeconds: 0.028,
-          anticipationRotationDeltaDeg: -1.2,
-          anticipationXpx: -0.25,
-          anticipationYpx: -0.45,
+          anticipationRotationDeltaDeg: -0.55,
+          anticipationXpx: -0.08,
+          anticipationYpx: -0.16,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.12,
+          anticipationMaxProgress: 0.08,
 
-          strikeMinDurationSeconds: 0.105,
-          strikeMaxDurationSeconds: 0.135,
-          strikeEase: 'power3.in',
+          strikeDurationSeconds: 0.095,
+          strikeMinDurationSeconds: 0.085,
+          strikeMaxDurationSeconds: 0.11,
+          strikeEase: 'expo.in',
 
-          /*
-           * The reference shows no visible bounce after contact.
-           * These values create only a sub-pixel collision settle.
-           */
+          followThroughDurationSeconds: 0.012,
           overshootRotationDeltaDeg: 0.08,
-          overshootXpx: 0.08,
+          overshootXpx: 0.04,
           overshootYpx: 0.18,
 
           settleDurationSeconds: 0.055,
-          settleEase: 'power2.out',
+          settleEase: 'power3.out',
 
-          liftMinDurationSeconds: 0.14,
-          liftMaxDurationSeconds: 0.21,
+          liftDurationSeconds: 0.16,
+          liftMinDurationSeconds: 0.13,
+          liftMaxDurationSeconds: 0.18,
           liftEase: 'power3.out',
         },
       },
@@ -1123,8 +1965,8 @@ const QUICK_TUNING = {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
-        restRotationDeg: -26,
-        impactRotationDeg: 0.8,
+        restRotationDeg: -28,
+        impactRotationDeg: 1.6,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
@@ -1133,34 +1975,33 @@ const QUICK_TUNING = {
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.035,
-          anticipationRotationDeltaDeg: -1.1,
-          anticipationXpx: -0.2,
-          anticipationYpx: -0.4,
+          anticipationDurationSeconds: 0.032,
+          anticipationRotationDeltaDeg: -0.5,
+          anticipationXpx: -0.08,
+          anticipationYpx: -0.14,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.12,
+          anticipationMaxProgress: 0.08,
 
-          strikeMinDurationSeconds: 0.115,
-          strikeMaxDurationSeconds: 0.145,
-          strikeEase: 'power3.in',
+          strikeDurationSeconds: 0.105,
+          strikeMinDurationSeconds: 0.095,
+          strikeMaxDurationSeconds: 0.12,
+          strikeEase: 'expo.in',
 
+          followThroughDurationSeconds: 0.012,
           overshootRotationDeltaDeg: 0.08,
-          overshootXpx: 0.08,
-          overshootYpx: 0.18,
+          overshootXpx: 0.04,
+          overshootYpx: 0.2,
 
           settleDurationSeconds: 0.06,
-          settleEase: 'power2.out',
+          settleEase: 'power3.out',
 
-          liftMinDurationSeconds: 0.16,
-          liftMaxDurationSeconds: 0.24,
+          liftDurationSeconds: 0.17,
+          liftMinDurationSeconds: 0.14,
+          liftMaxDurationSeconds: 0.19,
           liftEase: 'power3.out',
         },
       },
 
-      /*
-       * Preserved for compatibility with the existing wide shadow logic.
-       * The physical target animation is controlled by impactEffects below.
-       */
       targetReaction: {
         translateXpx: 0,
         translateYpx: 0.4,
@@ -1197,36 +2038,37 @@ const QUICK_TUNING = {
 
       impactEffects: {
         target: {
-          /*
-           * The block in the reference remains rigid.
-           * The movement is intentionally below one pixel.
-           */
-          compressionXpx: 0.08,
-          compressionYpx: 0.55,
-          compressionRotationDeg: 0.015,
-          compressionScaleX: 1.0005,
-          compressionScaleY: 0.9995,
+          compressionXpx: 0.06,
+          compressionYpx: 0.72,
+          compressionRotationDeg: 0.01,
+          compressionScaleX: 1.0004,
+          compressionScaleY: 0.999,
           compressionDurationSeconds: 0.04,
           compressionEase: 'power3.out',
 
-          recoilXpx: -0.04,
-          recoilYpx: -0.05,
-          recoilRotationDeg: -0.005,
+          recoilXpx: -0.025,
+          recoilYpx: -0.07,
+          recoilRotationDeg: -0.004,
           recoilScaleX: 1,
           recoilScaleY: 1,
-          recoilDurationSeconds: 0.03,
+          recoilDurationSeconds: 0.026,
           recoilEase: 'power2.out',
 
-          settleDurationSeconds: 0.07,
+          settleDurationSeconds: 0.06,
           settleEase: 'power3.out',
           transformOrigin: 'bottom center',
         },
 
+        broadShadow: {
+          translateYpx: 0.68,
+          scaleX: 1.04,
+          scaleY: 0.94,
+          opacity: 0.8,
+          compressionDurationSeconds: 0.032,
+          recoveryDurationSeconds: 0.09,
+        },
+
         castShadow: {
-          /*
-           * Same canvas and trajectory as the hammer.
-           * Only density changes between phases.
-           */
           xPercent: 3,
           yPercent: 6,
           rotationOffsetDeg: 8,
@@ -1234,56 +2076,99 @@ const QUICK_TUNING = {
           rest: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.2,
+            opacity: 0.07,
           },
 
           anticipation: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.16,
+            opacity: 0.05,
           },
 
           impact: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.32,
+            opacity: 0.105,
           },
 
           settle: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.28,
+            opacity: 0.08,
           },
         },
 
         dust: {
-          /*
-           * The reference dust appears at the contact line and expands
-           * laterally before fading. The asset remains restrained for TSA.
-           */
-          anchorOffsetXpx: -8,
-          anchorOffsetYpx: 8,
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
 
           xPercent: -50,
 
           startOpacity: 0,
-          peakOpacity: 0.18,
+          peakOpacity: 0.025,
 
           startScale: 0.72,
-          peakScale: 0.94,
-          endScale: 1.08,
+          peakScale: 0.8,
+          endScale: 0.92,
 
-          startYPercent: -20,
-          peakYPercent: -29,
-          endYPercent: -48,
+          startYPercent: -40,
+          peakYPercent: -50,
+          endYPercent: -62,
 
           revealDurationSeconds: 0.04,
-          fadeDurationSeconds: 0.17,
+          fadeDurationSeconds: 0.1,
 
           revealEase: 'power2.out',
           fadeEase: 'power2.out',
 
           transformOrigin: 'center bottom',
+        },
+
+        contactShadow: {
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
+
+          preContactLeadSeconds: 0.05,
+          preContactOpacity: 0.032,
+          preContactScaleX: 0.82,
+          preContactScaleY: 0.72,
+
+          contactOpacity: 0.13,
+          contactScaleX: 0.96,
+          contactScaleY: 0.6,
+          contactDurationSeconds: 0.032,
+          contactEase: 'power2.out',
+
+          recoilOpacity: 0.07,
+          recoilScaleX: 1.02,
+          recoilScaleY: 0.68,
+          recoilDurationSeconds: 0.04,
+          recoilEase: 'power2.out',
+
+          fadeOpacity: 0,
+          fadeScaleX: 0.94,
+          fadeScaleY: 0.72,
+          fadeDurationSeconds: 0.075,
+          fadeEase: 'power3.out',
+        },
+
+        resonance: {
+          enabled: false,
+
+          anchorOffsetXpx: 0,
+          anchorOffsetYpx: 0,
+
+          startOpacity: 0.05,
+          endOpacity: 0,
+
+          startScaleX: 0.72,
+          startScaleY: 0.82,
+
+          endScaleX: 1.14,
+          endScaleY: 0.98,
+
+          durationSeconds: 0.1,
+          ease: 'power2.out',
         },
       },
     },
@@ -1320,6 +2205,8 @@ export function initGavel(): void {
       gavel: '[data-gavel]',
       castShadow: '[data-gavel-cast-shadow]',
       dust: '[data-gavel-impact-dust]',
+      contactShadow: '[data-gavel-contact-shadow]',
+      resonance: '[data-gavel-resonance]',
       target: '[data-gavel-target]',
       shadow: '[data-gavel-shadow]',
     };
@@ -1338,6 +2225,8 @@ export function initGavel(): void {
 
     let activePresetName = QUICK_TUNING.activePreset;
 
+    const presetDefinitions = QUICK_TUNING.presets as Record<GavelPresetName, GavelPreset>;
+
     const instances: GavelInstance[] = [];
     const globalCleanup: Array<() => void> = [];
 
@@ -1347,6 +2236,14 @@ export function initGavel(): void {
 
     const lerp = (start: number, end: number, progress: number): number => {
       return start + (end - start) * progress;
+    };
+
+    const easeInCubic = (progress: number): number => {
+      return progress * progress * progress;
+    };
+
+    const easeOutCubic = (progress: number): number => {
+      return 1 - Math.pow(1 - progress, 3);
     };
 
     const degreesToRadians = (degrees: number): number => {
@@ -1382,8 +2279,170 @@ export function initGavel(): void {
       };
     };
 
-    const getActivePreset = (): GavelPreset => {
-      return QUICK_TUNING.presets[activePresetName];
+    const deepMerge = <T extends Record<string, unknown>>(
+      base: T,
+      override?: DeepPartial<T>
+    ): T => {
+      if (!override) {
+        return { ...base };
+      }
+
+      const output: Record<string, unknown> = { ...base };
+
+      Object.entries(override).forEach(([key, value]) => {
+        if (value === undefined) {
+          return;
+        }
+
+        const baseValue = output[key];
+
+        if (
+          value &&
+          baseValue &&
+          typeof value === 'object' &&
+          typeof baseValue === 'object' &&
+          !Array.isArray(value) &&
+          !Array.isArray(baseValue)
+        ) {
+          output[key] = deepMerge(
+            baseValue as Record<string, unknown>,
+            value as DeepPartial<Record<string, unknown>>
+          );
+
+          return;
+        }
+
+        output[key] = value;
+      });
+
+      return output as T;
+    };
+
+    const BASE_GAVEL_PRESET: GavelResolvedPreset = {
+      label: 'Scroll-cocked reveal',
+      description:
+        'Recommended mobile showcase: the hammer cocks with scroll, lands at the end of the viewport pass, then releases a polished contact burst.',
+
+      desktop: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+
+        restRotationDeg: -22,
+        impactRotationDeg: 0.8,
+
+        impactFineTuneXpx: 0,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 14,
+        restFineTuneYpx: 0,
+
+        motion: {
+          anticipationEnabled: true,
+          anticipationDurationSeconds: 0.07,
+          anticipationRotationDeltaDeg: -2.8,
+          anticipationXpx: -0.65,
+          anticipationYpx: -0.45,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.18,
+
+          strikeDurationSeconds: 0.16,
+          strikeMinDurationSeconds: 0.145,
+          strikeMaxDurationSeconds: 0.175,
+          strikeEase: 'power3.in',
+
+          followThroughEnabled: true,
+          followThroughDurationSeconds: 0.028,
+          overshootRotationDeltaDeg: 0.12,
+          overshootXpx: 0.12,
+          overshootYpx: 0.28,
+
+          settleEnabled: true,
+          settleDurationSeconds: 0.095,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.22,
+          liftMinDurationSeconds: 0.16,
+          liftMaxDurationSeconds: 0.25,
+          liftEase: 'power3.out',
+        },
+      },
+
+      mobile: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+
+        restRotationDeg: -20,
+        impactRotationDeg: 0.8,
+
+        impactFineTuneXpx: 0,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 10,
+        restFineTuneYpx: 0,
+
+        motion: {
+          anticipationEnabled: true,
+          anticipationDurationSeconds: 0.07,
+          anticipationRotationDeltaDeg: -2.8,
+          anticipationXpx: -0.65,
+          anticipationYpx: -0.45,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.18,
+
+          strikeDurationSeconds: 0.16,
+          strikeMinDurationSeconds: 0.145,
+          strikeMaxDurationSeconds: 0.175,
+          strikeEase: 'power3.in',
+
+          followThroughEnabled: true,
+          followThroughDurationSeconds: 0.028,
+          overshootRotationDeltaDeg: 0.12,
+          overshootXpx: 0.12,
+          overshootYpx: 0.28,
+
+          settleEnabled: true,
+          settleDurationSeconds: 0.095,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.22,
+          liftMinDurationSeconds: 0.16,
+          liftMaxDurationSeconds: 0.25,
+          liftEase: 'power3.out',
+        },
+      },
+
+      mobileViewport: QUICK_TUNING.interaction.mobileViewport,
+      impactEffects: QUICK_TUNING.impactEffects,
+    };
+
+    const resolvePreset = (presetName: GavelPresetName): GavelResolvedPreset => {
+      const definition = presetDefinitions[presetName];
+      const legacyImpactEffects: DeepPartial<GavelImpactEffectsConfig> = definition.shadowReaction
+        ? {
+            broadShadow: definition.shadowReaction,
+          }
+        : {};
+
+      return deepMerge(
+        {
+          ...BASE_GAVEL_PRESET,
+          label: definition.label,
+          description: definition.description ?? BASE_GAVEL_PRESET.description,
+        },
+        {
+          desktop: definition.desktop,
+          mobile: definition.mobile,
+          mobileViewport: definition.mobileViewport,
+          impactEffects: {
+            ...legacyImpactEffects,
+            ...(definition.impactEffects ?? {}),
+          },
+        }
+      );
+    };
+
+    const getActivePreset = (): GavelResolvedPreset => {
+      return resolvePreset(activePresetName);
     };
 
     const getGeometryConfig = (
@@ -1426,6 +2485,55 @@ export function initGavel(): void {
         restFineTuneXpx: deviceProfile.restFineTuneXpx,
 
         restFineTuneYpx: deviceProfile.restFineTuneYpx,
+      };
+    };
+
+    const isDeviceTargetImpactEffectConfig = (
+      targetConfig: GavelTargetImpactEffectPresetConfig
+    ): targetConfig is GavelDeviceTargetImpactEffectConfig => {
+      return 'desktop' in targetConfig && 'mobile' in targetConfig;
+    };
+
+    const getTargetImpactEffect = (
+      targetConfig: GavelTargetImpactEffectPresetConfig,
+      mode: GavelMode
+    ): GavelTargetImpactEffectConfig => {
+      return isDeviceTargetImpactEffectConfig(targetConfig) ? targetConfig[mode] : targetConfig;
+    };
+
+    const ensureGeneratedEffect = ({
+      component,
+      selector,
+      attributeName,
+      className,
+    }: {
+      component: HTMLElement;
+      selector: string;
+      attributeName: string;
+      className?: string;
+    }): GavelGeneratedEffect => {
+      const existing = component.querySelector<HTMLElement>(selector);
+
+      if (existing) {
+        return {
+          element: existing,
+          createdByScript: false,
+        };
+      }
+
+      const element = document.createElement('div');
+
+      element.setAttribute(attributeName, '');
+
+      if (className) {
+        element.classList.add(className);
+      }
+
+      component.appendChild(element);
+
+      return {
+        element,
+        createdByScript: true,
       };
     };
 
@@ -1511,7 +2619,8 @@ export function initGavel(): void {
       component: HTMLElement,
       gavel: HTMLElement,
       target: HTMLElement,
-      geometry: GavelGeometry
+      geometry: GavelGeometry,
+      effectAnchors?: GavelDebugEffectAnchors
     ): void => {
       removeDebug(component, gavel, target);
 
@@ -1559,6 +2668,20 @@ export function initGavel(): void {
         addMarker(geometry.targetContact, 'TARGET', 'is-target-contact');
       }
 
+      if (effectAnchors) {
+        if (QUICK_TUNING.debug.showContactShadowAnchor && effectAnchors.contactShadow) {
+          addMarker(effectAnchors.contactShadow, 'CONTACT SHADOW', 'is-contact-shadow-anchor');
+        }
+
+        if (QUICK_TUNING.debug.showDustAnchor && effectAnchors.dust) {
+          addMarker(effectAnchors.dust, 'DUST', 'is-dust-anchor');
+        }
+
+        if (QUICK_TUNING.debug.showResonanceAnchor && effectAnchors.resonance) {
+          addMarker(effectAnchors.resonance, 'RESONANCE', 'is-resonance-anchor');
+        }
+      }
+
       if (QUICK_TUNING.debug.showContactLine) {
         const deltaX = geometry.targetContact.x - geometry.restContact.x;
 
@@ -1602,6 +2725,18 @@ export function initGavel(): void {
           impactContactX: geometry.impactContact.x,
 
           impactContactY: geometry.impactContact.y,
+
+          contactShadowAnchor:
+            effectAnchors?.contactShadow &&
+            `${effectAnchors.contactShadow.x}, ${effectAnchors.contactShadow.y}`,
+
+          dustAnchor: effectAnchors?.dust && `${effectAnchors.dust.x}, ${effectAnchors.dust.y}`,
+
+          resonanceAnchor:
+            effectAnchors?.resonance &&
+            `${effectAnchors.resonance.x}, ${effectAnchors.resonance.y}`,
+
+          mobileImpactState: effectAnchors?.mobileImpactState,
         });
 
         console.groupEnd();
@@ -1757,46 +2892,49 @@ export function initGavel(): void {
     };
 
     const createController = ({
+      mode,
       component,
       gavel,
       castShadow,
       dust,
+      contactShadow,
+      resonance,
       target,
       shadow,
       geometryConfig,
       deviceProfile,
-      targetReaction,
-      shadowReaction,
       impactEffects,
     }: {
+      mode: GavelMode;
       component: HTMLElement;
       gavel: HTMLElement;
       castShadow: HTMLElement | null;
       dust: HTMLElement | null;
+      contactShadow: HTMLElement;
+      resonance: HTMLElement;
       target: HTMLElement;
       shadow: HTMLElement;
 
       geometryConfig: GavelGeometryConfig;
       deviceProfile: GavelDeviceProfile;
 
-      targetReaction: GavelReactionConfig;
-      shadowReaction: GavelReactionConfig;
       impactEffects: GavelImpactEffectsConfig;
     }): GavelController => {
       let geometry: GavelGeometry | null = null;
 
-      let activeTimeline: any = null;
-      let impactReactionTimeline: any = null;
+      let activeTimeline: TsaGavelGsapTimeline | null = null;
+      let impactReactionTimeline: TsaGavelGsapTimeline | null = null;
+      let replayTimer: number | null = null;
       let resizeFrame = 0;
 
       let desiredState: GavelDesiredState = 'rest';
-
-      let scrubModeActive = false;
-      let scrubProgressValue = 0;
-      let previousScrubProgress = 0;
-      let scrubImpactTriggered = false;
+      let activePhase: GavelAnimationPhase = 'rest';
+      let mobileStateReader:
+        | (() => Pick<GavelStateSnapshot, 'mobileStatus' | 'hasPlayed' | 'isInside'>)
+        | null = null;
 
       const motionConfig = deviceProfile.motion;
+      const broadShadowEffect = impactEffects.broadShadow;
 
       const { restRotationDeg } = deviceProfile;
 
@@ -1824,6 +2962,9 @@ export function initGavel(): void {
         if (dust) {
           dust.style.willChange = active ? 'transform, opacity' : '';
         }
+
+        contactShadow.style.willChange = active ? 'transform, opacity' : '';
+        resonance.style.willChange = active ? 'transform, opacity' : '';
       };
 
       const getNumericProperty = (element: HTMLElement, property: string): number => {
@@ -1898,6 +3039,36 @@ export function initGavel(): void {
           };
         }
 
+        if (mode === 'mobile' && progress > 0.005 && progress < 0.995) {
+          const approachEndProgress = 0.74;
+
+          const preImpactPose: GavelPose = {
+            x: geometry.impact.x + motionConfig.anticipationXpx,
+            y: geometry.impact.y + motionConfig.anticipationYpx,
+            rotation: geometry.impact.rotation + motionConfig.anticipationRotationDeltaDeg,
+          };
+
+          if (progress < approachEndProgress) {
+            const approachProgress = easeOutCubic(clamp(progress / approachEndProgress, 0, 1));
+
+            return {
+              x: lerp(geometry.rest.x, preImpactPose.x, approachProgress),
+              y: lerp(geometry.rest.y, preImpactPose.y, approachProgress),
+              rotation: lerp(geometry.rest.rotation, preImpactPose.rotation, approachProgress),
+            };
+          }
+
+          const strikeProgress = easeInCubic(
+            clamp((progress - approachEndProgress) / (1 - approachEndProgress), 0, 1)
+          );
+
+          return {
+            x: lerp(preImpactPose.x, geometry.impact.x, strikeProgress),
+            y: lerp(preImpactPose.y, geometry.impact.y, strikeProgress),
+            rotation: lerp(preImpactPose.rotation, geometry.impact.rotation, strikeProgress),
+          };
+        }
+
         return {
           x: lerp(geometry.rest.x, geometry.impact.x, progress),
 
@@ -1936,6 +3107,9 @@ export function initGavel(): void {
           scaleY: phaseEffect.scaleY,
           opacity: phaseEffect.opacity,
 
+          filter:
+            castShadowEffect.filterEnabled === false ? '' : (castShadowEffect.cssFilter ?? ''),
+          mixBlendMode: castShadowEffect.mixBlendMode ?? '',
           transformOrigin: geometry?.transformOrigin ?? '18% 65%',
           force3D: QUICK_TUNING.performance.force3D,
         };
@@ -1978,9 +3152,116 @@ export function initGavel(): void {
         });
       };
 
-      const setImpactReactionDefaults = (): void => {
-        const targetEffect = impactEffects.target;
+      const getComponentEffectAnchor = (
+        offsetXpx: number,
+        offsetYpx: number
+      ): GavelPoint | null => {
+        if (!geometry) {
+          return null;
+        }
+
+        return {
+          x: geometry.targetContact.x + offsetXpx,
+          y: geometry.targetContact.y + offsetYpx,
+        };
+      };
+
+      const getLocalEffectAnchor = (
+        element: HTMLElement,
+        offsetXpx: number,
+        offsetYpx: number
+      ): GavelPoint | null => {
+        if (!geometry) {
+          return null;
+        }
+
+        const offsetParent =
+          element.offsetParent instanceof HTMLElement ? element.offsetParent : component;
+
+        const componentRect = component.getBoundingClientRect();
+        const parentRect = offsetParent.getBoundingClientRect();
+
+        return {
+          x: componentRect.left - parentRect.left + geometry.targetContact.x + offsetXpx,
+          y: componentRect.top - parentRect.top + geometry.targetContact.y + offsetYpx,
+        };
+      };
+
+      const positionEffectAtContact = (
+        element: HTMLElement,
+        offsetXpx: number,
+        offsetYpx: number
+      ): void => {
+        const anchor = getLocalEffectAnchor(element, offsetXpx, offsetYpx);
+
+        if (!anchor) {
+          return;
+        }
+
+        gsap.set(element, {
+          left: anchor.x,
+          top: anchor.y,
+          right: 'auto',
+          bottom: 'auto',
+        });
+      };
+
+      const positionImpactEffectsAtContact = (): void => {
+        const contactShadowEffect = impactEffects.contactShadow;
+        const resonanceEffect = impactEffects.resonance;
+
+        positionDustAtContact();
+
+        positionEffectAtContact(
+          contactShadow,
+          contactShadowEffect.anchorOffsetXpx,
+          contactShadowEffect.anchorOffsetYpx
+        );
+
+        positionEffectAtContact(
+          resonance,
+          resonanceEffect.anchorOffsetXpx,
+          resonanceEffect.anchorOffsetYpx
+        );
+      };
+
+      const getDebugEffectAnchors = (): GavelDebugEffectAnchors => {
         const dustEffect = impactEffects.dust;
+        const contactShadowEffect = impactEffects.contactShadow;
+        const resonanceEffect = impactEffects.resonance;
+
+        return {
+          contactShadow: getComponentEffectAnchor(
+            contactShadowEffect.anchorOffsetXpx,
+            contactShadowEffect.anchorOffsetYpx
+          ),
+          dust: dust
+            ? getComponentEffectAnchor(dustEffect.anchorOffsetXpx, dustEffect.anchorOffsetYpx)
+            : null,
+          resonance: getComponentEffectAnchor(
+            resonanceEffect.anchorOffsetXpx,
+            resonanceEffect.anchorOffsetYpx
+          ),
+          mobileImpactState:
+            mode === 'mobile' ? (mobileStateReader?.().mobileStatus ?? 'uninitialized') : undefined,
+        };
+      };
+
+      const renderControllerDebug = (): void => {
+        if (!geometry) {
+          return;
+        }
+
+        renderDebug(component, gavel, target, geometry, getDebugEffectAnchors());
+      };
+
+      const setImpactReactionDefaults = (): void => {
+        const targetEffect = getTargetImpactEffect(impactEffects.target, mode);
+        const dustEffect = impactEffects.dust;
+        const contactShadowEffect = impactEffects.contactShadow;
+        const resonanceEffect = impactEffects.resonance;
+
+        positionImpactEffectsAtContact();
 
         gsap.set(target, {
           x: 0,
@@ -1999,22 +3280,58 @@ export function initGavel(): void {
           scaleY: 1,
           opacity: 1,
 
-          transformOrigin: shadowReaction.transformOrigin,
+          transformOrigin: broadShadowEffect.transformOrigin,
         });
 
         if (dust) {
-          positionDustAtContact();
-
           gsap.set(dust, {
             xPercent: dustEffect.xPercent,
             yPercent: dustEffect.startYPercent,
-            scale: dustEffect.startScale,
+            scaleX: dustEffect.startScaleX ?? dustEffect.startScale,
+            scaleY: dustEffect.startScaleY ?? dustEffect.startScale,
+            rotation: dustEffect.startRotationDeg ?? 0,
             opacity: dustEffect.startOpacity,
             visibility: 'hidden',
+            filter: dustEffect.cssFilter ?? '',
+            mixBlendMode: dustEffect.mixBlendMode ?? '',
 
             transformOrigin: dustEffect.transformOrigin,
           });
         }
+
+        gsap.set(contactShadow, {
+          xPercent: -50,
+          yPercent: -50,
+          width: contactShadowEffect.widthRem ? `${contactShadowEffect.widthRem}rem` : '',
+          height: contactShadowEffect.heightRem ? `${contactShadowEffect.heightRem}rem` : '',
+          scaleX: contactShadowEffect.initialScaleX ?? 0.78,
+          scaleY: contactShadowEffect.initialScaleY ?? 0.7,
+          opacity: contactShadowEffect.initialOpacity ?? 0,
+          visibility: 'hidden',
+          filter: contactShadowEffect.cssFilter ?? '',
+          mixBlendMode: contactShadowEffect.mixBlendMode ?? '',
+
+          transformOrigin: contactShadowEffect.transformOrigin ?? 'center center',
+        });
+
+        gsap.set(resonance, {
+          xPercent: -50,
+          yPercent: -50,
+          width: resonanceEffect.widthRem ? `${resonanceEffect.widthRem}rem` : '',
+          height: resonanceEffect.heightRem ? `${resonanceEffect.heightRem}rem` : '',
+          scaleX: resonanceEffect.startScaleX,
+          scaleY: resonanceEffect.startScaleY,
+          opacity: 0,
+          visibility: 'hidden',
+          borderColor: resonanceEffect.borderColor ?? '',
+          borderWidth:
+            typeof resonanceEffect.borderWidthPx === 'number'
+              ? `${resonanceEffect.borderWidthPx}px`
+              : '',
+          boxShadow: resonanceEffect.boxShadow ?? '',
+
+          transformOrigin: resonanceEffect.transformOrigin ?? 'center center',
+        });
       };
 
       const setReactionDefaults = (): void => {
@@ -2035,78 +3352,352 @@ export function initGavel(): void {
         impactReactionTimeline = null;
       };
 
-      const easeProgress = (easeName: string, progress: number): number => {
-        const normalizedProgress = clamp(progress, 0, 1);
-
-        if (typeof gsap.parseEase !== 'function') {
-          return normalizedProgress;
-        }
-
-        const ease = gsap.parseEase(easeName);
-
-        return typeof ease === 'function' ? ease(normalizedProgress) : normalizedProgress;
-      };
-
-      const interpolateBetweenPoses = (
-        from: GavelPose,
-        to: GavelPose,
-        progress: number
-      ): GavelPose => {
-        return {
-          x: lerp(from.x, to.x, progress),
-          y: lerp(from.y, to.y, progress),
-          rotation: lerp(from.rotation, to.rotation, progress),
-        };
-      };
-
-      const normalizeRange = (progress: number, start: number, end: number): number => {
-        if (end <= start) {
-          return progress >= end ? 1 : 0;
-        }
-
-        return clamp((progress - start) / (end - start), 0, 1);
-      };
-
-      const setCastShadowScrubState = (
-        pose: GavelPose,
-        fromPhase: CastShadowPhase,
-        toPhase: CastShadowPhase,
-        phaseProgress: number
-      ): void => {
-        if (!castShadow || !geometry) {
+      const clearReplayTimer = (): void => {
+        if (replayTimer === null) {
           return;
         }
 
-        const castShadowEffect = impactEffects.castShadow;
-        const from = castShadowEffect[fromPhase];
-        const to = castShadowEffect[toPhase];
-
-        gsap.set(castShadow, {
-          x: pose.x,
-          y: pose.y,
-          rotation: pose.rotation + castShadowEffect.rotationOffsetDeg,
-
-          xPercent: castShadowEffect.xPercent,
-          yPercent: castShadowEffect.yPercent,
-
-          scaleX: lerp(from.scaleX, to.scaleX, phaseProgress),
-          scaleY: lerp(from.scaleY, to.scaleY, phaseProgress),
-          opacity: lerp(from.opacity, to.opacity, phaseProgress),
-
-          transformOrigin: geometry.transformOrigin,
-          force3D: QUICK_TUNING.performance.force3D,
-        });
+        window.clearTimeout(replayTimer);
+        replayTimer = null;
       };
 
-      const playScrubImpactReaction = (): void => {
-        killImpactReactionTimeline();
-        setImpactReactionDefaults();
-        positionDustAtContact();
+      const addContactShadowPreContact = (
+        timeline: TsaGavelGsapTimeline,
+        contactTime: number
+      ): void => {
+        const contactShadowEffect = impactEffects.contactShadow;
 
-        const targetEffect = impactEffects.target;
+        if (contactShadowEffect.enabled === false) {
+          return;
+        }
+
+        const leadDuration = duration(contactShadowEffect.preContactLeadSeconds);
+        const startTime = Math.max(0, contactTime - leadDuration);
+        const availableDuration = Math.max(0.001, contactTime - startTime);
+
+        timeline.set(
+          contactShadow,
+          {
+            visibility: 'visible',
+            xPercent: -50,
+            yPercent: -50,
+          },
+          startTime
+        );
+
+        timeline.to(
+          contactShadow,
+          {
+            opacity: contactShadowEffect.preContactOpacity,
+            scaleX: contactShadowEffect.preContactScaleX,
+            scaleY: contactShadowEffect.preContactScaleY,
+
+            duration: availableDuration,
+            ease: 'power2.out',
+          },
+          startTime
+        );
+      };
+
+      const addImpactReactionToTimeline = (
+        timeline: TsaGavelGsapTimeline,
+        contactTime: number
+      ): void => {
+        const targetEffect = getTargetImpactEffect(impactEffects.target, mode);
         const dustEffect = impactEffects.dust;
+        const contactShadowEffect = impactEffects.contactShadow;
+        const resonanceEffect = impactEffects.resonance;
+        const effectsAllowed =
+          !QUICK_TUNING.performance.skipEffectsWhenDocumentHidden ||
+          document.visibilityState !== 'hidden';
+
+        if (targetEffect.enabled !== false) {
+          timeline.to(
+            target,
+            {
+              x: targetEffect.compressionXpx,
+              y: targetEffect.compressionYpx,
+              rotation: targetEffect.compressionRotationDeg,
+              scaleX: targetEffect.compressionScaleX,
+              scaleY: targetEffect.compressionScaleY,
+
+              transformOrigin: targetEffect.transformOrigin,
+
+              duration: duration(targetEffect.compressionDurationSeconds),
+              ease: targetEffect.compressionEase,
+            },
+            contactTime
+          );
+
+          if (targetEffect.recoilEnabled !== false) {
+            timeline.to(
+              target,
+              {
+                x: targetEffect.recoilXpx,
+                y: targetEffect.recoilYpx,
+                rotation: targetEffect.recoilRotationDeg,
+                scaleX: targetEffect.recoilScaleX,
+                scaleY: targetEffect.recoilScaleY,
+
+                duration: duration(targetEffect.recoilDurationSeconds),
+                ease: targetEffect.recoilEase,
+              },
+              contactTime + duration(targetEffect.compressionDurationSeconds)
+            );
+          }
+
+          timeline.to(
+            target,
+            {
+              x: 0,
+              y: 0,
+              rotation: 0,
+              scaleX: 1,
+              scaleY: 1,
+
+              duration: duration(targetEffect.settleDurationSeconds),
+              ease: targetEffect.settleEase,
+            },
+            contactTime +
+              duration(
+                targetEffect.compressionDurationSeconds +
+                  (targetEffect.recoilEnabled === false ? 0 : targetEffect.recoilDurationSeconds)
+              )
+          );
+        }
+
+        if (broadShadowEffect.enabled !== false) {
+          timeline.to(
+            shadow,
+            {
+              x: broadShadowEffect.translateXpx,
+              y: broadShadowEffect.translateYpx,
+              scaleX: broadShadowEffect.scaleX,
+              scaleY: broadShadowEffect.scaleY,
+              opacity: broadShadowEffect.opacity ?? 1,
+
+              transformOrigin: broadShadowEffect.transformOrigin,
+
+              duration: duration(broadShadowEffect.compressionDurationSeconds),
+              ease: broadShadowEffect.compressionEase,
+            },
+            contactTime
+          );
+
+          timeline.to(
+            shadow,
+            {
+              x: 0,
+              y: 0,
+              rotation: 0,
+              scaleX: 1,
+              scaleY: 1,
+              opacity: 1,
+
+              duration: duration(broadShadowEffect.recoveryDurationSeconds),
+              ease: broadShadowEffect.recoveryEase,
+            },
+            contactTime + duration(broadShadowEffect.compressionDurationSeconds)
+          );
+        }
+
+        if (contactShadowEffect.enabled !== false && effectsAllowed) {
+          timeline.set(
+            contactShadow,
+            {
+              visibility: 'visible',
+              xPercent: -50,
+              yPercent: -50,
+            },
+            contactTime
+          );
+
+          timeline.to(
+            contactShadow,
+            {
+              opacity: contactShadowEffect.contactOpacity,
+              scaleX: contactShadowEffect.contactScaleX,
+              scaleY: contactShadowEffect.contactScaleY,
+
+              duration: duration(contactShadowEffect.contactDurationSeconds),
+              ease: contactShadowEffect.contactEase,
+            },
+            contactTime
+          );
+
+          timeline.to(
+            contactShadow,
+            {
+              opacity: contactShadowEffect.recoilOpacity,
+              scaleX: contactShadowEffect.recoilScaleX,
+              scaleY: contactShadowEffect.recoilScaleY,
+
+              duration: duration(contactShadowEffect.recoilDurationSeconds),
+              ease: contactShadowEffect.recoilEase,
+            },
+            contactTime + duration(contactShadowEffect.contactDurationSeconds)
+          );
+
+          timeline.to(
+            contactShadow,
+            {
+              opacity: contactShadowEffect.fadeOpacity,
+              scaleX: contactShadowEffect.fadeScaleX,
+              scaleY: contactShadowEffect.fadeScaleY,
+
+              duration: duration(contactShadowEffect.fadeDurationSeconds),
+              ease: contactShadowEffect.fadeEase,
+            },
+            contactTime +
+              duration(
+                contactShadowEffect.contactDurationSeconds +
+                  contactShadowEffect.recoilDurationSeconds
+              )
+          );
+
+          timeline.set(
+            contactShadow,
+            {
+              visibility: 'hidden',
+            },
+            contactTime +
+              duration(
+                contactShadowEffect.contactDurationSeconds +
+                  contactShadowEffect.recoilDurationSeconds +
+                  contactShadowEffect.fadeDurationSeconds
+              )
+          );
+        }
+
+        if (dust && dustEffect.enabled !== false && effectsAllowed) {
+          timeline.set(
+            dust,
+            {
+              xPercent: dustEffect.xPercent,
+              yPercent: dustEffect.startYPercent,
+              scaleX: dustEffect.startScaleX ?? dustEffect.startScale,
+              scaleY: dustEffect.startScaleY ?? dustEffect.startScale,
+              rotation: dustEffect.startRotationDeg ?? 0,
+              opacity: dustEffect.startOpacity,
+              visibility: 'visible',
+            },
+            contactTime
+          );
+
+          timeline.to(
+            dust,
+            {
+              yPercent: dustEffect.peakYPercent,
+              scaleX: dustEffect.peakScaleX ?? dustEffect.peakScale,
+              scaleY: dustEffect.peakScaleY ?? dustEffect.peakScale,
+              rotation: dustEffect.peakRotationDeg ?? 0,
+              opacity: dustEffect.peakOpacity,
+
+              duration: duration(dustEffect.revealDurationSeconds),
+              ease: dustEffect.revealEase,
+            },
+            contactTime
+          );
+
+          timeline.to(
+            dust,
+            {
+              yPercent: dustEffect.endYPercent,
+              scaleX: dustEffect.endScaleX ?? dustEffect.endScale,
+              scaleY: dustEffect.endScaleY ?? dustEffect.endScale,
+              rotation: dustEffect.endRotationDeg ?? 0,
+              opacity: dustEffect.endOpacity ?? 0,
+
+              duration: duration(dustEffect.fadeDurationSeconds),
+              ease: dustEffect.fadeEase,
+            },
+            contactTime + duration(dustEffect.revealDurationSeconds)
+          );
+
+          timeline.set(
+            dust,
+            {
+              visibility: 'hidden',
+            },
+            contactTime +
+              duration(dustEffect.revealDurationSeconds + dustEffect.fadeDurationSeconds)
+          );
+        }
+
+        if (resonanceEffect.enabled && effectsAllowed) {
+          const resonanceRevealDuration = duration(
+            resonanceEffect.revealDurationSeconds ?? resonanceEffect.durationSeconds * 0.35
+          );
+          const resonanceFadeDuration = duration(
+            resonanceEffect.fadeDurationSeconds ?? resonanceEffect.durationSeconds * 0.65
+          );
+
+          timeline.set(
+            resonance,
+            {
+              visibility: 'visible',
+              xPercent: -50,
+              yPercent: -50,
+              scaleX: resonanceEffect.startScaleX,
+              scaleY: resonanceEffect.startScaleY,
+              opacity: resonanceEffect.startOpacity,
+            },
+            contactTime
+          );
+
+          timeline.to(
+            resonance,
+            {
+              opacity: resonanceEffect.peakOpacity ?? resonanceEffect.startOpacity,
+              scaleX: resonanceEffect.peakScaleX ?? resonanceEffect.startScaleX,
+              scaleY: resonanceEffect.peakScaleY ?? resonanceEffect.startScaleY,
+
+              duration: resonanceRevealDuration,
+              ease: resonanceEffect.revealEase ?? resonanceEffect.ease,
+            },
+            contactTime
+          );
+
+          timeline.to(
+            resonance,
+            {
+              opacity: resonanceEffect.endOpacity,
+              scaleX: resonanceEffect.endScaleX,
+              scaleY: resonanceEffect.endScaleY,
+
+              duration: resonanceFadeDuration,
+              ease: resonanceEffect.fadeEase ?? resonanceEffect.ease,
+            },
+            contactTime + resonanceRevealDuration
+          );
+
+          timeline.set(
+            resonance,
+            {
+              visibility: 'hidden',
+            },
+            contactTime + resonanceRevealDuration + resonanceFadeDuration
+          );
+        }
+      };
+
+      const resetImpactReaction = (): void => {
+        killImpactReactionTimeline();
+        setReactionDefaults();
+      };
+
+      const playImpactReaction = (): void => {
+        if (!ensureGeometry() || !geometry) {
+          return;
+        }
+
+        killImpactReactionTimeline();
+        positionImpactEffectsAtContact();
+        setImpactReactionDefaults();
 
         const timeline = gsap.timeline({
+          paused: true,
+
           defaults: {
             overwrite: 'auto',
           },
@@ -2115,10 +3706,6 @@ export function initGavel(): void {
             if (impactReactionTimeline === timeline) {
               impactReactionTimeline = null;
             }
-
-            const isStillScrubbing = scrubProgressValue > 0.001 && scrubProgressValue < 0.999;
-
-            setWillChange(isStillScrubbing);
           },
 
           onInterrupt: () => {
@@ -2129,148 +3716,62 @@ export function initGavel(): void {
         });
 
         impactReactionTimeline = timeline;
+        activePhase = 'contact';
 
-        /*
-         * Marble target response:
-         * short compression, smaller recoil, controlled settle.
-         */
-        timeline.to(
-          target,
-          {
-            x: targetEffect.compressionXpx,
-            y: targetEffect.compressionYpx,
-            rotation: targetEffect.compressionRotationDeg,
-            scaleX: targetEffect.compressionScaleX,
-            scaleY: targetEffect.compressionScaleY,
-
-            transformOrigin: targetEffect.transformOrigin,
-
-            duration: duration(targetEffect.compressionDurationSeconds),
-            ease: targetEffect.compressionEase,
-          },
-          0
-        );
-
-        timeline.to(
-          target,
-          {
-            x: targetEffect.recoilXpx,
-            y: targetEffect.recoilYpx,
-            rotation: targetEffect.recoilRotationDeg,
-            scaleX: targetEffect.recoilScaleX,
-            scaleY: targetEffect.recoilScaleY,
-
-            duration: duration(targetEffect.recoilDurationSeconds),
-            ease: targetEffect.recoilEase,
-          },
-          duration(targetEffect.compressionDurationSeconds)
-        );
-
-        timeline.to(
-          target,
-          {
-            x: 0,
-            y: 0,
-            rotation: 0,
-            scaleX: 1,
-            scaleY: 1,
-
-            duration: duration(targetEffect.settleDurationSeconds),
-            ease: targetEffect.settleEase,
-          },
-          duration(targetEffect.compressionDurationSeconds + targetEffect.recoilDurationSeconds)
-        );
-
-        /*
-         * Wide grounding shadow reacts at the same collision frame.
-         */
-        timeline.to(
-          shadow,
-          {
-            x: shadowReaction.translateXpx,
-            y: shadowReaction.translateYpx,
-            scaleX: shadowReaction.scaleX,
-            scaleY: shadowReaction.scaleY,
-            opacity: shadowReaction.opacity ?? 1,
-
-            transformOrigin: shadowReaction.transformOrigin,
-
-            duration: duration(shadowReaction.compressionDurationSeconds),
-            ease: shadowReaction.compressionEase,
-          },
-          0
-        );
-
-        timeline.to(
-          shadow,
-          {
-            x: 0,
-            y: 0,
-            scaleX: 1,
-            scaleY: 1,
-            opacity: 1,
-
-            duration: duration(shadowReaction.recoveryDurationSeconds),
-            ease: shadowReaction.recoveryEase,
-          },
-          duration(shadowReaction.compressionDurationSeconds)
-        );
-
-        /*
-         * Dust remains time-based so it never scrubs backward.
-         */
-        if (dust) {
-          timeline.set(
-            dust,
-            {
-              xPercent: dustEffect.xPercent,
-              yPercent: dustEffect.startYPercent,
-              scale: dustEffect.startScale,
-              opacity: dustEffect.startOpacity,
-              visibility: 'visible',
-            },
-            0
-          );
-
-          timeline.to(
-            dust,
-            {
-              yPercent: dustEffect.peakYPercent,
-              scale: dustEffect.peakScale,
-              opacity: dustEffect.peakOpacity,
-
-              duration: duration(dustEffect.revealDurationSeconds),
-              ease: dustEffect.revealEase,
-            },
-            0
-          );
-
-          timeline.to(
-            dust,
-            {
-              yPercent: dustEffect.endYPercent,
-              scale: dustEffect.endScale,
-              opacity: 0,
-
-              duration: duration(dustEffect.fadeDurationSeconds),
-              ease: dustEffect.fadeEase,
-            },
-            duration(dustEffect.revealDurationSeconds)
-          );
-
-          timeline.set(
-            dust,
-            {
-              visibility: 'hidden',
-            },
-            duration(dustEffect.revealDurationSeconds + dustEffect.fadeDurationSeconds)
-          );
-        }
+        addImpactReactionToTimeline(timeline, 0);
+        timeline.play(0);
       };
 
-      const resetScrubImpactReaction = (): void => {
-        killImpactReactionTimeline();
-        setImpactReactionDefaults();
+      const scrubToProgress = (progress: number): void => {
+        if (!ensureGeometry() || !geometry) {
+          return;
+        }
+
+        const clampedProgress = clamp(progress, 0, 1);
+        const pose = interpolatePose(clampedProgress);
+        const castShadowPhase: CastShadowPhase =
+          clampedProgress >= 0.98
+            ? 'settle'
+            : clampedProgress >= 0.72
+              ? 'impact'
+              : clampedProgress >= 0.12
+                ? 'anticipation'
+                : 'rest';
+
+        clearReplayTimer();
+        killActiveTimeline();
+
+        desiredState = clampedProgress >= 0.5 ? 'impact' : 'rest';
+        activePhase =
+          clampedProgress <= 0.005
+            ? 'rest'
+            : clampedProgress >= 0.995
+              ? 'impact-hold'
+              : clampedProgress >= 0.9
+                ? 'contact'
+                : clampedProgress >= 0.12
+                  ? 'strike'
+                  : 'anticipation';
+
+        if (clampedProgress <= 0.005) {
+          resetImpactReaction();
+        }
+
+        setWillChange(clampedProgress > 0.005 && clampedProgress < 0.995);
+
+        gsap.set(gavel, {
+          x: pose.x,
+          y: pose.y,
+          rotation: pose.rotation,
+
+          transformOrigin: geometry.transformOrigin,
+
+          force3D: QUICK_TUNING.performance.force3D,
+        });
+
+        if (castShadow) {
+          gsap.set(castShadow, getCastShadowVars(pose, castShadowPhase));
+        }
       };
 
       const ensureGeometry = (): boolean => {
@@ -2290,170 +3791,33 @@ export function initGavel(): void {
           return false;
         }
 
-        renderDebug(component, gavel, target, geometry);
-        positionDustAtContact();
+        renderControllerDebug();
+        positionImpactEffectsAtContact();
 
         return true;
       };
 
-      const completeTimeline = (timeline: any): void => {
+      const completeTimeline = (
+        timeline: TsaGavelGsapTimeline,
+        completedPhase: GavelAnimationPhase
+      ): void => {
         if (activeTimeline !== timeline) {
           return;
         }
 
         activeTimeline = null;
+        activePhase = completedPhase;
         setWillChange(false);
       };
 
-      const setScrubProgress = (rawProgress: number, suppressImpactReaction = false): void => {
-        scrubModeActive = true;
+      const animateToImpact = (options: GavelPlayOptions = {}): void => {
+        const wasMovingToImpact = desiredState === 'impact';
 
-        if (!ensureGeometry() || !geometry) {
+        if (activeTimeline && wasMovingToImpact && !options.force) {
           return;
         }
 
-        killActiveTimeline();
-
-        const scrubConfig = QUICK_TUNING.interaction.mobileScrub;
-        const progress = clamp(rawProgress, 0, 1);
-
-        scrubProgressValue = progress;
-        desiredState = progress >= scrubConfig.contactProgress ? 'impact' : 'rest';
-
-        const anticipationPose: GavelPose = {
-          x: geometry.rest.x + motionConfig.anticipationXpx,
-          y: geometry.rest.y + motionConfig.anticipationYpx,
-          rotation: geometry.rest.rotation + motionConfig.anticipationRotationDeltaDeg,
-        };
-
-        const followThroughPose: GavelPose = {
-          x: geometry.impact.x + motionConfig.overshootXpx,
-          y: geometry.impact.y + motionConfig.overshootYpx,
-          rotation: geometry.impact.rotation + motionConfig.overshootRotationDeltaDeg,
-        };
-
-        let pose = geometry.rest;
-
-        let castShadowFromPhase: CastShadowPhase = 'rest';
-        let castShadowToPhase: CastShadowPhase = 'rest';
-        let castShadowPhaseProgress = 0;
-
-        if (progress <= scrubConfig.anticipationEndProgress) {
-          const phaseProgress = easeProgress(
-            motionConfig.anticipationEase,
-            normalizeRange(progress, 0, scrubConfig.anticipationEndProgress)
-          );
-
-          pose = interpolateBetweenPoses(geometry.rest, anticipationPose, phaseProgress);
-
-          castShadowFromPhase = 'rest';
-          castShadowToPhase = 'anticipation';
-          castShadowPhaseProgress = phaseProgress;
-        } else if (progress <= scrubConfig.contactProgress) {
-          const phaseProgress = easeProgress(
-            motionConfig.strikeEase,
-            normalizeRange(
-              progress,
-              scrubConfig.anticipationEndProgress,
-              scrubConfig.contactProgress
-            )
-          );
-
-          pose = interpolateBetweenPoses(anticipationPose, geometry.impact, phaseProgress);
-
-          castShadowFromPhase = 'anticipation';
-          castShadowToPhase = 'impact';
-          castShadowPhaseProgress = phaseProgress;
-        } else if (progress <= scrubConfig.followThroughEndProgress) {
-          const phaseProgress = easeProgress(
-            'power2.out',
-            normalizeRange(
-              progress,
-              scrubConfig.contactProgress,
-              scrubConfig.followThroughEndProgress
-            )
-          );
-
-          pose = interpolateBetweenPoses(geometry.impact, followThroughPose, phaseProgress);
-
-          castShadowFromPhase = 'impact';
-          castShadowToPhase = 'impact';
-          castShadowPhaseProgress = 1;
-        } else if (progress <= scrubConfig.settleEndProgress) {
-          const phaseProgress = easeProgress(
-            motionConfig.settleEase,
-            normalizeRange(
-              progress,
-              scrubConfig.followThroughEndProgress,
-              scrubConfig.settleEndProgress
-            )
-          );
-
-          pose = interpolateBetweenPoses(followThroughPose, geometry.impact, phaseProgress);
-
-          castShadowFromPhase = 'impact';
-          castShadowToPhase = 'settle';
-          castShadowPhaseProgress = phaseProgress;
-        } else {
-          pose = geometry.impact;
-
-          castShadowFromPhase = 'settle';
-          castShadowToPhase = 'settle';
-          castShadowPhaseProgress = 1;
-        }
-
-        gsap.set(gavel, {
-          x: pose.x,
-          y: pose.y,
-          rotation: pose.rotation,
-
-          transformOrigin: geometry.transformOrigin,
-          force3D: QUICK_TUNING.performance.force3D,
-        });
-
-        setCastShadowScrubState(
-          pose,
-          castShadowFromPhase,
-          castShadowToPhase,
-          castShadowPhaseProgress
-        );
-
-        const movingForward = progress > previousScrubProgress + 0.0001;
-
-        if (suppressImpactReaction) {
-          scrubImpactTriggered = progress >= scrubConfig.contactProgress;
-
-          if (progress < scrubConfig.contactProgress) {
-            resetScrubImpactReaction();
-          } else {
-            /*
-             * A page loaded directly inside the impact hold should not
-             * emit dust or replay a collision.
-             */
-            setImpactReactionDefaults();
-          }
-        } else {
-          if (movingForward && !scrubImpactTriggered && progress >= scrubConfig.contactProgress) {
-            scrubImpactTriggered = true;
-            playScrubImpactReaction();
-          }
-
-          if (scrubImpactTriggered && progress < scrubConfig.reactionResetProgress) {
-            scrubImpactTriggered = false;
-            resetScrubImpactReaction();
-          }
-        }
-
-        previousScrubProgress = progress;
-
-        const isInsideScrub = progress > 0.001 && progress < 0.999;
-
-        setWillChange(isInsideScrub || Boolean(impactReactionTimeline));
-      };
-
-      const animateToImpact = (skipAnticipation = false): void => {
-        scrubModeActive = false;
-        scrubImpactTriggered = false;
+        clearReplayTimer();
         killImpactReactionTimeline();
 
         desiredState = 'impact';
@@ -2464,12 +3828,15 @@ export function initGavel(): void {
 
         const currentProgress = getProgress();
 
-        if (currentProgress >= 0.995 && !activeTimeline) {
+        if (currentProgress >= 0.995 && !activeTimeline && !options.force) {
+          activePhase = 'impact-hold';
           return;
         }
 
         killActiveTimeline();
+        setImpactReactionDefaults();
         setWillChange(true);
+        activePhase = 'strike';
 
         const timeline = gsap.timeline({
           paused: true,
@@ -2479,7 +3846,7 @@ export function initGavel(): void {
           },
 
           onComplete: () => {
-            completeTimeline(timeline);
+            completeTimeline(timeline, 'impact-hold');
           },
 
           onInterrupt: () => {
@@ -2492,9 +3859,13 @@ export function initGavel(): void {
         activeTimeline = timeline;
 
         const canAnticipate =
-          !skipAnticipation && currentProgress <= motionConfig.anticipationMaxProgress;
+          motionConfig.anticipationEnabled !== false &&
+          !options.skipAnticipation &&
+          currentProgress <= motionConfig.anticipationMaxProgress;
 
         if (canAnticipate) {
+          activePhase = 'anticipation';
+
           const availableProgress = 1 - currentProgress / motionConfig.anticipationMaxProgress;
 
           const anticipationDuration = Math.max(
@@ -2533,17 +3904,27 @@ export function initGavel(): void {
               '<'
             );
           }
+
+          timeline.call(
+            () => {
+              activePhase = 'strike';
+            },
+            null,
+            '>'
+          );
         }
 
         const remainingDistance = clamp(1 - currentProgress, 0, 1);
 
-        const strikeDuration = lerp(
-          motionConfig.strikeMinDurationSeconds,
+        const strikeDuration =
+          motionConfig.strikeDurationSeconds ??
+          lerp(
+            motionConfig.strikeMinDurationSeconds,
 
-          motionConfig.strikeMaxDurationSeconds,
+            motionConfig.strikeMaxDurationSeconds,
 
-          remainingDistance
-        );
+            remainingDistance
+          );
 
         const overshootPose: GavelPose = {
           x: geometry.impact.x + motionConfig.overshootXpx,
@@ -2585,232 +3966,114 @@ export function initGavel(): void {
 
         const contactTime = timeline.duration();
 
+        addContactShadowPreContact(timeline, contactTime);
+        timeline.call(
+          () => {
+            activePhase = 'contact';
+          },
+          null,
+          contactTime
+        );
+
         /*
          * Subtle physical follow-through after contact.
          * It is intentionally much smaller than the previous penetration.
          */
-        const followThroughDuration = Math.min(0.045, motionConfig.settleDurationSeconds * 0.35);
+        const followThroughDuration =
+          motionConfig.followThroughEnabled === false
+            ? 0
+            : (motionConfig.followThroughDurationSeconds ?? 0.028);
+        const finalSettleDuration =
+          motionConfig.settleEnabled === false ? 0 : motionConfig.settleDurationSeconds;
 
-        const finalSettleDuration = Math.max(
-          0.055,
-          motionConfig.settleDurationSeconds - followThroughDuration
-        );
+        if (followThroughDuration > 0) {
+          timeline.to(
+            gavel,
+            {
+              ...overshootPose,
 
-        timeline.to(
-          gavel,
-          {
-            ...overshootPose,
+              transformOrigin: geometry.transformOrigin,
 
-            transformOrigin: geometry.transformOrigin,
+              duration: duration(followThroughDuration),
+              ease: 'power1.out',
 
-            duration: duration(followThroughDuration),
-            ease: 'power2.out',
+              force3D: QUICK_TUNING.performance.force3D,
+            },
+            contactTime
+          );
 
-            force3D: QUICK_TUNING.performance.force3D,
-          },
-          contactTime
-        );
+          timeline.call(
+            () => {
+              activePhase = 'follow-through';
+            },
+            null,
+            contactTime
+          );
+        }
 
-        timeline.to(
-          gavel,
-          {
-            x: geometry.impact.x,
-            y: geometry.impact.y,
-            rotation: geometry.impact.rotation,
+        if (finalSettleDuration > 0) {
+          timeline.to(
+            gavel,
+            {
+              x: geometry.impact.x,
+              y: geometry.impact.y,
+              rotation: geometry.impact.rotation,
 
-            transformOrigin: geometry.transformOrigin,
+              transformOrigin: geometry.transformOrigin,
 
-            duration: duration(finalSettleDuration),
-            ease: motionConfig.settleEase,
+              duration: duration(finalSettleDuration),
+              ease: motionConfig.settleEase,
 
-            force3D: QUICK_TUNING.performance.force3D,
-          },
-          contactTime + duration(followThroughDuration)
-        );
+              force3D: QUICK_TUNING.performance.force3D,
+            },
+            contactTime + duration(followThroughDuration)
+          );
 
-        const targetEffect = impactEffects.target;
-        const dustEffect = impactEffects.dust;
+          timeline.call(
+            () => {
+              activePhase = 'settle';
+            },
+            null,
+            contactTime + duration(followThroughDuration)
+          );
+        }
 
-        /*
-         * Target rigid impact:
-         * down, micro-recoil, settle.
-         */
-        timeline.to(
-          target,
-          {
-            x: targetEffect.compressionXpx,
-            y: targetEffect.compressionYpx,
-            rotation: targetEffect.compressionRotationDeg,
-            scaleX: targetEffect.compressionScaleX,
-            scaleY: targetEffect.compressionScaleY,
-
-            transformOrigin: targetEffect.transformOrigin,
-
-            duration: duration(targetEffect.compressionDurationSeconds),
-
-            ease: targetEffect.compressionEase,
-          },
-          contactTime
-        );
-
-        timeline.to(
-          target,
-          {
-            x: targetEffect.recoilXpx,
-            y: targetEffect.recoilYpx,
-            rotation: targetEffect.recoilRotationDeg,
-            scaleX: targetEffect.recoilScaleX,
-            scaleY: targetEffect.recoilScaleY,
-
-            duration: duration(targetEffect.recoilDurationSeconds),
-
-            ease: targetEffect.recoilEase,
-          },
-          contactTime + duration(targetEffect.compressionDurationSeconds)
-        );
-
-        timeline.to(
-          target,
-          {
-            x: 0,
-            y: 0,
-            rotation: 0,
-            scaleX: 1,
-            scaleY: 1,
-
-            duration: duration(targetEffect.settleDurationSeconds),
-
-            ease: targetEffect.settleEase,
-          },
-          contactTime +
-            duration(targetEffect.compressionDurationSeconds + targetEffect.recoilDurationSeconds)
-        );
-
-        /*
-         * Existing wide shadow under the component.
-         */
-        timeline.to(
-          shadow,
-          {
-            x: shadowReaction.translateXpx,
-            y: shadowReaction.translateYpx,
-            scaleX: shadowReaction.scaleX,
-            scaleY: shadowReaction.scaleY,
-            opacity: shadowReaction.opacity ?? 1,
-
-            transformOrigin: shadowReaction.transformOrigin,
-
-            duration: duration(shadowReaction.compressionDurationSeconds),
-
-            ease: shadowReaction.compressionEase,
-          },
-          contactTime
-        );
-
-        timeline.to(
-          shadow,
-          {
-            x: 0,
-            y: 0,
-            scaleX: 1,
-            scaleY: 1,
-            opacity: 1,
-
-            duration: duration(shadowReaction.recoveryDurationSeconds),
-
-            ease: shadowReaction.recoveryEase,
-          },
-          contactTime + duration(shadowReaction.compressionDurationSeconds)
-        );
+        addImpactReactionToTimeline(timeline, contactTime);
 
         /*
          * Gavel cast shadow follows the same post-contact path.
          */
-        if (castShadow) {
+        if (castShadow && followThroughDuration > 0) {
           timeline.to(
             castShadow,
             {
               ...getCastShadowVars(overshootPose, 'impact'),
 
               duration: duration(followThroughDuration),
-              ease: 'power2.out',
+              ease: 'power1.out',
             },
             contactTime
           );
 
-          timeline.to(
-            castShadow,
-            {
-              ...getCastShadowVars(geometry.impact, 'settle'),
+          if (finalSettleDuration > 0) {
+            timeline.to(
+              castShadow,
+              {
+                ...getCastShadowVars(geometry.impact, 'settle'),
 
-              duration: duration(finalSettleDuration),
-              ease: motionConfig.settleEase,
-            },
-            contactTime + duration(followThroughDuration)
-          );
-        }
-
-        /*
-         * Dust puff:
-         * very short, low-opacity, no looping.
-         */
-        if (dust) {
-          timeline.set(
-            dust,
-            {
-              xPercent: dustEffect.xPercent,
-              yPercent: dustEffect.startYPercent,
-              scale: dustEffect.startScale,
-              opacity: dustEffect.startOpacity,
-              visibility: 'visible',
-            },
-            contactTime
-          );
-
-          timeline.to(
-            dust,
-            {
-              yPercent: dustEffect.peakYPercent,
-              scale: dustEffect.peakScale,
-              opacity: dustEffect.peakOpacity,
-
-              duration: duration(dustEffect.revealDurationSeconds),
-
-              ease: dustEffect.revealEase,
-            },
-            contactTime
-          );
-
-          timeline.to(
-            dust,
-            {
-              yPercent: dustEffect.endYPercent,
-              scale: dustEffect.endScale,
-              opacity: 0,
-
-              duration: duration(dustEffect.fadeDurationSeconds),
-
-              ease: dustEffect.fadeEase,
-            },
-            contactTime + duration(dustEffect.revealDurationSeconds)
-          );
-
-          timeline.set(
-            dust,
-            {
-              visibility: 'hidden',
-            },
-            contactTime +
-              duration(dustEffect.revealDurationSeconds + dustEffect.fadeDurationSeconds)
-          );
+                duration: duration(finalSettleDuration),
+                ease: motionConfig.settleEase,
+              },
+              contactTime + duration(followThroughDuration)
+            );
+          }
         }
 
         timeline.play(0);
       };
 
       const animateToRest = (): void => {
-        scrubModeActive = false;
-        scrubImpactTriggered = false;
+        clearReplayTimer();
         killImpactReactionTimeline();
 
         desiredState = 'rest';
@@ -2823,19 +4086,23 @@ export function initGavel(): void {
 
         if (currentProgress <= 0.005 && !activeTimeline) {
           setReactionDefaults();
+          activePhase = 'rest';
           return;
         }
 
         killActiveTimeline();
         setWillChange(true);
+        activePhase = 'lift';
 
-        const liftDuration = lerp(
-          motionConfig.liftMinDurationSeconds,
+        const liftDuration =
+          motionConfig.liftDurationSeconds ??
+          lerp(
+            motionConfig.liftMinDurationSeconds,
 
-          motionConfig.liftMaxDurationSeconds,
+            motionConfig.liftMaxDurationSeconds,
 
-          currentProgress
-        );
+            currentProgress
+          );
 
         const timeline = gsap.timeline({
           paused: true,
@@ -2845,7 +4112,7 @@ export function initGavel(): void {
           },
 
           onComplete: () => {
-            completeTimeline(timeline);
+            completeTimeline(timeline, 'rest');
           },
 
           onInterrupt: () => {
@@ -2932,15 +4199,24 @@ export function initGavel(): void {
           );
         }
 
+        timeline.set(
+          [contactShadow, resonance],
+          {
+            opacity: 0,
+            visibility: 'hidden',
+          },
+          0
+        );
+
         timeline.play(0);
       };
 
       const setRest = (): void => {
-        scrubModeActive = false;
-        scrubImpactTriggered = false;
+        clearReplayTimer();
         killImpactReactionTimeline();
 
         desiredState = 'rest';
+        activePhase = 'rest';
 
         if (!ensureGeometry() || !geometry) {
           return;
@@ -2964,11 +4240,11 @@ export function initGavel(): void {
       };
 
       const setImpact = (): void => {
-        scrubModeActive = false;
-        scrubImpactTriggered = false;
+        clearReplayTimer();
         killImpactReactionTimeline();
 
         desiredState = 'impact';
+        activePhase = 'impact-hold';
 
         if (!ensureGeometry() || !geometry) {
           return;
@@ -3002,78 +4278,87 @@ export function initGavel(): void {
         setWillChange(false);
       };
 
-      const refresh = (): void => {
+      const refreshNow = (): void => {
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = 0;
+
+        const preservedProgress = getProgress();
+        const preservedState = desiredState;
+
+        killActiveTimeline();
+        killImpactReactionTimeline();
+
+        geometry = calculateGeometry({
+          component,
+          gavel,
+          target,
+          geometryConfig,
+          restRotationDeg,
+        });
+
+        if (!geometry) {
+          return;
+        }
+
+        setReactionDefaults();
+        renderControllerDebug();
+
+        const preservedPose = interpolatePose(preservedProgress);
+
+        gsap.set(gavel, {
+          x: preservedPose.x,
+          y: preservedPose.y,
+
+          rotation: preservedPose.rotation,
+
+          transformOrigin: geometry.transformOrigin,
+
+          force3D: QUICK_TUNING.performance.force3D,
+        });
+
+        if (castShadow) {
+          gsap.set(
+            castShadow,
+            getCastShadowVars(preservedPose, preservedState === 'impact' ? 'settle' : 'rest')
+          );
+        }
+
+        if (preservedState === 'impact' && preservedProgress >= 0.995) {
+          setImpact();
+        } else if (preservedState === 'rest' && preservedProgress <= 0.005) {
+          setRest();
+        } else {
+          activePhase = preservedState === 'impact' ? 'impact-hold' : 'rest';
+          setWillChange(false);
+        }
+      };
+
+      const scheduleRefresh = (): void => {
         cancelAnimationFrame(resizeFrame);
 
         resizeFrame = requestAnimationFrame(() => {
-          const preservedProgress = scrubModeActive ? scrubProgressValue : getProgress();
-
-          const preservedState = desiredState;
-
-          killActiveTimeline();
-          killImpactReactionTimeline();
-
-          geometry = calculateGeometry({
-            component,
-            gavel,
-            target,
-            geometryConfig,
-            restRotationDeg,
-          });
-
-          if (!geometry) {
-            return;
-          }
-
-          setReactionDefaults();
-          renderDebug(component, gavel, target, geometry);
-
-          if (scrubModeActive) {
-            previousScrubProgress = preservedProgress;
-            scrubImpactTriggered =
-              preservedProgress >= QUICK_TUNING.interaction.mobileScrub.contactProgress;
-
-            setScrubProgress(preservedProgress, true);
-
-            return;
-          }
-
-          const preservedPose = interpolatePose(preservedProgress);
-
-          gsap.set(gavel, {
-            x: preservedPose.x,
-            y: preservedPose.y,
-
-            rotation: preservedPose.rotation,
-
-            transformOrigin: geometry.transformOrigin,
-
-            force3D: QUICK_TUNING.performance.force3D,
-          });
-
-          if (preservedState === 'impact' && preservedProgress < 0.995) {
-            animateToImpact(true);
-          } else if (preservedState === 'rest' && preservedProgress > 0.005) {
-            animateToRest();
-          } else {
-            setWillChange(false);
-          }
+          refreshNow();
         });
       };
 
       const kill = (): void => {
         cancelAnimationFrame(resizeFrame);
+        clearReplayTimer();
 
         killActiveTimeline();
         killImpactReactionTimeline();
+        activePhase = 'killed';
 
         removeDebug(component, gavel, target);
 
         setWillChange(false);
 
-        gsap.set([gavel, castShadow, dust, target, shadow].filter(Boolean), {
-          clearProps: 'transform,transformOrigin,willChange,opacity,visibility',
-        });
+        gsap.set(
+          [gavel, castShadow, dust, contactShadow, resonance, target, shadow].filter(Boolean),
+          {
+            clearProps: 'transform,transformOrigin,willChange,opacity,visibility',
+          }
+        );
       };
 
       geometry = calculateGeometry({
@@ -3098,27 +4383,106 @@ export function initGavel(): void {
           force3D: QUICK_TUNING.performance.force3D,
         });
 
-        renderDebug(component, gavel, target, geometry);
+        renderControllerDebug();
       }
 
+      activePhase = 'rest';
+
+      const replay = (options: GavelPlayOptions = {}): void => {
+        clearReplayTimer();
+
+        if (!ensureGeometry()) {
+          return;
+        }
+
+        if (getProgress() > 0.005 || activeTimeline) {
+          animateToRest();
+
+          const liftDuration = duration(
+            motionConfig.liftDurationSeconds ?? motionConfig.liftMaxDurationSeconds
+          );
+
+          replayTimer = window.setTimeout(
+            () => {
+              replayTimer = null;
+              animateToImpact({ ...options, force: true });
+            },
+            liftDuration * 1000 + 32
+          );
+
+          return;
+        }
+
+        animateToImpact({ ...options, force: true });
+      };
+
+      const reset = (options: GavelResetOptions = {}): void => {
+        clearReplayTimer();
+        killActiveTimeline();
+        killImpactReactionTimeline();
+
+        if (options.initialState === 'impact') {
+          setImpact();
+          return;
+        }
+
+        setRest();
+      };
+
       return {
-        moveToImpact: () => {
-          animateToImpact(false);
+        moveToImpact: (options = {}) => {
+          animateToImpact(options);
         },
 
-        moveToRest: animateToRest,
+        moveToRest: () => {
+          animateToRest();
+        },
+
+        playImpactSequence: (options = {}) => {
+          animateToImpact(options);
+        },
+
+        playImpactReaction,
+        resetImpactReaction,
+        scrubToProgress,
+
+        replay,
+        reset,
 
         setRest,
         setImpact,
-        setScrubProgress,
 
-        refresh,
+        refresh: scheduleRefresh,
+        refreshNow,
+        scheduleRefresh,
 
         geometry: () => geometry,
 
         progress: getProgress,
 
         desiredState: () => desiredState,
+        isAnimating: () => Boolean(activeTimeline || impactReactionTimeline),
+        activePhase: () => activePhase,
+        state: () => {
+          const mobileState = mobileStateReader?.() ?? {
+            mobileStatus: null,
+            hasPlayed: null,
+            isInside: null,
+          };
+
+          return {
+            mode,
+            desiredState,
+            progress: getProgress(),
+            mobileStatus: mobileState.mobileStatus,
+            hasPlayed: mobileState.hasPlayed,
+            isInside: mobileState.isInside,
+            activePreset: activePresetName,
+          };
+        },
+        setMobileStateReader: (reader) => {
+          mobileStateReader = reader;
+        },
 
         kill,
       };
@@ -3195,21 +4559,49 @@ export function initGavel(): void {
         return;
       }
 
+      const localCleanup: Array<() => void> = [];
+
+      const contactShadowLayer = ensureGeneratedEffect({
+        component,
+        selector: SELECTORS.contactShadow,
+        attributeName: 'data-gavel-contact-shadow',
+      });
+
+      const resonanceLayer = ensureGeneratedEffect({
+        component,
+        selector: SELECTORS.resonance,
+        attributeName: 'data-gavel-resonance',
+        className: 'tsa-gavel-resonance',
+      });
+
+      if (contactShadowLayer.createdByScript) {
+        localCleanup.push(() => {
+          contactShadowLayer.element.remove();
+        });
+      }
+
+      if (resonanceLayer.createdByScript) {
+        localCleanup.push(() => {
+          resonanceLayer.element.remove();
+        });
+      }
+
       const preset = getActivePreset();
       const impactEffects = preset.impactEffects ?? QUICK_TUNING.impactEffects;
 
       const media = gsap.matchMedia();
 
-      const localCleanup: Array<() => void> = [];
-
       media.add(DESKTOP_QUERY, () => {
         const deviceProfile = preset.desktop;
 
         const controller = createController({
+          mode: 'desktop',
           component,
           gavel,
           castShadow,
           dust,
+          contactShadow: contactShadowLayer.element,
+          resonance: resonanceLayer.element,
           target,
           shadow,
 
@@ -3217,9 +4609,6 @@ export function initGavel(): void {
 
           deviceProfile,
 
-          targetReaction: preset.targetReaction,
-
-          shadowReaction: preset.shadowReaction,
           impactEffects,
         });
 
@@ -3279,7 +4668,7 @@ export function initGavel(): void {
         const resizeObserver =
           typeof ResizeObserver !== 'undefined'
             ? new ResizeObserver(() => {
-                controller.refresh();
+                controller.scheduleRefresh();
               })
             : null;
 
@@ -3302,13 +4691,16 @@ export function initGavel(): void {
       });
 
       media.add(MOBILE_QUERY, () => {
-        const deviceProfile = preset.mobile;
+        const { mobile: deviceProfile, mobileViewport } = preset;
 
         const controller = createController({
+          mode: 'mobile',
           component,
           gavel,
           castShadow,
           dust,
+          contactShadow: contactShadowLayer.element,
+          resonance: resonanceLayer.element,
           target,
           shadow,
 
@@ -3316,9 +4708,6 @@ export function initGavel(): void {
 
           deviceProfile,
 
-          targetReaction: preset.targetReaction,
-
-          shadowReaction: preset.shadowReaction,
           impactEffects,
         });
 
@@ -3330,87 +4719,610 @@ export function initGavel(): void {
 
         registerInstance(instance);
 
-        const { mobileScrub } = QUICK_TUNING.interaction;
-
-        const scrubProxy = {
-          progress: 0,
+        const mobileState: GavelMobileRuntimeState = {
+          status: 'uninitialized',
+          hasPlayed: false,
+          isInside: false,
+          enteredFrom: null,
+          lastPlayTimestamp: 0,
+          entryDelayTimer: null,
+          returnTimer: null,
+          resetTimer: null,
+          isRefreshing: false,
+          isDestroyed: false,
         };
 
-        /*
-         * Initial refreshes and responsive recalculations should position
-         * the gavel correctly without producing a dust burst.
-         */
-        let suppressScrubImpactReaction = true;
-        let releaseSuppressionFrame = 0;
+        controller.setMobileStateReader(() => ({
+          mobileStatus: mobileState.status,
+          hasPlayed: mobileState.hasPlayed,
+          isInside: mobileState.isInside,
+        }));
 
-        const releaseImpactSuppression = (): void => {
-          cancelAnimationFrame(releaseSuppressionFrame);
+        let scrollRefreshFrame = 0;
+        let initialVisibilityFrame = 0;
 
-          releaseSuppressionFrame = requestAnimationFrame(() => {
-            suppressScrubImpactReaction = false;
+        const durationMultiplier = QUICK_TUNING.debug.enabled
+          ? QUICK_TUNING.debug.slowMotionMultiplier
+          : 1;
+
+        const setMobileStatus = (status: GavelMobileEntryState): void => {
+          if (mobileState.status === status) {
+            return;
+          }
+
+          mobileState.status = status;
+
+          if (QUICK_TUNING.debug.enabled && QUICK_TUNING.debug.logStateChanges) {
+            console.info('[TSA Gavel] Mobile state:', status);
+          }
+        };
+
+        const clearTimer = (key: 'entryDelayTimer' | 'returnTimer' | 'resetTimer'): void => {
+          const timer = mobileState[key];
+
+          if (timer === null) {
+            return;
+          }
+
+          window.clearTimeout(timer);
+          mobileState[key] = null;
+        };
+
+        const cancelMobileTimers = (): void => {
+          clearTimer('entryDelayTimer');
+          clearTimer('returnTimer');
+          clearTimer('resetTimer');
+        };
+
+        const scheduleScrollTriggerRefresh = (): void => {
+          cancelAnimationFrame(scrollRefreshFrame);
+
+          scrollRefreshFrame = requestAnimationFrame(() => {
+            scrollRefreshFrame = 0;
+            ScrollTrigger.refresh();
           });
         };
 
-        controller.setScrubProgress(0, true);
+        const getImpactSequenceDurationMs = (): number => {
+          const { motion } = deviceProfile;
+          const targetEffect = getTargetImpactEffect(impactEffects.target, 'mobile');
+          const contactShadowEffect = impactEffects.contactShadow;
+          const dustEffect = impactEffects.dust;
+          const resonanceEffect = impactEffects.resonance;
 
-        const scrubTween = gsap.to(scrubProxy, {
-          progress: 1,
-          paused: true,
-          ease: 'none',
+          const motionDuration =
+            (motion.anticipationEnabled === false ? 0 : motion.anticipationDurationSeconds) +
+            (motion.strikeDurationSeconds ?? motion.strikeMaxDurationSeconds) +
+            (motion.followThroughEnabled === false
+              ? 0
+              : (motion.followThroughDurationSeconds ?? 0.028)) +
+            (motion.settleEnabled === false ? 0 : motion.settleDurationSeconds);
 
-          onUpdate: () => {
-            controller.setScrubProgress(scrubProxy.progress, suppressScrubImpactReaction);
-          },
+          const targetDuration =
+            targetEffect.enabled === false
+              ? 0
+              : targetEffect.compressionDurationSeconds +
+                (targetEffect.recoilEnabled === false ? 0 : targetEffect.recoilDurationSeconds) +
+                targetEffect.settleDurationSeconds;
+
+          const contactShadowDuration =
+            contactShadowEffect.enabled === false
+              ? 0
+              : contactShadowEffect.contactDurationSeconds +
+                contactShadowEffect.recoilDurationSeconds +
+                contactShadowEffect.fadeDurationSeconds;
+
+          const dustDuration =
+            !dust || dustEffect.enabled === false
+              ? 0
+              : dustEffect.revealDurationSeconds + dustEffect.fadeDurationSeconds;
+
+          const resonanceDuration = resonanceEffect.enabled
+            ? (resonanceEffect.revealDurationSeconds ?? 0) +
+              (resonanceEffect.fadeDurationSeconds ?? resonanceEffect.durationSeconds)
+            : 0;
+
+          const broadShadowDuration =
+            impactEffects.broadShadow.enabled === false
+              ? 0
+              : impactEffects.broadShadow.compressionDurationSeconds +
+                impactEffects.broadShadow.recoveryDurationSeconds;
+
+          return (
+            Math.max(
+              motionDuration,
+              targetDuration,
+              contactShadowDuration,
+              dustDuration,
+              resonanceDuration,
+              broadShadowDuration
+            ) *
+              durationMultiplier *
+              1000 +
+            48
+          );
+        };
+
+        const getLiftDurationMs = (): number => {
+          const { motion } = deviceProfile;
+          return (
+            (motion.liftDurationSeconds ?? motion.liftMaxDurationSeconds) *
+              durationMultiplier *
+              1000 +
+            48
+          );
+        };
+
+        const isComponentVisible = (): boolean => {
+          const rect = component.getBoundingClientRect();
+          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+          return rect.top < viewportHeight && rect.bottom > 0;
+        };
+
+        const canReplayMobileEntry = (allowWaiting = false): boolean => {
+          if (mobileViewport.replayMode === 'manual') {
+            return false;
+          }
+
+          if (mobileState.status === 'waiting') {
+            return allowWaiting;
+          }
+
+          if (mobileState.status === 'playing' || mobileState.status === 'returning') {
+            return false;
+          }
+
+          const elapsed = window.performance.now() - mobileState.lastPlayTimestamp;
+          const cooldownElapsed = elapsed >= mobileViewport.minimumReplayIntervalSeconds * 1000;
+
+          if (!cooldownElapsed && mobileState.lastPlayTimestamp > 0) {
+            return false;
+          }
+
+          if (mobileViewport.replayMode === 'once') {
+            return !mobileState.hasPlayed;
+          }
+
+          return !mobileState.hasPlayed || mobileState.status === 'outside';
+        };
+
+        const startReturnToRest = (): void => {
+          if (mobileState.isDestroyed) {
+            return;
+          }
+
+          clearTimer('returnTimer');
+          setMobileStatus('returning');
+          controller.moveToRest();
+
+          mobileState.returnTimer = window.setTimeout(() => {
+            mobileState.returnTimer = null;
+
+            if (mobileState.isDestroyed) {
+              return;
+            }
+
+            setMobileStatus(mobileState.isInside ? 'completed' : 'outside');
+          }, getLiftDurationMs());
+        };
+
+        const completeMobileImpact = (): void => {
+          if (mobileState.isDestroyed) {
+            return;
+          }
+
+          if (!mobileState.isInside && !mobileViewport.finishCurrentAnimationOnLeave) {
+            setMobileStatus('outside');
+            return;
+          }
+
+          setMobileStatus('holding');
+
+          if (mobileViewport.finalState !== 'auto-return') {
+            return;
+          }
+
+          clearTimer('returnTimer');
+
+          mobileState.returnTimer = window.setTimeout(
+            () => {
+              mobileState.returnTimer = null;
+              startReturnToRest();
+            },
+            (mobileViewport.holdAtImpactSeconds + mobileViewport.autoReturnDelaySeconds) * 1000
+          );
+        };
+
+        const scheduleMobileEntry = (
+          direction: GavelMobileEntryDirection,
+          isInitialLoad = false
+        ): void => {
+          mobileState.isInside = true;
+          mobileState.enteredFrom = direction;
+
+          if (!mobileViewport.enabled || mobileState.isDestroyed) {
+            return;
+          }
+
+          if (mobileState.isRefreshing && mobileViewport.preventRefreshPlayback) {
+            return;
+          }
+
+          if (!isInitialLoad) {
+            if (direction === 'below' && !mobileViewport.playOnEnter) {
+              return;
+            }
+
+            if (direction === 'above' && !mobileViewport.playOnEnterBack) {
+              return;
+            }
+          }
+
+          if (!canReplayMobileEntry()) {
+            return;
+          }
+
+          cancelMobileTimers();
+          setMobileStatus('waiting');
+
+          mobileState.entryDelayTimer = window.setTimeout(() => {
+            mobileState.entryDelayTimer = null;
+
+            if (
+              mobileState.isDestroyed ||
+              (mobileState.isRefreshing && mobileViewport.preventRefreshPlayback)
+            ) {
+              return;
+            }
+
+            if (!mobileState.isInside && !mobileViewport.finishCurrentAnimationOnLeave) {
+              setMobileStatus('outside');
+              return;
+            }
+
+            if (!canReplayMobileEntry(true)) {
+              return;
+            }
+
+            setMobileStatus('playing');
+            mobileState.hasPlayed = true;
+            mobileState.lastPlayTimestamp = window.performance.now();
+
+            controller.playImpactSequence({ force: true });
+
+            mobileState.returnTimer = window.setTimeout(() => {
+              mobileState.returnTimer = null;
+              completeMobileImpact();
+            }, getImpactSequenceDurationMs());
+          }, mobileViewport.entryDelaySeconds * 1000);
+        };
+
+        const shouldResetForLeave = (position: GavelMobileEntryDirection): boolean => {
+          return (
+            mobileViewport.resetWhenFullyOutside &&
+            (mobileViewport.resetPosition === 'either' || mobileViewport.resetPosition === position)
+          );
+        };
+
+        const rearmReplayIfAllowed = (): void => {
+          if (
+            mobileViewport.replayMode === 'once-per-entry' ||
+            mobileViewport.replayMode === 'on-enter-and-enter-back'
+          ) {
+            mobileState.hasPlayed = false;
+          }
+        };
+
+        const handleMobileLeave = (position: GavelMobileEntryDirection): void => {
+          mobileState.isInside = false;
+
+          if (mobileState.status === 'waiting' && !mobileViewport.finishCurrentAnimationOnLeave) {
+            clearTimer('entryDelayTimer');
+            setMobileStatus('outside');
+          }
+
+          if (mobileViewport.finalState === 'return-on-leave') {
+            if (mobileState.status === 'playing' && mobileViewport.reverseOnLeave) {
+              cancelMobileTimers();
+              startReturnToRest();
+            } else if (
+              mobileState.status === 'playing' &&
+              mobileViewport.finishCurrentAnimationOnLeave
+            ) {
+              clearTimer('returnTimer');
+              mobileState.returnTimer = window.setTimeout(() => {
+                mobileState.returnTimer = null;
+                startReturnToRest();
+              }, getImpactSequenceDurationMs());
+            } else if (mobileState.status === 'holding' || mobileState.status === 'completed') {
+              startReturnToRest();
+            }
+          }
+
+          if (shouldResetForLeave(position)) {
+            clearTimer('resetTimer');
+            mobileState.resetTimer = window.setTimeout(() => {
+              mobileState.resetTimer = null;
+
+              if (mobileState.isDestroyed || mobileState.isInside) {
+                return;
+              }
+
+              controller.reset({
+                initialState: mobileViewport.initialState,
+                resetMobileReplay: true,
+              });
+              rearmReplayIfAllowed();
+              setMobileStatus('outside');
+            }, mobileViewport.resetDelaySeconds * 1000);
+          } else {
+            rearmReplayIfAllowed();
+            setMobileStatus('outside');
+          }
+        };
+
+        const beginSilentRefresh = (): void => {
+          mobileState.isRefreshing = true;
+
+          if (mobileViewport.refreshSilently) {
+            controller.refreshNow();
+          }
+        };
+
+        const finishSilentRefresh = (isActive?: boolean): void => {
+          mobileState.isRefreshing = false;
+          mobileState.isInside = Boolean(isActive);
+
+          if (mobileState.status === 'uninitialized') {
+            setMobileStatus('ready');
+            return;
+          }
+
+          if (!mobileState.isInside && mobileState.status !== 'returning') {
+            setMobileStatus('outside');
+          }
+        };
+
+        controller.reset({
+          initialState: mobileViewport.initialState,
+          resetMobileReplay: false,
         });
+        setMobileStatus('ready');
+
+        const baseReset = controller.reset;
+        controller.reset = (options = {}) => {
+          baseReset(options);
+
+          if (options.resetMobileReplay !== false) {
+            mobileState.hasPlayed = false;
+            mobileState.lastPlayTimestamp = 0;
+          }
+        };
+
+        if (mobileViewport.playback === 'scrub') {
+          let scrubImpactPlayed = false;
+
+          const canPlayScrubImpact = (): boolean => {
+            if (mobileViewport.replayMode === 'manual') {
+              return false;
+            }
+
+            if (mobileViewport.replayMode === 'once' && mobileState.hasPlayed) {
+              return false;
+            }
+
+            const elapsed = window.performance.now() - mobileState.lastPlayTimestamp;
+            return (
+              mobileState.lastPlayTimestamp === 0 ||
+              elapsed >= mobileViewport.minimumReplayIntervalSeconds * 1000
+            );
+          };
+
+          const resetScrubImpact = (): void => {
+            if (!scrubImpactPlayed) {
+              return;
+            }
+
+            scrubImpactPlayed = false;
+
+            if (mobileViewport.replayMode !== 'once') {
+              mobileState.hasPlayed = false;
+            }
+
+            controller.resetImpactReaction();
+          };
+
+          const handleScrubUpdate = (self: GavelScrollTriggerSelf): void => {
+            if (!mobileViewport.enabled || mobileState.isDestroyed) {
+              return;
+            }
+
+            const progress = clamp(self.progress ?? 0, 0, 1);
+            const isInside = Boolean(self.isActive) || (progress > 0 && progress < 1);
+
+            mobileState.isInside = isInside;
+
+            if (mobileState.isRefreshing && mobileViewport.preventRefreshPlayback) {
+              controller.scrubToProgress(progress);
+              return;
+            }
+
+            controller.scrubToProgress(progress);
+
+            if (progress < mobileViewport.scrubResetThreshold) {
+              resetScrubImpact();
+
+              if (isInside) {
+                setMobileStatus('scrubbing');
+              }
+            }
+
+            if (
+              progress >= mobileViewport.scrubImpactThreshold &&
+              !scrubImpactPlayed &&
+              canPlayScrubImpact()
+            ) {
+              scrubImpactPlayed = true;
+              mobileState.hasPlayed = true;
+              mobileState.lastPlayTimestamp = window.performance.now();
+              setMobileStatus('holding');
+              controller.playImpactReaction();
+              return;
+            }
+
+            if (isInside && mobileState.status !== 'holding') {
+              setMobileStatus('scrubbing');
+            } else if (!isInside && mobileState.status !== 'holding') {
+              setMobileStatus('outside');
+            }
+          };
+
+          const scrollTrigger = ScrollTrigger.create({
+            trigger: component,
+
+            start: mobileViewport.start,
+            end: mobileViewport.end,
+
+            scrub:
+              mobileViewport.scrubSmoothingSeconds > 0
+                ? mobileViewport.scrubSmoothingSeconds
+                : true,
+
+            markers: mobileViewport.markers || QUICK_TUNING.debug.markers,
+            invalidateOnRefresh: true,
+
+            onUpdate: handleScrubUpdate,
+
+            onEnter: () => {
+              mobileState.isInside = true;
+              setMobileStatus('scrubbing');
+            },
+
+            onEnterBack: () => {
+              mobileState.isInside = true;
+              setMobileStatus('scrubbing');
+            },
+
+            onLeave: () => {
+              mobileState.isInside = false;
+              setMobileStatus('outside');
+            },
+
+            onLeaveBack: () => {
+              mobileState.isInside = false;
+              resetScrubImpact();
+              setMobileStatus('outside');
+            },
+
+            onRefreshInit: () => {
+              beginSilentRefresh();
+            },
+
+            onRefresh: (self: GavelScrollTriggerSelf) => {
+              finishSilentRefresh(self.isActive);
+              handleScrubUpdate(self);
+            },
+          });
+
+          const resizeObserver =
+            QUICK_TUNING.performance.useResizeObserver && typeof ResizeObserver !== 'undefined'
+              ? new ResizeObserver(() => {
+                  controller.scheduleRefresh();
+                  scheduleScrollTriggerRefresh();
+                })
+              : null;
+
+          resizeObserver?.observe(component);
+
+          scheduleScrollTriggerRefresh();
+
+          return () => {
+            cancelAnimationFrame(scrollRefreshFrame);
+            cancelAnimationFrame(initialVisibilityFrame);
+            mobileState.isDestroyed = true;
+            setMobileStatus('destroyed');
+            cancelMobileTimers();
+
+            scrollTrigger.kill();
+            resizeObserver?.disconnect();
+            controller.setMobileStateReader(null);
+
+            controller.kill();
+            removeInstance(instance);
+          };
+        }
 
         const scrollTrigger = ScrollTrigger.create({
           trigger: component,
 
-          start: mobileScrub.start,
-          end: mobileScrub.end,
+          start: mobileViewport.start,
+          end: mobileViewport.end,
 
-          animation: scrubTween,
-          scrub: mobileScrub.smoothingSeconds,
-
+          markers: mobileViewport.markers || QUICK_TUNING.debug.markers,
           invalidateOnRefresh: true,
 
-          onRefreshInit: () => {
-            suppressScrubImpactReaction = true;
-            controller.refresh();
+          onEnter: () => {
+            scheduleMobileEntry('below');
           },
 
-          onRefresh: (self: any) => {
-            /*
-             * Snap the internal physical state to the measured scroll
-             * position. ScrollTrigger continues with smooth scrub after
-             * this initial synchronization.
-             */
-            controller.setScrubProgress(self.progress, true);
-            releaseImpactSuppression();
+          onEnterBack: () => {
+            scheduleMobileEntry('above');
+          },
+
+          onLeave: () => {
+            handleMobileLeave('above');
+          },
+
+          onLeaveBack: () => {
+            handleMobileLeave('below');
+          },
+
+          onRefreshInit: () => {
+            beginSilentRefresh();
+          },
+
+          onRefresh: (self: GavelScrollTriggerSelf) => {
+            finishSilentRefresh(self.isActive);
           },
         });
 
         const resizeObserver =
-          typeof ResizeObserver !== 'undefined'
+          QUICK_TUNING.performance.useResizeObserver && typeof ResizeObserver !== 'undefined'
             ? new ResizeObserver(() => {
-                suppressScrubImpactReaction = true;
-                controller.refresh();
-                ScrollTrigger.refresh();
+                controller.scheduleRefresh();
+                scheduleScrollTriggerRefresh();
               })
             : null;
 
         resizeObserver?.observe(component);
 
-        requestAnimationFrame(() => {
-          ScrollTrigger.refresh();
-        });
+        scheduleScrollTriggerRefresh();
+
+        if (mobileViewport.playOnInitialLoadIfVisible && mobileViewport.replayMode !== 'manual') {
+          initialVisibilityFrame = requestAnimationFrame(() => {
+            initialVisibilityFrame = requestAnimationFrame(() => {
+              initialVisibilityFrame = 0;
+
+              if (mobileState.isDestroyed || mobileState.isRefreshing || !isComponentVisible()) {
+                return;
+              }
+
+              scheduleMobileEntry('below', true);
+            });
+          });
+        }
 
         return () => {
-          cancelAnimationFrame(releaseSuppressionFrame);
+          cancelAnimationFrame(scrollRefreshFrame);
+          cancelAnimationFrame(initialVisibilityFrame);
+          mobileState.isDestroyed = true;
+          setMobileStatus('destroyed');
+          cancelMobileTimers();
 
-          scrubTween.kill();
           scrollTrigger.kill();
           resizeObserver?.disconnect();
+          controller.setMobileStateReader(null);
 
           controller.kill();
           removeInstance(instance);
@@ -3420,8 +5332,24 @@ export function initGavel(): void {
       media.add(REDUCED_MOTION_QUERY, () => {
         removeDebug(component, gavel, target);
 
-        gsap.set([gavel, target, shadow], {
-          clearProps: 'transform,transformOrigin,willChange,opacity',
+        gsap.set(
+          [
+            gavel,
+            castShadow,
+            dust,
+            contactShadowLayer.element,
+            resonanceLayer.element,
+            target,
+            shadow,
+          ].filter(Boolean),
+          {
+            clearProps: 'transform,transformOrigin,willChange,opacity',
+          }
+        );
+
+        gsap.set([dust, contactShadowLayer.element, resonanceLayer.element].filter(Boolean), {
+          opacity: 0,
+          visibility: 'hidden',
         });
       });
 
@@ -3440,10 +5368,12 @@ export function initGavel(): void {
             instances
               .filter((instance) => instance.scope === scope)
               .forEach((instance) => {
-                instance.controller.refresh();
+                instance.controller.scheduleRefresh();
               });
 
-            ScrollTrigger.refresh();
+            requestAnimationFrame(() => {
+              ScrollTrigger.refresh();
+            });
           };
 
           element.addEventListener('load', refresh, { once: true });
@@ -3501,7 +5431,7 @@ export function initGavel(): void {
 
     runtimeWindow.TSAGavel = {
       play: (index = 0) => {
-        instances[index]?.controller.moveToImpact();
+        instances[index]?.controller.playImpactSequence({ manual: true });
       },
 
       lift: (index = 0) => {
@@ -3516,16 +5446,26 @@ export function initGavel(): void {
         instances[index]?.controller.setImpact();
       },
 
+      replay: (index = 0) => {
+        instances[index]?.controller.replay({ manual: true, force: true });
+      },
+
+      reset: (index = 0) => {
+        instances[index]?.controller.reset({ resetMobileReplay: true });
+      },
+
       refresh: (index = 0) => {
         instances[index]?.controller.refresh();
       },
 
       refreshAll: () => {
         instances.forEach((instance) => {
-          instance.controller.refresh();
+          instance.controller.scheduleRefresh();
         });
 
-        ScrollTrigger.refresh();
+        requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+        });
       },
 
       geometry: (index = 0) => {
@@ -3540,11 +5480,19 @@ export function initGavel(): void {
         return instances[index]?.controller.progress() || 0;
       },
 
+      desiredState: (index = 0) => {
+        return instances[index]?.controller.desiredState() || null;
+      },
+
+      state: (index = 0) => {
+        return instances[index]?.controller.state() || null;
+      },
+
       usePreset: (presetName: GavelPresetName): boolean => {
-        if (!Object.prototype.hasOwnProperty.call(QUICK_TUNING.presets, presetName)) {
+        if (!Object.prototype.hasOwnProperty.call(presetDefinitions, presetName)) {
           console.warn('[TSA Gavel] Preset invalid.', presetName);
 
-          console.info('[TSA Gavel] Preseturi disponibile:', Object.keys(QUICK_TUNING.presets));
+          console.info('[TSA Gavel] Preseturi disponibile:', Object.keys(presetDefinitions));
 
           return false;
         }
@@ -3562,8 +5510,28 @@ export function initGavel(): void {
         initializeAll();
 
         console.info(
-          `[TSA Gavel] Preset activ: ${presetName}, ` + QUICK_TUNING.presets[presetName].label
+          `[TSA Gavel] Preset activ: ${presetName}, ` + presetDefinitions[presetName].label
         );
+
+        return true;
+      },
+
+      previewPreset: (presetName: GavelPresetName, index = 0): boolean => {
+        if (!runtimeWindow.TSAGavel?.usePreset(presetName)) {
+          return false;
+        }
+
+        const instance = instances[index];
+
+        if (!instance) {
+          return false;
+        }
+
+        instance.controller.reset({ initialState: 'rest', resetMobileReplay: true });
+
+        requestAnimationFrame(() => {
+          instance.controller.playImpactSequence({ manual: true, force: true });
+        });
 
         return true;
       },
@@ -3575,17 +5543,41 @@ export function initGavel(): void {
       },
 
       listPresets: () => {
-        const names = Object.keys(QUICK_TUNING.presets) as GavelPresetName[];
+        const names = Object.keys(presetDefinitions) as GavelPresetName[];
 
         console.table(
           names.map((name) => ({
             preset: name,
-            label: QUICK_TUNING.presets[name].label,
+            label: presetDefinitions[name].label,
+            description: presetDefinitions[name].description ?? resolvePreset(name).description,
           }))
         );
 
         return names;
       },
+
+      describePreset: (presetName: GavelPresetName) => {
+        if (!Object.prototype.hasOwnProperty.call(presetDefinitions, presetName)) {
+          console.warn('[TSA Gavel] Preset invalid.', presetName);
+
+          return null;
+        }
+
+        const definition = presetDefinitions[presetName];
+
+        return {
+          label: definition.label,
+          description: definition.description ?? resolvePreset(presetName).description,
+          overrides: {
+            desktop: definition.desktop,
+            mobile: definition.mobile,
+            mobileViewport: definition.mobileViewport,
+            impactEffects: definition.impactEffects,
+          },
+        };
+      },
+
+      config: () => QUICK_TUNING,
 
       destroyAll,
     };

@@ -612,6 +612,7 @@ export function initPracticeTextReels(): void {
     function canDrag(): boolean {
       return (
         PRACTICE_TEXT_REEL_SETTINGS.dragEnabled &&
+        !isMobile &&
         shouldAnimate &&
         originalItemCount > 1 &&
         !isLoopResetting &&

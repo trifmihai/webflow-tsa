@@ -7,6 +7,8 @@ const RESPONSIVE_QUERY = '(min-width: 992px) and (hover: hover) and (pointer: fi
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const DEFAULT_STATE_MACHINE_QUERY = '(min-width: 992px)';
+const MOBILE_PRELOAD_QUERY = '(max-width: 991px)';
+const DEFAULT_MOBILE_PRELOAD_VIEWPORTS = 2.5;
 const DESKTOP_STATE_MACHINE_PLACEHOLDER = 'data-rive-state-machine-desktop';
 const MOBILE_STATE_MACHINE_PLACEHOLDER = 'data-rive-state-machine-mobile';
 const QUERY_PLACEHOLDER = 'data-rive-state-machine-query';
@@ -30,6 +32,7 @@ type BrowserTestWindow = Window &
     };
     __benefitRiveTest: {
       mediaListenerCount: (query: string) => number;
+      preloadRootMargins: () => string[];
       setMedia: (query: string, matches: boolean) => void;
       setVisibility: (visibilityState: DocumentVisibilityState) => void;
       triggerPreload: (isIntersecting?: boolean) => void;
@@ -50,6 +53,7 @@ type BenefitMarkupOptions = {
 type BrowserMockOptions = {
   defaultStateMachineMatches?: boolean;
   finePointerMatches?: boolean;
+  mobilePreloadMatches?: boolean;
   reducedMotionMatches?: boolean;
   responsiveMatches?: boolean;
 };
@@ -259,6 +263,42 @@ test('data-rive-device all allows mobile mounting while reduced motion prevents 
 
   await expect(page.locator('[data-benefit-rive]')).toHaveClass(/is-rive-unavailable/);
   expect(await getMountedRiveInstances(page)).toHaveLength(0);
+});
+
+test('mobile preload observer starts loading farther before the section enters view', async ({
+  page,
+}) => {
+  const viewport = { height: 844, width: 390 };
+
+  await page.setViewportSize(viewport);
+  await page.setContent(getBenefitMarkup());
+  await installBrowserMocks(page, {
+    finePointerMatches: false,
+    mobilePreloadMatches: true,
+    responsiveMatches: false,
+  });
+  await page.addScriptTag({ content: benefitRiveBundle });
+  await page.evaluate(() => {
+    (window as BrowserTestWindow).BenefitRiveFeature.initBenefitRive();
+  });
+
+  const rootMargins = await page.evaluate(() => {
+    return (window as BrowserTestWindow).__benefitRiveTest.preloadRootMargins();
+  });
+
+  expect(rootMargins).toContain(
+    `${Math.round(viewport.height * DEFAULT_MOBILE_PRELOAD_VIEWPORTS)}px 0px`
+  );
+  expect(await getMountedRiveInstances(page)).toHaveLength(0);
+
+  await page.evaluate(() => {
+    const testWindow = window as BrowserTestWindow;
+
+    testWindow.__benefitRiveTest.triggerRenderVisibility(true);
+    testWindow.__benefitRiveTest.triggerPreload(true);
+  });
+
+  await expect(page.locator('[data-benefit-rive]')).toHaveClass(/is-rive-ready/);
 });
 
 test('responsive query changes reset the active State Machine safely', async ({ page }) => {
@@ -495,6 +535,7 @@ async function installBrowserMocks(
   {
     defaultStateMachineMatches = false,
     finePointerMatches = false,
+    mobilePreloadMatches = false,
     reducedMotionMatches = false,
     responsiveMatches = false,
   }: BrowserMockOptions
@@ -503,6 +544,8 @@ async function installBrowserMocks(
     content: `(${installBrowserTestEnvironment.toString()})(${JSON.stringify({
       finePointerMatches,
       finePointerQuery: FINE_POINTER_QUERY,
+      mobilePreloadMatches,
+      mobilePreloadQuery: MOBILE_PRELOAD_QUERY,
       defaultStateMachineMatches,
       defaultStateMachineQuery: DEFAULT_STATE_MACHINE_QUERY,
       reducedMotionMatches,
@@ -577,6 +620,8 @@ function installBrowserTestEnvironment({
   defaultStateMachineQuery,
   finePointerMatches,
   finePointerQuery,
+  mobilePreloadMatches,
+  mobilePreloadQuery,
   reducedMotionMatches,
   reducedMotionQuery,
   responsiveMatches,
@@ -586,6 +631,8 @@ function installBrowserTestEnvironment({
   defaultStateMachineQuery: string;
   finePointerMatches: boolean;
   finePointerQuery: string;
+  mobilePreloadMatches: boolean;
+  mobilePreloadQuery: string;
   reducedMotionMatches: boolean;
   reducedMotionQuery: string;
   responsiveMatches: boolean;
@@ -607,6 +654,7 @@ function installBrowserTestEnvironment({
   const initialMatches: Record<string, boolean> = {
     [defaultStateMachineQuery]: defaultStateMachineMatches,
     [finePointerQuery]: finePointerMatches,
+    [mobilePreloadQuery]: mobilePreloadMatches,
     [reducedMotionQuery]: reducedMotionMatches,
     [responsiveQuery]: responsiveMatches,
   };
@@ -731,6 +779,11 @@ function installBrowserTestEnvironment({
     mediaListenerCount(query: string) {
       return getMediaRecord(query).listeners.size;
     },
+    preloadRootMargins() {
+      return observerRecords
+        .filter(({ options }) => typeof options?.rootMargin === 'string')
+        .map(({ options }) => options?.rootMargin ?? '');
+    },
     setMedia(query: string, matches: boolean) {
       const record = getMediaRecord(query);
       record.matches = matches;
@@ -773,7 +826,9 @@ function installBrowserTestEnvironment({
     isIntersecting: boolean,
     intersectionRatio: number
   ): void {
-    const observer = observerRecords.find(({ options }) => predicate(options));
+    const observer = observerRecords.find(
+      ({ options, targets }) => predicate(options) && targets.size > 0
+    );
 
     if (!observer) {
       throw new Error('Expected IntersectionObserver was not created.');
