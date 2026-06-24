@@ -15,21 +15,50 @@
   -webkit-backface-visibility: hidden;
 }
 
+/*
+ * Webflow already controls the outer component layout, positioning
+ * and overflow. Custom CSS only ensures the animated strike group
+ * does not clip its own absolutely positioned children.
+ */
+[data-gavel-component] .practice-cta_strike-group {
+  overflow: visible;
+}
+
+/* Local stacking order */
 [data-gavel-component] [data-gavel-shadow] {
   z-index: 1;
 }
 
-.practice-cta_strike-group {
-  overflow: visible;
+[data-gavel-component] [data-gavel-target] {
+  z-index: 2;
+}
+
+[data-gavel-component] [data-gavel-contact-shadow] {
+  z-index: 3;
+}
+
+[data-gavel-component] [data-gavel-impact-dust] {
+  z-index: 4;
+}
+
+[data-gavel-component] [data-gavel-cast-shadow] {
+  z-index: 4;
+}
+
+[data-gavel-component] [data-gavel] {
+  z-index: 5;
+}
+
+[data-gavel-component] [data-gavel-resonance] {
+  z-index: 6;
 }
 
 /*
- * Gavel and cast shadow use the same layout box, position and size.
- * GSAP applies the same trajectory to both. The shadow keeps only
- * a small local offset and a subtle opacity change.
+ * Gavel and cast shadow use the same Webflow-authored layout box.
+ * GSAP owns their animated translation, rotation and scale.
  */
-.practice-cta_govel-shadow,
-.practice-cta_govel {
+[data-gavel-component] .practice-cta_govel-shadow,
+[data-gavel-component] .practice-cta_govel {
   position: absolute;
   bottom: -13%;
   left: -47%;
@@ -41,32 +70,27 @@
   transform-origin: 18% 65%;
 }
 
-.practice-cta_govel-shadow {
-  z-index: 4;
+[data-gavel-component] .practice-cta_govel-shadow {
   opacity: 0.07;
   filter: brightness(0) saturate(0) blur(3px);
   mix-blend-mode: multiply;
   transform: translate(3%, 6%) rotate(-14deg);
 }
 
-.practice-cta_govel {
-  z-index: 5;
+[data-gavel-component] .practice-cta_govel {
   transform: rotate(-22deg);
 }
 
 /*
  * Dust is positioned dynamically from the measured contact point.
- * Do not add right or bottom offsets here, because that would stack
- * CSS positioning on top of the GSAP geometry calculation.
+ * Do not add right or bottom offsets here.
  */
-.practice-cta_dust {
+[data-gavel-component] .practice-cta_dust {
   position: absolute;
   top: 0;
   left: 0;
   right: auto;
   bottom: auto;
-  /* Keep impact dust below the hammer layer and above the target image. */
-  z-index: 4;
 
   display: block;
   width: 8.5rem;
@@ -75,19 +99,23 @@
 
   opacity: 0;
   visibility: hidden;
+
   filter: brightness(0) saturate(0);
   mix-blend-mode: multiply;
+
   transform: translate(-50%, -28%) scale(0.7);
   transform-origin: center bottom;
 }
 
-[data-gavel-contact-shadow] {
+/*
+ * Generated automatically by TypeScript when missing.
+ */
+[data-gavel-component] [data-gavel-contact-shadow] {
   position: absolute;
   top: 0;
   left: 0;
   right: auto;
   bottom: auto;
-  z-index: 3;
 
   display: block;
   width: 4.25rem;
@@ -101,33 +129,26 @@
     transparent 74%
   );
 
-  filter: blur(2px);
-  mix-blend-mode: multiply;
-
   opacity: 0;
   visibility: hidden;
 
+  filter: blur(2px);
+  mix-blend-mode: multiply;
+
   transform: translate(-50%, -50%) scale(0.78, 0.7);
   transform-origin: center center;
-
-  pointer-events: none;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
 /*
- * The resonance is created automatically by TypeScript when the
- * component does not already contain [data-gavel-resonance].
- * It is positioned dynamically at the exact target contact point.
+ * Generated automatically by TypeScript when missing.
  */
-.tsa-gavel-resonance,
-[data-gavel-resonance] {
+[data-gavel-component] .tsa-gavel-resonance,
+[data-gavel-component] [data-gavel-resonance] {
   position: absolute;
   top: 0;
   left: 0;
   right: auto;
   bottom: auto;
-  z-index: 6;
 
   display: block;
   width: 5.75rem;
@@ -139,19 +160,21 @@
 
   opacity: 0;
   visibility: hidden;
+
   transform: translate(-50%, -50%) scale(0.7, 0.85);
   transform-origin: center center;
 }
 
-.practice-cta_hit {
+[data-gavel-component] .practice-cta_hit {
   position: absolute;
   bottom: 0;
   left: 62%;
-  z-index: 2;
 
   width: 12.5rem;
   transform-origin: bottom center;
 }
+
+/* Debug layer */
 
 .tsa-gavel-debug-layer {
   position: absolute;
@@ -177,13 +200,17 @@
   position: absolute;
   top: calc(100% + 0.375rem);
   left: 50%;
+
   padding: 0.1875rem 0.375rem;
   border-radius: 0.1875rem;
+
   background: rgb(0 0 0 / 88%);
   color: white;
+
   font:
     500 0.625rem/1.2 Arial,
     sans-serif;
+
   white-space: nowrap;
   transform: translateX(-50%);
 }
@@ -234,18 +261,23 @@
 }
 
 @media screen and (max-width: 991px) {
-  .practice-cta_strike-group {
+  /*
+   * Webflow continues to own the wrapper height, order and layout.
+   * These rules only configure the animation assets.
+   */
+  [data-gavel-component] .practice-cta_strike-group {
     position: absolute;
     bottom: 0;
     left: 50%;
-    z-index: 2;
 
     width: clamp(10.5rem, 23vw, 12.5rem);
+
+    overflow: visible;
     transform: translateX(-50%);
   }
 
-  .practice-cta_govel-shadow,
-  .practice-cta_govel {
+  [data-gavel-component] .practice-cta_govel-shadow,
+  [data-gavel-component] .practice-cta_govel {
     bottom: -10%;
     left: -150%;
 
@@ -253,15 +285,15 @@
     transform-origin: 18% 65%;
   }
 
-  .practice-cta_govel-shadow {
+  [data-gavel-component] .practice-cta_govel-shadow {
     transform: translate(3%, 6%) rotate(-18deg);
   }
 
-  .practice-cta_govel {
+  [data-gavel-component] .practice-cta_govel {
     transform: rotate(-20deg);
   }
 
-  .practice-cta_dust {
+  [data-gavel-component] .practice-cta_dust {
     position: absolute;
     top: 0;
     left: 0;
@@ -269,46 +301,34 @@
     bottom: auto;
 
     width: 68%;
+
     filter: brightness(0) saturate(0);
     mix-blend-mode: multiply;
+
     transform: translate(-50%, -28%) scale(0.7);
   }
 
-  [data-gavel-contact-shadow] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: auto;
-    bottom: auto;
-
+  [data-gavel-component] [data-gavel-contact-shadow] {
     width: clamp(3.25rem, 13vw, 4.25rem);
     height: clamp(0.5rem, 2.1vw, 0.65rem);
   }
 
-  .tsa-gavel-resonance,
-  [data-gavel-resonance] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: auto;
-    bottom: auto;
-
+  [data-gavel-component] .tsa-gavel-resonance,
+  [data-gavel-component] [data-gavel-resonance] {
     width: clamp(4.25rem, 18vw, 5.5rem);
     height: clamp(1rem, 4.5vw, 1.3rem);
   }
 
-  .practice-cta_hit {
+  [data-gavel-component] .practice-cta_hit {
     position: relative;
     inset: auto;
-    z-index: 2;
 
     display: block;
     width: 100%;
 
-    filter: drop-shadow(0 -11px 5px rgba(214, 214, 214, 0.03))
-      drop-shadow(0 -6px 4px rgba(214, 214, 214, 0.1))
-      drop-shadow(0 -3px 3px rgba(214, 214, 214, 0.17))
-      drop-shadow(0 -1px 2px rgba(214, 214, 214, 0.2));
+    filter: drop-shadow(0 -11px 5px rgb(214 214 214 / 3%))
+      drop-shadow(0 -6px 4px rgb(214 214 214 / 10%)) drop-shadow(0 -3px 3px rgb(214 214 214 / 17%))
+      drop-shadow(0 -1px 2px rgb(214 214 214 / 20%));
   }
 }
 
@@ -323,10 +343,10 @@
     will-change: auto !important;
   }
 
-  .practice-cta_dust,
-  [data-gavel-contact-shadow],
-  .tsa-gavel-resonance,
-  [data-gavel-resonance] {
+  [data-gavel-component] .practice-cta_dust,
+  [data-gavel-component] [data-gavel-contact-shadow],
+  [data-gavel-component] .tsa-gavel-resonance,
+  [data-gavel-component] [data-gavel-resonance] {
     display: none !important;
   }
 
