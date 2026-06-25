@@ -7,7 +7,7 @@ export const COOKIE_CONSENT_SETTINGS = {
   rootSelector: '[data-tsa-cookie-consent]',
   externalSettingsSelector: '[data-cookie-settings]',
   analyticsScriptAttribute: 'data-tsa-google-analytics',
-  policyUrl: '/politica-de-confidentialitate',
+  policyUrl: '/politica-de-cookies',
 } as const;
 
 type ConsentChoice = 'accepted' | 'rejected';
@@ -303,7 +303,7 @@ function createBanner(): HTMLElement {
         </h2>
         <p class="tsa-cookie-consent__description" id="tsa-cookie-consent-description">
           Folosim Google Analytics doar cu acordul tău, pentru a înțelege cum este utilizat site-ul și pentru a-l îmbunătăți. Cookie-urile strict necesare rămân active.
-          <a href="${COOKIE_CONSENT_SETTINGS.policyUrl}">Politica de confidențialitate</a>
+          <a href="${COOKIE_CONSENT_SETTINGS.policyUrl}">Politica de cookies</a>
         </p>
       </div>
       <div class="tsa-cookie-consent__actions" aria-label="Opțiuni cookie">
