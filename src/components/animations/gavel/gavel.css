@@ -22,7 +22,7 @@
 [data-gavel-component] [data-gavel-resonance],
 [data-gavel-component] [data-gavel-target],
 [data-gavel-component] [data-gavel-shadow] {
-  pointer-events: none;
+  pointer-events: none !important;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
