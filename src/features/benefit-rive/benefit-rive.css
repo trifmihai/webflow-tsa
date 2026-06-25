@@ -52,6 +52,7 @@
 
 [data-benefit-rive-canvas],
 [data-benefit-experience-rive-canvas] {
+  backface-visibility: hidden;
   background: transparent;
   box-sizing: border-box;
   display: block;
@@ -62,6 +63,8 @@
   min-height: 0;
   min-width: 0;
   touch-action: pan-y;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
   width: 100%;
 }
 

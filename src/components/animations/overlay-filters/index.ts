@@ -4,6 +4,7 @@ type OverlayFilterPreset =
   | 'soft-neon'
   | 'premium-white'
   | 'solid-white'
+  | 'solid-glow'
   | 'base-neon'
   | 'strong-neon';
 

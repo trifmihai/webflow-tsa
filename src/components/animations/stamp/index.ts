@@ -19,12 +19,6 @@ type PlanStampTweenVars = {
 type PlanStampTimeline = {
   kill: () => void;
 
-  set: (
-    target: PlanStampGsapTarget,
-    vars: PlanStampTweenVars,
-    position?: number | string
-  ) => PlanStampTimeline;
-
   to: (
     target: PlanStampGsapTarget,
     vars: PlanStampTweenVars,
@@ -621,7 +615,7 @@ export function initPlanStamp(): void {
               willChange: 'transform,opacity',
             });
 
-            activeAnimation = gsap.timeline({
+            const timeline = gsap.timeline({
               defaults: {
                 overwrite: 'auto',
               },
@@ -632,7 +626,9 @@ export function initPlanStamp(): void {
               },
             });
 
-            activeAnimation.to(
+            activeAnimation = timeline;
+
+            timeline.to(
               stamp,
               {
                 autoAlpha: ACTIVE_PRESET.approach.opacity,
@@ -644,7 +640,7 @@ export function initPlanStamp(): void {
               ACTIVE_PRESET.approach.start
             );
 
-            activeAnimation.to(
+            timeline.to(
               stamp,
               {
                 x: ACTIVE_PRESET.impact.x,
@@ -661,7 +657,7 @@ export function initPlanStamp(): void {
               ACTIVE_PRESET.impact.start
             );
 
-            activeAnimation.to(
+            timeline.to(
               stamp,
               {
                 autoAlpha: ACTIVE_PRESET.ink.opacity,
@@ -673,7 +669,7 @@ export function initPlanStamp(): void {
               ACTIVE_PRESET.ink.start
             );
 
-            activeAnimation.to(
+            timeline.to(
               stamp,
               {
                 autoAlpha: ACTIVE_PRESET.settle.opacity,
@@ -709,7 +705,7 @@ export function initPlanStamp(): void {
               willChange: 'transform,opacity',
             });
 
-            activeAnimation = gsap.timeline({
+            const timeline = gsap.timeline({
               defaults: {
                 overwrite: 'auto',
               },
@@ -720,7 +716,9 @@ export function initPlanStamp(): void {
               },
             });
 
-            activeAnimation.to(stamp, {
+            activeAnimation = timeline;
+
+            timeline.to(stamp, {
               autoAlpha: ACTIVE_PRESET.settle.opacity,
 
               x: ACTIVE_PRESET.settle.x,
@@ -750,7 +748,7 @@ export function initPlanStamp(): void {
               willChange: 'transform,opacity',
             });
 
-            activeAnimation = gsap.timeline({
+            const timeline = gsap.timeline({
               defaults: {
                 overwrite: 'auto',
               },
@@ -761,7 +759,9 @@ export function initPlanStamp(): void {
               },
             });
 
-            activeAnimation.to(
+            activeAnimation = timeline;
+
+            timeline.to(
               stamp,
               {
                 autoAlpha: ACTIVE_PRESET.exit.opacity,

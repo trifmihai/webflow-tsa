@@ -27,10 +27,13 @@ const DEFAULT_STATE_MACHINE_QUERY = '(min-width: 992px)';
 const MOBILE_PRELOAD_QUERY = '(max-width: 991px)';
 const DEFAULT_DESKTOP_PRELOAD_ROOT_MARGIN_PX = 400;
 const RENDER_VISIBILITY_THRESHOLD = 0.01;
+const RENDER_RETAINED_VIEWPORTS = 0.75;
+const RENDER_STOP_DELAY_MS = 300;
 const DEFAULT_VIEWPORT_THRESHOLD = 0.35;
 const DEFAULT_DESKTOP_NEARBY_PRELOAD_VIEWPORTS = 1.5;
-const DEFAULT_MOBILE_PRELOAD_VIEWPORTS = 2.5;
+const DEFAULT_MOBILE_PRELOAD_VIEWPORTS = 3;
 const MIN_NEARBY_PRELOAD_VIEWPORTS = 0.5;
+const MIN_MOBILE_PRELOAD_VIEWPORTS = 2.5;
 const MAX_NEARBY_PRELOAD_VIEWPORTS = 3;
 const DEFAULT_BOUNDARY_PROPERTY = 'pulseBoundary';
 const CURSOR_PROPERTIES_ATTRIBUTE = 'data-rive-cursor-properties';
@@ -87,6 +90,12 @@ type RectSnapshot = {
   width: number;
 };
 
+type DrawingSurfaceSnapshot = {
+  devicePixelRatio: number;
+  height: number;
+  width: number;
+};
+
 type PointerCursorSubscription = {
   callback: EventCallback;
   property: ViewModelInstanceBoolean;
@@ -124,6 +133,7 @@ const ALIGNMENT_MAP: Record<string, Pick<ResolvedLayoutConfig, 'alignment' | 'ob
 
 let didWarnBoundaryFallback = false;
 const malformedAttributeWarnings = new WeakMap<HTMLElement, Set<string>>();
+const prefetchedRiveSources = new Set<string>();
 
 export function initBenefitRive(): void {
   document.querySelectorAll<HTMLElement>(ROOT_QUERY).forEach(initBenefitRiveRoot);
@@ -149,7 +159,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   const minScrollPreloadViewports = getPreloadMinScrollViewports(root);
 
   applyLayoutCssVariables(root, layoutConfig);
-  prepareFallbackImage(fallback, fallbackMode);
+  prepareFallbackImage(fallback);
 
   if (!mount) {
     applyErrorState(root);
@@ -207,6 +217,11 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   let preloadResizeFrame = 0;
   let preloadScrollFrame = 0;
   let preloadScrollCallback: (() => void) | null = null;
+  let renderVisibilityObserver: IntersectionObserver | null = null;
+  let renderVisibilityFrame = 0;
+  let renderVisibilityRefreshFrame = 0;
+  let renderStopTimeout = 0;
+  let lastDrawingSurfaceSnapshot: DrawingSurfaceSnapshot | null = null;
   let isWithinPreloadArea = false;
   let isNearViewport = false;
   let isRiveLoaded = false;
@@ -230,6 +245,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       : null;
   let hasMetPreloadMinScroll =
     preloadMode !== 'nearby' ||
+    mobilePreloadQuery.matches ||
     minScrollPreloadViewports === null ||
     getCurrentScrollY() > 1 ||
     isElementActuallyVisible(root);
@@ -358,15 +374,54 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   };
 
   const canRenderNow = (): boolean => {
-    return document.visibilityState === 'visible' && isRenderVisible;
+    return document.visibilityState === 'visible' && canvas.isConnected && isRenderVisible;
   };
 
   const canWarmupOffscreen = (): boolean => {
-    return preloadMode === 'nearby';
+    return preloadMode === 'nearby' || mobilePreloadQuery.matches;
   };
 
   const canWarmupNow = (): boolean => {
     return document.visibilityState === 'visible' && (isRenderVisible || canWarmupOffscreen());
+  };
+
+  const getDrawingSurfaceSnapshot = (): DrawingSurfaceSnapshot | null => {
+    const rect = canvas.getBoundingClientRect();
+    const width = canvas.clientWidth || rect.width;
+    const height = canvas.clientHeight || rect.height;
+
+    if (width <= 0 || height <= 0 || !Number.isFinite(width) || !Number.isFinite(height)) {
+      return null;
+    }
+
+    return {
+      devicePixelRatio: window.devicePixelRatio || 1,
+      height,
+      width,
+    };
+  };
+
+  const hasDrawingSurfaceChanged = (nextSnapshot: DrawingSurfaceSnapshot): boolean => {
+    if (!lastDrawingSurfaceSnapshot) return true;
+
+    return (
+      Math.abs(nextSnapshot.width - lastDrawingSurfaceSnapshot.width) > 0.5 ||
+      Math.abs(nextSnapshot.height - lastDrawingSurfaceSnapshot.height) > 0.5 ||
+      Math.abs(nextSnapshot.devicePixelRatio - lastDrawingSurfaceSnapshot.devicePixelRatio) > 0.001
+    );
+  };
+
+  const resizeDrawingSurfaceIfNeeded = (instance = rive): boolean => {
+    if (!instance || !canvas.isConnected) return false;
+
+    const nextSnapshot = getDrawingSurfaceSnapshot();
+
+    if (!nextSnapshot || !hasDrawingSurfaceChanged(nextSnapshot)) return false;
+
+    instance.resizeDrawingSurfaceToCanvas();
+    lastDrawingSurfaceSnapshot = nextSnapshot;
+
+    return true;
   };
 
   const performGeometrySyncAndResize = async (): Promise<void> => {
@@ -389,7 +444,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       startRenderingIfAllowed();
     }
 
-    rive.resizeDrawingSurfaceToCanvas();
+    resizeDrawingSurfaceIfNeeded(rive);
 
     if (shouldPaintIdleResize) {
       idleResizeToken += 1;
@@ -573,7 +628,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     }
 
     syncMountToFallbackGeometry();
-    rive.resizeDrawingSurfaceToCanvas();
+    resizeDrawingSurfaceIfNeeded(rive);
 
     await waitForAnimationFrames(
       IDLE_RESET_FRAME_COUNT,
@@ -624,7 +679,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
         isPausedForHidden = false;
       }
 
-      instance.resizeDrawingSurfaceToCanvas();
+      resizeDrawingSurfaceIfNeeded(instance);
       startRenderingIfAllowed(canWarmupOffscreen());
 
       await Promise.all([
@@ -643,7 +698,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       }
 
       syncMountToFallbackGeometry();
-      instance.resizeDrawingSurfaceToCanvas();
+      resizeDrawingSurfaceIfNeeded(instance);
       isVisualReady = true;
       isWarmingUp = false;
       root.classList.add('is-rive-visual-ready');
@@ -1049,6 +1104,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     isPausedForHidden = false;
     pendingGracefulStop = false;
     stopRequestedFromBoundaryValue = null;
+    lastDrawingSurfaceSnapshot = null;
     root.classList.remove('is-rive-loading', 'is-rive-ready', 'is-rive-visual-ready');
 
     if (clearError) {
@@ -1075,6 +1131,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     isRendering = false;
     isPlaying = false;
     isPausedForHidden = false;
+    lastDrawingSurfaceSnapshot = null;
     root.classList.remove(
       'is-rive-loading',
       'is-rive-ready',
@@ -1144,7 +1201,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     }
 
     syncMountToFallbackGeometry();
-    instance.resizeDrawingSurfaceToCanvas();
+    resizeDrawingSurfaceIfNeeded(instance);
     syncPlayback();
     scheduleLayoutParityCheck();
   };
@@ -1165,6 +1222,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     isRiveLoaded = false;
     isVisualReady = false;
     isWarmingUp = false;
+    lastDrawingSurfaceSnapshot = null;
     setupFallbackImageListeners();
     syncMountToFallbackGeometry();
 
@@ -1289,6 +1347,13 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   };
 
   const handleDocumentVisibility = (): void => {
+    if (document.visibilityState === 'hidden') {
+      cancelPendingRenderStop();
+      scheduleRenderVisibilityCheck(true);
+    } else {
+      scheduleRenderVisibilityCheck();
+    }
+
     syncPlayback();
   };
 
@@ -1329,6 +1394,11 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   const hasSatisfiedPreloadMinScroll = (): boolean => {
     if (hasMetPreloadMinScroll) return true;
 
+    if (mobilePreloadQuery.matches) {
+      hasMetPreloadMinScroll = true;
+      return true;
+    }
+
     if (isElementActuallyVisible(root)) {
       hasMetPreloadMinScroll = true;
       return true;
@@ -1348,6 +1418,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   const beginPreload = (): void => {
     if (isNearViewport) return;
 
+    prefetchRiveSource(root.dataset.riveSrc);
     isNearViewport = true;
     disconnectPreloadObserver();
     removePreloadScrollGuard();
@@ -1363,6 +1434,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       isWithinPreloadArea ||
       isElementWithinVerticalViewportMargin(root, getPreloadVerticalMarginPx())
     ) {
+      prefetchRiveSource(root.dataset.riveSrc);
       beginPreload();
     }
   };
@@ -1387,6 +1459,8 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     isWithinPreloadArea = Boolean(entry?.isIntersecting);
 
     if (!isWithinPreloadArea) return;
+
+    prefetchRiveSource(root.dataset.riveSrc);
 
     if (!hasSatisfiedPreloadMinScroll()) {
       ensurePreloadScrollGuard();
@@ -1423,37 +1497,144 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   const handleViewportResize = (): void => {
     scheduleGeometrySyncAndResize();
     schedulePreloadObserverRefresh();
+    scheduleRenderVisibilityObserverRefresh();
+  };
+
+  const handleVisualViewportScroll = (): void => {
+    scheduleRenderVisibilityCheck();
   };
 
   const handlePreloadMediaChange = (): void => {
     schedulePreloadObserverRefresh();
   };
 
-  const renderVisibilityObserver = new IntersectionObserver(
-    ([entry]) => {
-      isRenderVisible = Boolean(entry?.isIntersecting);
+  const getRenderRetainedMarginPx = (): number => {
+    return Math.round(getViewportHeight() * RENDER_RETAINED_VIEWPORTS);
+  };
 
-      if (!isRenderVisible) {
-        if (canWarmupOffscreen() && !isVisualReady) {
-          syncPlayback();
-          return;
-        }
+  const getRenderRootMargin = (): string => {
+    return `${getRenderRetainedMarginPx()}px 0px`;
+  };
 
-        cancelWarmup();
+  const isWithinRetainedRenderArea = (): boolean => {
+    return (
+      canvas.isConnected &&
+      isElementWithinVerticalViewportMargin(canvas, getRenderRetainedMarginPx())
+    );
+  };
 
-        if (config.mode !== 'animation') {
-          syncPlayback();
-          return;
-        }
+  const cancelPendingRenderStop = (): void => {
+    window.clearTimeout(renderStopTimeout);
+    renderStopTimeout = 0;
+  };
 
-        stopAndResetToIdle(false);
+  const applyRenderVisibilityOutside = (force = false): void => {
+    if (force) {
+      cancelPendingRenderStop();
+      isRenderVisible = false;
+      cancelWarmup();
+
+      if (isCleanedUp || document.visibilityState === 'hidden' || !canvas.isConnected) {
+        stopRendering(true);
         return;
       }
 
       syncPlayback();
-    },
-    { threshold: RENDER_VISIBILITY_THRESHOLD }
-  );
+      stopRendering(true);
+      return;
+    }
+
+    if (renderStopTimeout) return;
+
+    renderStopTimeout = window.setTimeout(() => {
+      renderStopTimeout = 0;
+
+      if (
+        isCleanedUp ||
+        document.visibilityState === 'hidden' ||
+        !canvas.isConnected ||
+        !isWithinRetainedRenderArea()
+      ) {
+        isRenderVisible = false;
+        cancelWarmup();
+        syncPlayback();
+        return;
+      }
+
+      isRenderVisible = true;
+      syncPlayback();
+    }, RENDER_STOP_DELAY_MS);
+  };
+
+  const updateRenderVisibility = (forceOutside = false): void => {
+    if (
+      forceOutside ||
+      isCleanedUp ||
+      document.visibilityState === 'hidden' ||
+      !canvas.isConnected
+    ) {
+      applyRenderVisibilityOutside(true);
+      return;
+    }
+
+    if (!isWithinRetainedRenderArea()) {
+      applyRenderVisibilityOutside();
+      return;
+    }
+
+    cancelPendingRenderStop();
+
+    if (!isRenderVisible) {
+      isRenderVisible = true;
+    }
+
+    syncPlayback();
+  };
+
+  const scheduleRenderVisibilityCheck = (forceOutside = false): void => {
+    window.cancelAnimationFrame(renderVisibilityFrame);
+
+    renderVisibilityFrame = window.requestAnimationFrame(() => {
+      renderVisibilityFrame = 0;
+      updateRenderVisibility(forceOutside);
+    });
+  };
+
+  const disconnectRenderVisibilityObserver = (): void => {
+    renderVisibilityObserver?.disconnect();
+    renderVisibilityObserver = null;
+  };
+
+  const createRenderVisibilityObserver = (): void => {
+    disconnectRenderVisibilityObserver();
+
+    renderVisibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          updateRenderVisibility();
+          return;
+        }
+
+        scheduleRenderVisibilityCheck();
+      },
+      {
+        rootMargin: getRenderRootMargin(),
+        threshold: RENDER_VISIBILITY_THRESHOLD,
+      }
+    );
+
+    renderVisibilityObserver.observe(canvas);
+    scheduleRenderVisibilityCheck();
+  };
+
+  const scheduleRenderVisibilityObserverRefresh = (): void => {
+    window.cancelAnimationFrame(renderVisibilityRefreshFrame);
+
+    renderVisibilityRefreshFrame = window.requestAnimationFrame(() => {
+      renderVisibilityRefreshFrame = 0;
+      createRenderVisibilityObserver();
+    });
+  };
 
   const mobileActivationObserver = new IntersectionObserver(
     ([entry]) => {
@@ -1491,7 +1672,12 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     removePreloadScrollGuard();
     window.cancelAnimationFrame(preloadResizeFrame);
     preloadResizeFrame = 0;
-    renderVisibilityObserver.disconnect();
+    disconnectRenderVisibilityObserver();
+    window.cancelAnimationFrame(renderVisibilityFrame);
+    window.cancelAnimationFrame(renderVisibilityRefreshFrame);
+    renderVisibilityFrame = 0;
+    renderVisibilityRefreshFrame = 0;
+    cancelPendingRenderStop();
     mobileActivationObserver.disconnect();
     resizeObserver.disconnect();
     finePointerQuery.removeEventListener('change', syncEligibility);
@@ -1503,13 +1689,15 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     trigger?.removeEventListener('pointerleave', handlePointerLeave);
     window.removeEventListener('resize', handleViewportResize);
     window.removeEventListener('orientationchange', handleViewportResize);
+    window.visualViewport?.removeEventListener('resize', handleViewportResize);
+    window.visualViewport?.removeEventListener('scroll', handleVisualViewportScroll);
     cleanupRiveInstance();
   };
 
   setupFallbackImageListeners();
   syncMountToFallbackGeometry();
   createPreloadObserver();
-  renderVisibilityObserver.observe(root);
+  createRenderVisibilityObserver();
   mobileActivationObserver.observe(root);
   resizeObserver.observe(root);
 
@@ -1526,6 +1714,10 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   trigger?.addEventListener('pointerleave', handlePointerLeave);
   window.addEventListener('resize', handleViewportResize);
   window.addEventListener('orientationchange', handleViewportResize);
+  window.visualViewport?.addEventListener('resize', handleViewportResize);
+  window.visualViewport?.addEventListener('scroll', handleVisualViewportScroll, {
+    passive: true,
+  });
   window.addEventListener('pagehide', cleanup, { once: true });
 
   syncEligibility();
@@ -1576,7 +1768,7 @@ function getTriggerElement(root: HTMLElement, key: string): HTMLElement | null {
   );
 }
 
-function prepareFallbackImage(fallback: HTMLElement | null, fallbackMode: FallbackMode): void {
+function prepareFallbackImage(fallback: HTMLElement | null): void {
   if (!fallback) return;
 
   fallback.setAttribute('aria-hidden', 'true');
@@ -1587,10 +1779,9 @@ function prepareFallbackImage(fallback: HTMLElement | null, fallbackMode: Fallba
     fallback.alt = '';
   }
 
-  if (fallbackMode === 'error-only') {
-    fallback.setAttribute('loading', 'lazy');
-    fallback.setAttribute('fetchpriority', 'low');
-  }
+  fallback.loading = 'eager';
+  fallback.decoding = 'async';
+  fallback.setAttribute('fetchpriority', 'high');
 
   const hasUsableSource = Boolean(
     fallback.currentSrc.trim() || fallback.getAttribute('src')?.trim()
@@ -1797,7 +1988,11 @@ function getNearbyPreloadViewports(root: HTMLElement, useMobileDefault: boolean)
     return defaultValue;
   }
 
-  return clamp(value, MIN_NEARBY_PRELOAD_VIEWPORTS, MAX_NEARBY_PRELOAD_VIEWPORTS);
+  return clamp(
+    value,
+    useMobileDefault ? MIN_MOBILE_PRELOAD_VIEWPORTS : MIN_NEARBY_PRELOAD_VIEWPORTS,
+    MAX_NEARBY_PRELOAD_VIEWPORTS
+  );
 }
 
 function getPreloadMinScrollViewports(root: HTMLElement): number | null {
@@ -1814,7 +2009,13 @@ function getPreloadMinScrollViewports(root: HTMLElement): number | null {
 
 function getResolvedLayoutConfig(root: HTMLElement): ResolvedLayoutConfig {
   const fitValue = root.getAttribute('data-rive-fit')?.trim().toLowerCase();
-  const alignmentValue = root.getAttribute('data-rive-alignment')?.trim().toLowerCase();
+  const alignmentValue = (
+    root.getAttribute('data-rive-alignment') ??
+    root.getAttribute('data-rive-alignement') ??
+    ''
+  )
+    .trim()
+    .toLowerCase();
   const resolvedFit = fitValue
     ? (FIT_MAP[fitValue] ?? DEFAULT_LAYOUT_CONFIG)
     : DEFAULT_LAYOUT_CONFIG;
@@ -1986,6 +2187,26 @@ function isRectWithinTolerance(rect: RectSnapshot, targetRect: RectSnapshot): bo
 
 function isDevelopmentHost(): boolean {
   return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+
+function prefetchRiveSource(source: string | null | undefined): void {
+  const value = source?.trim();
+
+  if (!value || !isValidUrl(value)) return;
+
+  const { href } = new URL(value, document.baseURI);
+
+  if (prefetchedRiveSources.has(href)) return;
+
+  prefetchedRiveSources.add(href);
+
+  const link = document.createElement('link');
+
+  link.rel = 'prefetch';
+  link.href = href;
+  link.as = 'fetch';
+
+  document.head.append(link);
 }
 
 function isValidUrl(value: string): boolean {

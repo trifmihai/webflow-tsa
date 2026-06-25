@@ -1,6 +1,6 @@
 {
   "name": "@finsweet/developer-starter",
-  "version": "0.0.0",
+  "version": "2.3.0",
   "description": "Developer starter template for Finsweet projects.",
   "homepage": "https://github.com/finsweet/developer-starter#readme",
   "license": "ISC",
@@ -17,7 +17,6 @@
     "url": "https://github.com/finsweet/developer-starter/issues"
   },
   "type": "module",
-  "packageManager": "pnpm@11.1.3",
   "main": "src/index.ts",
   "module": "src/index.ts",
   "files": [
