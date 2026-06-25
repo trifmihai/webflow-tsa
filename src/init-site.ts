@@ -25,8 +25,8 @@ export function initSite(): void {
   initPlanStamp();
   initCallPopover();
   onDomReady(() => {
-    initGavel();
     initGavelMobileStability();
+    initGavel();
   });
   onDomReady(initOverlayFilterPresets);
   onDomReady(initTsaStatueShine);
