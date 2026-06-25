@@ -657,7 +657,7 @@ type GavelRuntimeWindow = Omit<Window, 'gsap' | 'ScrollTrigger'> & {
    ========================================================================== */
 
 const QUICK_TUNING = {
-  version: '14.0.1',
+  version: '14.1.0',
 
   /*
    * Varianta încărcată implicit după publicare.
@@ -792,7 +792,7 @@ const QUICK_TUNING = {
   },
 
   performance: {
-    force3D: 'auto',
+    force3D: false,
     temporaryWillChange: true,
     clearPropsAfterRest: false,
     clearPropsAfterImpact: false,
@@ -1893,7 +1893,7 @@ const QUICK_TUNING = {
          * This changes only the authored rest/return pose. Exact impact
          * remains locked to the target by calculateGeometry().
          */
-        restFineTuneXpx: 72,
+        restFineTuneXpx: 40,
         restFineTuneYpx: -10,
 
         motion: {
@@ -5333,6 +5333,48 @@ export function initGavel(): void {
       }
     };
 
+    /*
+     * Webflow can add overflow/clip rules to any wrapper above the gavel.
+     * Hard-coding a short class list proved fragile because the actual mobile
+     * ancestor chain also includes padding-global, container-large,
+     * content-wrapper and practices_group. Mark the real ancestor chain at
+     * runtime so CSS can unlock only the wrappers that can clip this visual.
+     *
+     * Reference counts keep this safe if more than one gavel instance shares
+     * an ancestor or if Webflow reinitializes the component.
+     */
+    const overflowSafeClass = 'tsa-gavel-overflow-safe';
+    const overflowSafeRefCounts = new Map<HTMLElement, number>();
+
+    const markOverflowSafeAncestors = (component: HTMLElement): (() => void) => {
+      const marked: HTMLElement[] = [];
+      let element: HTMLElement | null = component;
+
+      while (element && element !== document.body && element !== document.documentElement) {
+        const currentCount = overflowSafeRefCounts.get(element) ?? 0;
+
+        overflowSafeRefCounts.set(element, currentCount + 1);
+        element.classList.add(overflowSafeClass);
+        marked.push(element);
+
+        element = element.parentElement;
+      }
+
+      return () => {
+        marked.forEach((markedElement) => {
+          const nextCount = (overflowSafeRefCounts.get(markedElement) ?? 1) - 1;
+
+          if (nextCount <= 0) {
+            overflowSafeRefCounts.delete(markedElement);
+            markedElement.classList.remove(overflowSafeClass);
+            return;
+          }
+
+          overflowSafeRefCounts.set(markedElement, nextCount);
+        });
+      };
+    };
+
     const initializeScope = (scope: GavelScopeElement): void => {
       scope.__tsaGavelCleanup?.();
 
@@ -5364,6 +5406,10 @@ export function initGavel(): void {
       }
 
       const localCleanup: Array<() => void> = [];
+
+      /* Apply before geometry is measured so native Safari and desktop use
+       * the same unclipped coordinate space from the first rendered frame. */
+      localCleanup.push(markOverflowSafeAncestors(component));
 
       const contactShadowLayer = ensureGeneratedEffect({
         component,
