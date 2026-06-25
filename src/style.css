@@ -1,4 +1,5 @@
 @import './styles/globals.css';
+@import './components/cookie-consent/cookie-consent.css';
 @import './components/animations/gavel/gavel.css';
 @import './components/animations/overlay-filters/overlay-filters.css';
 @import './components/animations/overlay/overlay.css';
