@@ -168,7 +168,7 @@ const PLAN_STAMP_PRESETS = {
       y: 1,
       scale: 0.975,
       rotation: -0.45,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0,
       duration: 0.24,
@@ -176,7 +176,7 @@ const PLAN_STAMP_PRESETS = {
     },
 
     ink: {
-      opacity: 1,
+      opacity: 0.7,
       start: 0.1,
       duration: 0.14,
       ease: 'power1.out',
@@ -187,7 +187,7 @@ const PLAN_STAMP_PRESETS = {
       y: 0,
       scale: 1,
       rotation: 0,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0.24,
       duration: 0.36,
@@ -230,7 +230,7 @@ const PLAN_STAMP_PRESETS = {
       y: 0.75,
       scale: 0.985,
       rotation: -0.15,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0,
       duration: 0.28,
@@ -238,7 +238,7 @@ const PLAN_STAMP_PRESETS = {
     },
 
     ink: {
-      opacity: 1,
+      opacity: 0.7,
       start: 0.15,
       duration: 0.13,
       ease: 'power1.out',
@@ -249,7 +249,7 @@ const PLAN_STAMP_PRESETS = {
       y: 0,
       scale: 1,
       rotation: 0,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0.28,
       duration: 0.32,
@@ -300,7 +300,7 @@ const PLAN_STAMP_PRESETS = {
     },
 
     ink: {
-      opacity: 1,
+      opacity: 0.7,
       start: 0.16,
       duration: 0.24,
       ease: 'sine.inOut',
@@ -311,7 +311,7 @@ const PLAN_STAMP_PRESETS = {
       y: 0,
       scale: 1,
       rotation: 0,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0.34,
       duration: 0.44,
@@ -354,7 +354,7 @@ const PLAN_STAMP_PRESETS = {
       y: 2,
       scale: 0.965,
       rotation: -0.65,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0,
       duration: 0.3,
@@ -362,7 +362,7 @@ const PLAN_STAMP_PRESETS = {
     },
 
     ink: {
-      opacity: 1,
+      opacity: 0.7,
       start: 0.17,
       duration: 0.13,
       ease: 'power1.out',
@@ -373,7 +373,7 @@ const PLAN_STAMP_PRESETS = {
       y: 0,
       scale: 1,
       rotation: 0,
-      opacity: 1,
+      opacity: 0.7,
 
       start: 0.3,
       duration: 0.4,

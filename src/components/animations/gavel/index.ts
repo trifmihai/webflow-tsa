@@ -11,7 +11,7 @@ type GavelPose = {
 
 type GavelMode = 'desktop' | 'mobile';
 type GavelDesiredState = 'rest' | 'impact';
-type GavelPresetName = 'A' | 'B' | 'C' | 'D' | 'E';
+type GavelPresetName = 'C' | 'F' | 'G' | 'H' | 'I';
 type GavelMobilePlaybackMode = 'timed' | 'scrub';
 type GavelReplayMode = 'once' | 'once-per-entry' | 'on-enter-and-enter-back' | 'manual';
 type GavelMobileInitialState = 'rest' | 'impact';
@@ -35,6 +35,9 @@ type GavelAnimationPhase =
   | 'strike'
   | 'contact'
   | 'follow-through'
+  | 'rebound'
+  | 'rebound-settle'
+  | 'rebound-hold'
   | 'settle'
   | 'impact-hold'
   | 'lift'
@@ -134,6 +137,27 @@ type GavelMotionConfig = {
   overshootRotationDeltaDeg: number;
   overshootXpx: number;
   overshootYpx: number;
+
+  /*
+   * Optional post-contact rebound.
+   *
+   * The peak pose is relative to the exact impact pose. The settle pose
+   * is also relative to impact, which makes both desktop and mobile easy
+   * to tune without changing the contact geometry.
+   */
+  reboundEnabled?: boolean;
+  reboundDurationSeconds?: number;
+  reboundRotationDeltaDeg?: number;
+  reboundXpx?: number;
+  reboundYpx?: number;
+  reboundEase?: string;
+
+  reboundSettleEnabled?: boolean;
+  reboundSettleDurationSeconds?: number;
+  reboundSettleRotationDeltaDeg?: number;
+  reboundSettleXpx?: number;
+  reboundSettleYpx?: number;
+  reboundSettleEase?: string;
 
   settleEnabled?: boolean;
   settleDurationSeconds: number;
@@ -239,6 +263,7 @@ type GavelCastShadowEffectConfig = {
   rest: GavelCastShadowPhaseConfig;
   anticipation: GavelCastShadowPhaseConfig;
   impact: GavelCastShadowPhaseConfig;
+  rebound?: GavelCastShadowPhaseConfig;
   settle: GavelCastShadowPhaseConfig;
 };
 
@@ -621,37 +646,33 @@ type GavelRuntimeWindow = Omit<Window, 'gsap' | 'ScrollTrigger'> & {
 /* ==========================================================================
    QUICK TUNING AREA
 
-   1. Schimbă activePreset între A, B, C, D și E.
+   1. Schimbă activePreset între C, F, G, H și I.
    2. Toate valorile vizuale importante sunt în această zonă.
    3. Poți testa profilurile live și din consolă:
-      TSAGavel.usePreset('A')
-      TSAGavel.usePreset('B')
       TSAGavel.usePreset('C')
-      TSAGavel.usePreset('D')
-      TSAGavel.usePreset('E')
+      TSAGavel.usePreset('F')
+      TSAGavel.usePreset('G')
+      TSAGavel.usePreset('H')
+      TSAGavel.usePreset('I')
    ========================================================================== */
 
 const QUICK_TUNING = {
-  version: '10.0.0',
+  version: '14.0.0',
 
   /*
    * Varianta încărcată implicit după publicare.
    *
-   * A = Quiet tap
-   * B = Scroll-cocked reveal
    * C = Ceremonial slam
-   * D = Editorial pendulum
-   * E = Snap verdict
+   * F = Balanced controlled rebound
+   * G = Restrained controlled rebound
+   * H = Decisive controlled rebound
+   * I = Weighted controlled rebound
    */
-  activePreset: 'C' as GavelPresetName,
+  activePreset: 'G' as GavelPresetName,
 
   interaction: {
     desktopMinWidthPx: 992,
 
-    /*
-     * Mobile/tablet can either play a normal time-based strike on entry
-     * or scrub the hammer pose through ScrollTrigger progress per preset.
-     */
     mobileViewport: {
       enabled: true,
 
@@ -660,19 +681,12 @@ const QUICK_TUNING = {
       start: 'top 82%',
       end: 'bottom 18%',
 
-      /*
-       * Ignored while playback is "timed".
-       * Retained only because the current type requires them.
-       */
       scrubSmoothingSeconds: 0.24,
       scrubImpactThreshold: 0.92,
       scrubResetThreshold: 0.62,
 
       entryDelaySeconds: 0.08,
 
-      /*
-       * Rearm after the component leaves the active viewport range.
-       */
       replayMode: 'once-per-entry' as GavelReplayMode,
 
       initialState: 'rest' as GavelMobileInitialState,
@@ -930,6 +944,12 @@ const QUICK_TUNING = {
         opacity: 0.12,
       },
 
+      rebound: {
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 0.055,
+      },
+
       settle: {
         scaleX: 1,
         scaleY: 1,
@@ -1072,397 +1092,6 @@ const QUICK_TUNING = {
   } satisfies GavelImpactEffectsConfig,
 
   presets: {
-    A: {
-      label: 'Quiet tap',
-      description:
-        'Restrained time-based tap with a quick auto-return; best when the section already has enough visual weight.',
-
-      mobileViewport: {
-        playback: 'timed',
-        replayMode: 'once',
-        finalState: 'auto-return',
-        entryDelaySeconds: 0.05,
-        holdAtImpactSeconds: 0.18,
-        autoReturnDelaySeconds: 0.16,
-      },
-
-      desktop: {
-        pivotXPercent: 17,
-        pivotYPercent: 66,
-
-        restRotationDeg: -17,
-        impactRotationDeg: 0.4,
-
-        impactFineTuneXpx: 0,
-        impactFineTuneYpx: 0,
-
-        restFineTuneXpx: 6,
-        restFineTuneYpx: 0,
-
-        motion: {
-          anticipationDurationSeconds: 0.04,
-          anticipationRotationDeltaDeg: -0.8,
-          anticipationXpx: -0.12,
-          anticipationYpx: -0.1,
-          anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.1,
-
-          strikeDurationSeconds: 0.115,
-          strikeMinDurationSeconds: 0.105,
-          strikeMaxDurationSeconds: 0.13,
-          strikeEase: 'power3.in',
-
-          followThroughDurationSeconds: 0.012,
-          overshootRotationDeltaDeg: 0.02,
-          overshootXpx: 0.02,
-          overshootYpx: 0.06,
-
-          settleDurationSeconds: 0.07,
-          settleEase: 'power3.out',
-
-          liftDurationSeconds: 0.14,
-          liftMinDurationSeconds: 0.12,
-          liftMaxDurationSeconds: 0.18,
-          liftEase: 'power3.out',
-        },
-      },
-
-      mobile: {
-        pivotXPercent: 17,
-        pivotYPercent: 66,
-
-        restRotationDeg: -16,
-        impactRotationDeg: 0.4,
-
-        impactFineTuneXpx: 0,
-        impactFineTuneYpx: 0,
-
-        restFineTuneXpx: 3,
-        restFineTuneYpx: 0,
-
-        motion: {
-          anticipationDurationSeconds: 0.045,
-          anticipationRotationDeltaDeg: -0.7,
-          anticipationXpx: -0.1,
-          anticipationYpx: -0.08,
-          anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.1,
-
-          strikeDurationSeconds: 0.12,
-          strikeMinDurationSeconds: 0.11,
-          strikeMaxDurationSeconds: 0.14,
-          strikeEase: 'power3.in',
-
-          followThroughDurationSeconds: 0.012,
-          overshootRotationDeltaDeg: 0.02,
-          overshootXpx: 0.02,
-          overshootYpx: 0.06,
-
-          settleDurationSeconds: 0.075,
-          settleEase: 'power3.out',
-
-          liftDurationSeconds: 0.15,
-          liftMinDurationSeconds: 0.13,
-          liftMaxDurationSeconds: 0.19,
-          liftEase: 'power3.out',
-        },
-      },
-
-      targetReaction: {
-        translateXpx: 0,
-        translateYpx: 0.45,
-        scaleX: 1.001,
-        scaleY: 0.998,
-
-        compressionDurationSeconds: 0.04,
-        compressionEase: 'power2.out',
-
-        recoveryDurationSeconds: 0.13,
-        recoveryEase: 'power3.out',
-
-        transformOrigin: 'bottom center',
-      },
-
-      shadowReaction: {
-        translateXpx: 0,
-        translateYpx: 1.5,
-
-        scaleX: 1.12,
-        scaleY: 0.86,
-
-        opacity: 0.84,
-
-        compressionDurationSeconds: 0.05,
-        compressionEase: 'power2.out',
-
-        recoveryDurationSeconds: 0.16,
-        recoveryEase: 'power3.out',
-
-        transformOrigin: 'center center',
-      },
-
-      impactEffects: {
-        target: {
-          desktop: {
-            compressionYpx: 0.22,
-            compressionScaleY: 0.9992,
-            recoilEnabled: true,
-            recoilYpx: -0.018,
-            recoilDurationSeconds: 0.022,
-            settleDurationSeconds: 0.06,
-          },
-
-          mobile: {
-            compressionYpx: 0.28,
-            compressionScaleY: 0.999,
-            recoilEnabled: true,
-            recoilYpx: -0.02,
-            recoilDurationSeconds: 0.024,
-            settleDurationSeconds: 0.065,
-          },
-        },
-
-        broadShadow: {
-          translateYpx: 0.28,
-          scaleX: 1.012,
-          scaleY: 0.985,
-          opacity: 0.66,
-          compressionDurationSeconds: 0.035,
-          recoveryDurationSeconds: 0.08,
-        },
-
-        contactShadow: {
-          preContactOpacity: 0.02,
-          contactOpacity: 0.055,
-          recoilOpacity: 0.035,
-          fadeDurationSeconds: 0.07,
-        },
-
-        dust: {
-          enabled: false,
-        },
-
-        resonance: {
-          enabled: false,
-        },
-      },
-    },
-
-    B: {
-      label: 'Scroll-cocked reveal',
-      description:
-        'Recommended mobile showcase: the hammer cocks with scroll, lands at the end of the viewport pass, then releases a polished contact burst.',
-
-      mobileViewport: {
-        playback: 'scrub',
-        start: 'top 92%',
-        end: 'bottom 38%',
-        scrubSmoothingSeconds: 0.32,
-        scrubImpactThreshold: 0.9,
-        scrubResetThreshold: 0.46,
-        replayMode: 'once-per-entry',
-        finalState: 'hold-impact',
-        entryDelaySeconds: 0,
-        minimumReplayIntervalSeconds: 0.25,
-        playOnInitialLoadIfVisible: false,
-      },
-
-      desktop: {
-        pivotXPercent: 18,
-        pivotYPercent: 65,
-
-        restRotationDeg: -28,
-        impactRotationDeg: 0.8,
-
-        impactFineTuneXpx: 0,
-        impactFineTuneYpx: 0,
-
-        restFineTuneXpx: 18,
-        restFineTuneYpx: 0,
-
-        motion: {
-          anticipationDurationSeconds: 0.09,
-          anticipationRotationDeltaDeg: -3.2,
-          anticipationXpx: -0.74,
-          anticipationYpx: -0.48,
-          anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.24,
-
-          strikeDurationSeconds: 0.18,
-          strikeMinDurationSeconds: 0.15,
-          strikeMaxDurationSeconds: 0.2,
-          strikeEase: 'power3.in',
-
-          followThroughDurationSeconds: 0.03,
-          overshootRotationDeltaDeg: 0.12,
-          overshootXpx: 0.12,
-          overshootYpx: 0.28,
-
-          settleDurationSeconds: 0.12,
-          settleEase: 'power3.out',
-
-          liftDurationSeconds: 0.22,
-          liftMinDurationSeconds: 0.16,
-          liftMaxDurationSeconds: 0.25,
-          liftEase: 'power3.out',
-        },
-      },
-
-      mobile: {
-        pivotXPercent: 18,
-        pivotYPercent: 65,
-
-        restRotationDeg: -34,
-        impactRotationDeg: 0.8,
-
-        impactFineTuneXpx: 0,
-        impactFineTuneYpx: 0,
-
-        restFineTuneXpx: 12,
-        restFineTuneYpx: 10,
-
-        motion: {
-          anticipationDurationSeconds: 0.11,
-          anticipationRotationDeltaDeg: -3.2,
-          anticipationXpx: -18,
-          anticipationYpx: -12,
-          anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.32,
-
-          strikeDurationSeconds: 0.2,
-          strikeMinDurationSeconds: 0.17,
-          strikeMaxDurationSeconds: 0.23,
-          strikeEase: 'power3.in',
-
-          followThroughDurationSeconds: 0.034,
-          overshootRotationDeltaDeg: 0.14,
-          overshootXpx: 0.12,
-          overshootYpx: 0.32,
-
-          settleDurationSeconds: 0.13,
-          settleEase: 'power3.out',
-
-          liftDurationSeconds: 0.23,
-          liftMinDurationSeconds: 0.17,
-          liftMaxDurationSeconds: 0.26,
-          liftEase: 'power3.out',
-        },
-      },
-
-      targetReaction: {
-        translateXpx: 0,
-        translateYpx: 1,
-
-        scaleX: 1.005,
-        scaleY: 0.989,
-
-        compressionDurationSeconds: 0.055,
-        compressionEase: 'power2.out',
-
-        recoveryDurationSeconds: 0.17,
-        recoveryEase: 'power3.out',
-
-        transformOrigin: 'bottom center',
-      },
-
-      shadowReaction: {
-        translateXpx: 0,
-        translateYpx: 1.5,
-
-        scaleX: 1.12,
-        scaleY: 0.85,
-
-        opacity: 0.82,
-
-        compressionDurationSeconds: 0.065,
-        compressionEase: 'power2.out',
-
-        recoveryDurationSeconds: 0.19,
-        recoveryEase: 'power3.out',
-
-        transformOrigin: 'center center',
-      },
-
-      impactEffects: {
-        target: {
-          desktop: {
-            compressionYpx: 0.8,
-            compressionScaleY: 0.9972,
-            recoilYpx: -0.08,
-            settleDurationSeconds: 0.115,
-          },
-
-          mobile: {
-            compressionYpx: 1.12,
-            compressionScaleY: 0.9964,
-            recoilYpx: -0.11,
-            settleDurationSeconds: 0.12,
-          },
-        },
-
-        broadShadow: {
-          translateYpx: 1.1,
-          scaleX: 1.085,
-          scaleY: 0.89,
-          opacity: 0.9,
-          compressionDurationSeconds: 0.06,
-          recoveryDurationSeconds: 0.18,
-        },
-
-        castShadow: {
-          xPercent: 3.5,
-          yPercent: 7.5,
-          cssFilter: 'brightness(0) saturate(0) blur(2.25px)',
-
-          rest: {
-            opacity: 0.2,
-          },
-
-          anticipation: {
-            opacity: 0.14,
-          },
-
-          impact: {
-            opacity: 0.28,
-          },
-
-          settle: {
-            opacity: 0.22,
-          },
-        },
-
-        contactShadow: {
-          preContactOpacity: 0.06,
-          contactOpacity: 0.18,
-          contactScaleX: 1.08,
-          recoilOpacity: 0.105,
-          fadeDurationSeconds: 0.16,
-        },
-
-        dust: {
-          anchorOffsetXpx: 0,
-          anchorOffsetYpx: 0,
-          peakOpacity: 0.12,
-          peakScale: 1.02,
-          endScale: 1.22,
-          startYPercent: -42,
-          peakYPercent: -52,
-          endYPercent: -66,
-          fadeDurationSeconds: 0.18,
-        },
-
-        resonance: {
-          enabled: true,
-          startOpacity: 0.07,
-          peakOpacity: 0.08,
-          endScaleX: 1.32,
-          endScaleY: 1.04,
-          revealDurationSeconds: 0.035,
-          fadeDurationSeconds: 0.11,
-        },
-      },
-    },
-
     C: {
       label: 'Ceremonial slam',
       description:
@@ -1577,7 +1206,7 @@ const QUICK_TUNING = {
         pivotXPercent: 18,
         pivotYPercent: 65,
 
-        visualScale: 1.09,
+        visualScale: 1.14,
 
         restRotationDeg: -34,
         impactRotationDeg: -3,
@@ -1814,118 +1443,172 @@ const QUICK_TUNING = {
       },
     },
 
-    D: {
-      label: 'Editorial pendulum',
+    F: {
+      label: 'Balanced controlled rebound',
       description:
-        'A slow scroll-scrubbed arc: less explosive than B, more cinematic and inspectable on mobile.',
+        'The TSA reference: a short physical recoil, strong damping and a composed return without elastic bounce.',
 
       mobileViewport: {
-        playback: 'scrub',
-        start: 'top 96%',
-        end: 'bottom 12%',
-        scrubSmoothingSeconds: 0.55,
-        scrubImpactThreshold: 0.96,
-        scrubResetThreshold: 0.38,
+        playback: 'timed',
+        start: 'top 82%',
+        end: 'bottom 18%',
         replayMode: 'once-per-entry',
-        finalState: 'hold-impact',
-        entryDelaySeconds: 0,
-        minimumReplayIntervalSeconds: 0.35,
-        playOnInitialLoadIfVisible: false,
+        initialState: 'rest',
+        finalState: 'auto-return',
+        entryDelaySeconds: 0.04,
+
+        /*
+         * The timer starts after rebound and rebound-settle finish.
+         * The final lift therefore never interrupts the contact motion.
+         */
+        holdAtImpactSeconds: 0.14,
+        autoReturnDelaySeconds: 0.06,
+
+        resetWhenFullyOutside: true,
+        resetPosition: 'either',
+        resetDelaySeconds: 0,
+        resetDurationSeconds: 0.24,
+        resetEase: 'power3.out',
+
+        playOnInitialLoadIfVisible: true,
+        playOnEnter: true,
+        playOnEnterBack: true,
+        finishCurrentAnimationOnLeave: true,
+        reverseOnLeave: false,
+        minimumReplayIntervalSeconds: 0.9,
+        refreshSilently: true,
+        preventRefreshPlayback: true,
+        markers: false,
       },
 
       desktop: {
-        pivotXPercent: 16,
-        pivotYPercent: 66,
-
-        restRotationDeg: -24,
-        impactRotationDeg: 0.6,
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+        restRotationDeg: -31,
+        impactRotationDeg: 1.2,
 
         impactFineTuneXpx: 0,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 9,
+        restFineTuneXpx: 20,
         restFineTuneYpx: 0,
 
         motion: {
-          anticipationDurationSeconds: 0.14,
-          anticipationRotationDeltaDeg: -2.6,
-          anticipationXpx: -0.45,
-          anticipationYpx: -0.3,
+          anticipationDurationSeconds: 0.055,
+          anticipationRotationDeltaDeg: -1.6,
+          anticipationXpx: -0.24,
+          anticipationYpx: -0.18,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.26,
+          anticipationMaxProgress: 0.18,
 
-          strikeDurationSeconds: 0.34,
-          strikeMinDurationSeconds: 0.3,
-          strikeMaxDurationSeconds: 0.38,
-          strikeEase: 'power2.in',
+          strikeDurationSeconds: 0.13,
+          strikeMinDurationSeconds: 0.115,
+          strikeMaxDurationSeconds: 0.145,
+          strikeEase: 'expo.in',
 
-          followThroughDurationSeconds: 0.032,
-          overshootRotationDeltaDeg: 0.06,
-          overshootXpx: 0.06,
-          overshootYpx: 0.18,
+          followThroughDurationSeconds: 0.012,
+          overshootRotationDeltaDeg: 0.05,
+          overshootXpx: 0.035,
+          overshootYpx: 0.11,
 
-          settleDurationSeconds: 0.22,
-          settleEase: 'sine.out',
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.14,
+          reboundRotationDeltaDeg: -10.5,
+          reboundXpx: -1,
+          reboundYpx: -1.25,
+          reboundEase: 'power2.out',
 
-          liftDurationSeconds: 0.42,
-          liftMinDurationSeconds: 0.36,
-          liftMaxDurationSeconds: 0.48,
-          liftEase: 'power3.out',
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.19,
+          reboundSettleRotationDeltaDeg: -3.4,
+          reboundSettleXpx: -0.28,
+          reboundSettleYpx: -0.36,
+          reboundSettleEase: 'power2.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.4,
+          liftMinDurationSeconds: 0.35,
+          liftMaxDurationSeconds: 0.44,
+          liftEase: 'power3.inOut',
         },
       },
 
       mobile: {
-        pivotXPercent: 16,
-        pivotYPercent: 66,
+        pivotXPercent: 18,
+        pivotYPercent: 65,
 
-        restRotationDeg: -30,
-        impactRotationDeg: 0.6,
+        visualScale: 1,
 
-        impactFineTuneXpx: 0,
+        /*
+         * Mobile mirrors the desktop rhythm, but starts closer to the
+         * target. Auto-return always resolves back to this exact pose.
+         */
+        restRotationDeg: -23,
+        impactRotationDeg: -3,
+
+        impactFineTuneXpx: 20,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 8,
-        restFineTuneYpx: 0,
+        restFineTuneXpx: 17,
+        restFineTuneYpx: 1,
 
         motion: {
-          anticipationDurationSeconds: 0.16,
-          anticipationRotationDeltaDeg: -2.5,
-          anticipationXpx: -0.42,
-          anticipationYpx: -0.28,
+          anticipationDurationSeconds: 0.043,
+          anticipationRotationDeltaDeg: -0.95,
+          anticipationXpx: -0.14,
+          anticipationYpx: -0.09,
           anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.28,
+          anticipationMaxProgress: 0.13,
 
-          strikeDurationSeconds: 0.38,
-          strikeMinDurationSeconds: 0.34,
-          strikeMaxDurationSeconds: 0.44,
-          strikeEase: 'power2.in',
+          strikeDurationSeconds: 0.11,
+          strikeMinDurationSeconds: 0.098,
+          strikeMaxDurationSeconds: 0.122,
+          strikeEase: 'expo.in',
 
-          followThroughDurationSeconds: 0.032,
-          overshootRotationDeltaDeg: 0.06,
-          overshootXpx: 0.06,
-          overshootYpx: 0.18,
+          followThroughDurationSeconds: 0.011,
+          overshootRotationDeltaDeg: 0.04,
+          overshootXpx: 0.03,
+          overshootYpx: 0.1,
 
-          settleDurationSeconds: 0.24,
-          settleEase: 'sine.out',
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.13,
+          reboundRotationDeltaDeg: -7.8,
+          reboundXpx: -0.62,
+          reboundYpx: -0.85,
+          reboundEase: 'power2.out',
 
-          liftDurationSeconds: 0.48,
-          liftMinDurationSeconds: 0.42,
-          liftMaxDurationSeconds: 0.54,
-          liftEase: 'power3.out',
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.18,
+          reboundSettleRotationDeltaDeg: -2.5,
+          reboundSettleXpx: -0.18,
+          reboundSettleYpx: -0.26,
+          reboundSettleEase: 'power2.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.36,
+          liftMinDurationSeconds: 0.32,
+          liftMaxDurationSeconds: 0.4,
+          liftEase: 'power3.inOut',
         },
       },
 
       targetReaction: {
         translateXpx: 0,
-        translateYpx: 0.8,
+        translateYpx: 0.45,
 
-        scaleX: 1.003,
-        scaleY: 0.991,
+        scaleX: 1.0008,
+        scaleY: 0.9975,
 
-        compressionDurationSeconds: 0.06,
-        compressionEase: 'power2.out',
+        compressionDurationSeconds: 0.045,
+        compressionEase: 'power3.out',
 
-        recoveryDurationSeconds: 0.17,
+        recoveryDurationSeconds: 0.12,
         recoveryEase: 'power3.out',
 
         transformOrigin: 'bottom center',
@@ -1933,17 +1616,17 @@ const QUICK_TUNING = {
 
       shadowReaction: {
         translateXpx: 0,
-        translateYpx: 1.25,
+        translateYpx: 0.9,
 
-        scaleX: 1.09,
-        scaleY: 0.88,
+        scaleX: 1.06,
+        scaleY: 0.92,
 
-        opacity: 0.85,
+        opacity: 0.9,
 
-        compressionDurationSeconds: 0.07,
-        compressionEase: 'power2.out',
+        compressionDurationSeconds: 0.055,
+        compressionEase: 'power3.out',
 
-        recoveryDurationSeconds: 0.19,
+        recoveryDurationSeconds: 0.15,
         recoveryEase: 'power3.out',
 
         transformOrigin: 'center center',
@@ -1952,212 +1635,57 @@ const QUICK_TUNING = {
       impactEffects: {
         target: {
           desktop: {
-            compressionYpx: 0.42,
-            compressionScaleY: 0.9986,
-            recoilYpx: -0.04,
-            compressionDurationSeconds: 0.052,
-            settleDurationSeconds: 0.12,
+            compressionXpx: 0.08,
+            compressionYpx: 1.12,
+            compressionRotationDeg: 0.016,
+            compressionScaleX: 1.0009,
+            compressionScaleY: 0.9961,
+            compressionDurationSeconds: 0.047,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.04,
+            recoilYpx: -0.13,
+            recoilRotationDeg: -0.007,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0002,
+            recoilDurationSeconds: 0.035,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.145,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
           },
 
           mobile: {
-            compressionYpx: 0.5,
-            compressionScaleY: 0.9982,
-            recoilYpx: -0.045,
-            compressionDurationSeconds: 0.055,
-            settleDurationSeconds: 0.13,
+            compressionXpx: 0.1,
+            compressionYpx: 1.28,
+            compressionRotationDeg: 0.022,
+            compressionScaleX: 1.0011,
+            compressionScaleY: 0.9956,
+            compressionDurationSeconds: 0.05,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.05,
+            recoilYpx: -0.15,
+            recoilRotationDeg: -0.009,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0003,
+            recoilDurationSeconds: 0.038,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.155,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
           },
         },
 
         broadShadow: {
-          translateYpx: 0.52,
-          scaleX: 1.03,
-          scaleY: 0.965,
-          opacity: 0.7,
-          compressionDurationSeconds: 0.06,
-          recoveryDurationSeconds: 0.18,
-        },
-
-        contactShadow: {
-          preContactOpacity: 0.032,
-          contactOpacity: 0.08,
-          recoilOpacity: 0.058,
-          fadeDurationSeconds: 0.14,
-        },
-
-        dust: {
-          enabled: false,
-        },
-
-        resonance: {
-          enabled: true,
-          startOpacity: 0.04,
-          peakOpacity: 0.045,
-          endScaleX: 1.22,
-          endScaleY: 1,
-          revealDurationSeconds: 0.06,
-          fadeDurationSeconds: 0.16,
-        },
-      },
-    },
-
-    E: {
-      label: 'Snap verdict',
-      description:
-        'Fastest time-based option: a sharp decisive hit with very little atmosphere and a clear mobile change.',
-
-      mobileViewport: {
-        playback: 'timed',
-        replayMode: 'once',
-        finalState: 'hold-impact',
-        entryDelaySeconds: 0,
-      },
-
-      desktop: {
-        pivotXPercent: 18,
-        pivotYPercent: 65,
-
-        restRotationDeg: -26,
-        impactRotationDeg: 1.6,
-
-        impactFineTuneXpx: 0,
-        impactFineTuneYpx: 0,
-
-        restFineTuneXpx: 14,
-        restFineTuneYpx: 0,
-
-        motion: {
-          anticipationDurationSeconds: 0.028,
-          anticipationRotationDeltaDeg: -0.55,
-          anticipationXpx: -0.08,
-          anticipationYpx: -0.16,
-          anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.08,
-
-          strikeDurationSeconds: 0.095,
-          strikeMinDurationSeconds: 0.085,
-          strikeMaxDurationSeconds: 0.11,
-          strikeEase: 'expo.in',
-
-          followThroughDurationSeconds: 0.012,
-          overshootRotationDeltaDeg: 0.08,
-          overshootXpx: 0.04,
-          overshootYpx: 0.18,
-
-          settleDurationSeconds: 0.055,
-          settleEase: 'power3.out',
-
-          liftDurationSeconds: 0.16,
-          liftMinDurationSeconds: 0.13,
-          liftMaxDurationSeconds: 0.18,
-          liftEase: 'power3.out',
-        },
-      },
-
-      mobile: {
-        pivotXPercent: 18,
-        pivotYPercent: 65,
-
-        restRotationDeg: -28,
-        impactRotationDeg: 1.6,
-
-        impactFineTuneXpx: 0,
-        impactFineTuneYpx: 0,
-
-        restFineTuneXpx: 10,
-        restFineTuneYpx: 0,
-
-        motion: {
-          anticipationDurationSeconds: 0.032,
-          anticipationRotationDeltaDeg: -0.5,
-          anticipationXpx: -0.08,
-          anticipationYpx: -0.14,
-          anticipationEase: 'power2.out',
-          anticipationMaxProgress: 0.08,
-
-          strikeDurationSeconds: 0.105,
-          strikeMinDurationSeconds: 0.095,
-          strikeMaxDurationSeconds: 0.12,
-          strikeEase: 'expo.in',
-
-          followThroughDurationSeconds: 0.012,
-          overshootRotationDeltaDeg: 0.08,
-          overshootXpx: 0.04,
-          overshootYpx: 0.2,
-
-          settleDurationSeconds: 0.06,
-          settleEase: 'power3.out',
-
-          liftDurationSeconds: 0.17,
-          liftMinDurationSeconds: 0.14,
-          liftMaxDurationSeconds: 0.19,
-          liftEase: 'power3.out',
-        },
-      },
-
-      targetReaction: {
-        translateXpx: 0,
-        translateYpx: 0.4,
-
-        scaleX: 1.0005,
-        scaleY: 0.9995,
-
-        compressionDurationSeconds: 0.04,
-        compressionEase: 'power2.out',
-
-        recoveryDurationSeconds: 0.11,
-        recoveryEase: 'power3.out',
-
-        transformOrigin: 'bottom center',
-      },
-
-      shadowReaction: {
-        translateXpx: 0,
-        translateYpx: 0.8,
-
-        scaleX: 1.06,
-        scaleY: 0.92,
-
-        opacity: 0.92,
-
-        compressionDurationSeconds: 0.055,
-        compressionEase: 'power2.out',
-
-        recoveryDurationSeconds: 0.14,
-        recoveryEase: 'power3.out',
-
-        transformOrigin: 'center center',
-      },
-
-      impactEffects: {
-        target: {
-          compressionXpx: 0.06,
-          compressionYpx: 0.72,
-          compressionRotationDeg: 0.01,
-          compressionScaleX: 1.0004,
-          compressionScaleY: 0.999,
-          compressionDurationSeconds: 0.04,
-          compressionEase: 'power3.out',
-
-          recoilXpx: -0.025,
-          recoilYpx: -0.07,
-          recoilRotationDeg: -0.004,
-          recoilScaleX: 1,
-          recoilScaleY: 1,
-          recoilDurationSeconds: 0.026,
-          recoilEase: 'power2.out',
-
-          settleDurationSeconds: 0.06,
-          settleEase: 'power3.out',
-          transformOrigin: 'bottom center',
-        },
-
-        broadShadow: {
-          translateYpx: 0.68,
-          scaleX: 1.04,
-          scaleY: 0.94,
-          opacity: 0.8,
-          compressionDurationSeconds: 0.032,
-          recoveryDurationSeconds: 0.09,
+          translateYpx: 1.25,
+          scaleX: 1.1,
+          scaleY: 0.86,
+          opacity: 0.92,
+          compressionDurationSeconds: 0.062,
+          recoveryDurationSeconds: 0.2,
         },
 
         castShadow: {
@@ -2174,92 +1702,1086 @@ const QUICK_TUNING = {
           anticipation: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.05,
+            opacity: 0.045,
           },
 
           impact: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.105,
+            opacity: 0.17,
+          },
+
+          rebound: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.05,
           },
 
           settle: {
             scaleX: 1,
             scaleY: 1,
-            opacity: 0.08,
+            opacity: 0.085,
           },
         },
 
         dust: {
-          anchorOffsetXpx: 0,
+          anchorOffsetXpx: -16,
           anchorOffsetYpx: 0,
 
-          xPercent: -50,
+          peakOpacity: 0.075,
 
-          startOpacity: 0,
-          peakOpacity: 0.025,
+          startScale: 0.76,
+          peakScale: 0.98,
+          endScale: 1.18,
 
-          startScale: 0.72,
-          peakScale: 0.8,
-          endScale: 0.92,
+          startYPercent: -42,
+          peakYPercent: -53,
+          endYPercent: -70,
 
-          startYPercent: -40,
-          peakYPercent: -50,
-          endYPercent: -62,
-
-          revealDurationSeconds: 0.04,
-          fadeDurationSeconds: 0.1,
-
-          revealEase: 'power2.out',
-          fadeEase: 'power2.out',
-
-          transformOrigin: 'center bottom',
+          revealDurationSeconds: 0.038,
+          fadeDurationSeconds: 0.18,
         },
 
         contactShadow: {
-          anchorOffsetXpx: 0,
-          anchorOffsetYpx: 0,
+          preContactOpacity: 0.06,
 
-          preContactLeadSeconds: 0.05,
-          preContactOpacity: 0.032,
-          preContactScaleX: 0.82,
-          preContactScaleY: 0.72,
+          contactOpacity: 0.19,
+          contactScaleX: 1.1,
+          contactScaleY: 0.5,
+          contactDurationSeconds: 0.034,
 
-          contactOpacity: 0.13,
-          contactScaleX: 0.96,
-          contactScaleY: 0.6,
-          contactDurationSeconds: 0.032,
-          contactEase: 'power2.out',
+          recoilOpacity: 0.095,
+          recoilScaleX: 1.12,
+          recoilScaleY: 0.62,
+          recoilDurationSeconds: 0.05,
 
-          recoilOpacity: 0.07,
-          recoilScaleX: 1.02,
-          recoilScaleY: 0.68,
-          recoilDurationSeconds: 0.04,
-          recoilEase: 'power2.out',
-
-          fadeOpacity: 0,
-          fadeScaleX: 0.94,
-          fadeScaleY: 0.72,
-          fadeDurationSeconds: 0.075,
-          fadeEase: 'power3.out',
+          fadeDurationSeconds: 0.15,
         },
 
         resonance: {
-          enabled: false,
+          enabled: true,
 
-          anchorOffsetXpx: 0,
-          anchorOffsetYpx: 0,
-
-          startOpacity: 0.05,
+          startOpacity: 0.065,
+          peakOpacity: 0.08,
           endOpacity: 0,
 
           startScaleX: 0.72,
           startScaleY: 0.82,
 
-          endScaleX: 1.14,
-          endScaleY: 0.98,
+          endScaleX: 1.34,
+          endScaleY: 1.04,
 
-          durationSeconds: 0.1,
+          durationSeconds: 0.15,
+          revealDurationSeconds: 0.04,
+          fadeDurationSeconds: 0.11,
+          ease: 'power2.out',
+        },
+      },
+    },
+
+    G: {
+      label: 'Restrained controlled rebound',
+      description:
+        'A quieter F variation with the smallest recoil, softer damping and the least visual interruption.',
+
+      mobileViewport: {
+        playback: 'timed',
+        start: 'top 82%',
+        end: 'bottom 18%',
+        replayMode: 'once-per-entry',
+        initialState: 'rest',
+        finalState: 'auto-return',
+        entryDelaySeconds: 0.045,
+
+        /*
+         * The timer starts after rebound and rebound-settle finish.
+         * The final lift therefore never interrupts the contact motion.
+         */
+        holdAtImpactSeconds: 0.16,
+        autoReturnDelaySeconds: 0.07,
+
+        resetWhenFullyOutside: true,
+        resetPosition: 'either',
+        resetDelaySeconds: 0,
+        resetDurationSeconds: 0.25,
+        resetEase: 'power3.out',
+
+        playOnInitialLoadIfVisible: true,
+        playOnEnter: true,
+        playOnEnterBack: true,
+        finishCurrentAnimationOnLeave: true,
+        reverseOnLeave: false,
+        minimumReplayIntervalSeconds: 0.92,
+        refreshSilently: true,
+        preventRefreshPlayback: true,
+        markers: false,
+      },
+
+      desktop: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+        restRotationDeg: -30,
+        impactRotationDeg: 1.1,
+
+        impactFineTuneXpx: 0,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 19,
+        restFineTuneYpx: 0,
+
+        motion: {
+          anticipationDurationSeconds: 0.065,
+          anticipationRotationDeltaDeg: -1.4,
+          anticipationXpx: -0.2,
+          anticipationYpx: -0.14,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.18,
+
+          strikeDurationSeconds: 0.14,
+          strikeMinDurationSeconds: 0.124,
+          strikeMaxDurationSeconds: 0.152,
+          strikeEase: 'power4.in',
+
+          followThroughDurationSeconds: 0.012,
+          overshootRotationDeltaDeg: 0.04,
+          overshootXpx: 0.03,
+          overshootYpx: 0.09,
+
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.155,
+          reboundRotationDeltaDeg: -7.4,
+          reboundXpx: -0.35,
+          reboundYpx: -0.65,
+          reboundEase: 'power2.out',
+
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.22,
+          reboundSettleRotationDeltaDeg: -1,
+          reboundSettleXpx: -0.22,
+          reboundSettleYpx: -0.29,
+          reboundSettleEase: 'sine.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.5,
+          liftMinDurationSeconds: 0.38,
+          liftMaxDurationSeconds: 0.47,
+          liftEase: 'power3.inOut',
+        },
+      },
+
+      mobile: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+
+        visualScale: 1.08,
+
+        /*
+         * Mobile mirrors the desktop rhythm, but starts closer to the
+         * target. Auto-return always resolves back to this exact pose.
+         */
+        restRotationDeg: -35,
+        impactRotationDeg: -3,
+
+        impactFineTuneXpx: 10,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 40,
+        restFineTuneYpx: -10,
+
+        motion: {
+          anticipationDurationSeconds: 0.05,
+          anticipationRotationDeltaDeg: -0.82,
+          anticipationXpx: -0.12,
+          anticipationYpx: -0.075,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.12,
+
+          strikeDurationSeconds: 0.12,
+          strikeMinDurationSeconds: 0.108,
+          strikeMaxDurationSeconds: 0.134,
+          strikeEase: 'power4.in',
+
+          followThroughDurationSeconds: 0.011,
+          overshootRotationDeltaDeg: 0.035,
+          overshootXpx: 0.025,
+          overshootYpx: 0.08,
+
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.145,
+          reboundRotationDeltaDeg: -6.2,
+          reboundXpx: -0.48,
+          reboundYpx: -0.67,
+          reboundEase: 'power2.out',
+
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.205,
+          reboundSettleRotationDeltaDeg: 1,
+          reboundSettleXpx: -0.14,
+          reboundSettleYpx: -0.2,
+          reboundSettleEase: 'sine.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.55,
+          liftMinDurationSeconds: 0.35,
+          liftMaxDurationSeconds: 0.43,
+          liftEase: 'power3.inOut',
+        },
+      },
+
+      targetReaction: {
+        translateXpx: 0,
+        translateYpx: 0.45,
+
+        scaleX: 1.0008,
+        scaleY: 0.9975,
+
+        compressionDurationSeconds: 0.045,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.12,
+        recoveryEase: 'power3.out',
+
+        transformOrigin: 'bottom center',
+      },
+
+      shadowReaction: {
+        translateXpx: 0,
+        translateYpx: 0.9,
+
+        scaleX: 1.06,
+        scaleY: 0.92,
+
+        opacity: 0.9,
+
+        compressionDurationSeconds: 0.055,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.15,
+        recoveryEase: 'power3.out',
+
+        transformOrigin: 'center center',
+      },
+
+      impactEffects: {
+        target: {
+          desktop: {
+            compressionXpx: 0.08,
+            compressionYpx: 1.12,
+            compressionRotationDeg: 0.016,
+            compressionScaleX: 1.0009,
+            compressionScaleY: 0.9961,
+            compressionDurationSeconds: 0.047,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.04,
+            recoilYpx: -0.13,
+            recoilRotationDeg: -0.007,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0002,
+            recoilDurationSeconds: 0.035,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.145,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+
+          mobile: {
+            compressionXpx: 0.1,
+            compressionYpx: 1.28,
+            compressionRotationDeg: 0.022,
+            compressionScaleX: 1.0011,
+            compressionScaleY: 0.9956,
+            compressionDurationSeconds: 0.05,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.05,
+            recoilYpx: -0.15,
+            recoilRotationDeg: -0.009,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0003,
+            recoilDurationSeconds: 0.038,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.155,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 1.25,
+          scaleX: 1.1,
+          scaleY: 0.86,
+          opacity: 0.92,
+          compressionDurationSeconds: 0.062,
+          recoveryDurationSeconds: 0.2,
+        },
+
+        castShadow: {
+          xPercent: 3,
+          yPercent: 6,
+          rotationOffsetDeg: 8,
+
+          rest: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.46,
+          },
+
+          anticipation: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.36,
+          },
+
+          impact: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.3,
+          },
+
+          rebound: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.31,
+          },
+
+          settle: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.34,
+          },
+        },
+
+        dust: {
+          anchorOffsetXpx: -16,
+          anchorOffsetYpx: 0,
+
+          peakOpacity: 0.075,
+
+          startScale: 0.76,
+          peakScale: 0.98,
+          endScale: 1.18,
+
+          startYPercent: -42,
+          peakYPercent: -53,
+          endYPercent: -70,
+
+          revealDurationSeconds: 0.038,
+          fadeDurationSeconds: 0.18,
+        },
+
+        contactShadow: {
+          preContactOpacity: 0.06,
+
+          contactOpacity: 0.19,
+          contactScaleX: 1.1,
+          contactScaleY: 0.5,
+          contactDurationSeconds: 0.034,
+
+          recoilOpacity: 0.095,
+          recoilScaleX: 1.12,
+          recoilScaleY: 0.62,
+          recoilDurationSeconds: 0.05,
+
+          fadeDurationSeconds: 0.15,
+        },
+
+        resonance: {
+          enabled: true,
+
+          startOpacity: 0.065,
+          peakOpacity: 0.08,
+          endOpacity: 0,
+
+          startScaleX: 0.72,
+          startScaleY: 0.82,
+
+          endScaleX: 1.34,
+          endScaleY: 1.04,
+
+          durationSeconds: 0.15,
+          revealDurationSeconds: 0.04,
+          fadeDurationSeconds: 0.11,
+          ease: 'power2.out',
+        },
+      },
+    },
+
+    H: {
+      label: 'Decisive controlled rebound',
+      description:
+        'A firmer F variation with a quicker contact reversal and a slightly stronger, tightly damped recoil.',
+
+      mobileViewport: {
+        playback: 'timed',
+        start: 'top 82%',
+        end: 'bottom 18%',
+        replayMode: 'once-per-entry',
+        initialState: 'rest',
+        finalState: 'auto-return',
+        entryDelaySeconds: 0.035,
+
+        /*
+         * The timer starts after rebound and rebound-settle finish.
+         * The final lift therefore never interrupts the contact motion.
+         */
+        holdAtImpactSeconds: 0.11,
+        autoReturnDelaySeconds: 0.05,
+
+        resetWhenFullyOutside: true,
+        resetPosition: 'either',
+        resetDelaySeconds: 0,
+        resetDurationSeconds: 0.22,
+        resetEase: 'power3.out',
+
+        playOnInitialLoadIfVisible: true,
+        playOnEnter: true,
+        playOnEnterBack: true,
+        finishCurrentAnimationOnLeave: true,
+        reverseOnLeave: false,
+        minimumReplayIntervalSeconds: 0.82,
+        refreshSilently: true,
+        preventRefreshPlayback: true,
+        markers: false,
+      },
+
+      desktop: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+        restRotationDeg: -31.5,
+        impactRotationDeg: 1.3,
+
+        impactFineTuneXpx: 0,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 20,
+        restFineTuneYpx: 0,
+
+        motion: {
+          anticipationDurationSeconds: 0.045,
+          anticipationRotationDeltaDeg: -1.4,
+          anticipationXpx: -0.2,
+          anticipationYpx: -0.15,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.16,
+
+          strikeDurationSeconds: 0.115,
+          strikeMinDurationSeconds: 0.103,
+          strikeMaxDurationSeconds: 0.13,
+          strikeEase: 'expo.in',
+
+          followThroughDurationSeconds: 0.011,
+          overshootRotationDeltaDeg: 0.055,
+          overshootXpx: 0.038,
+          overshootYpx: 0.12,
+
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.12,
+          reboundRotationDeltaDeg: -11.8,
+          reboundXpx: -1.08,
+          reboundYpx: -1.34,
+          reboundEase: 'power3.out',
+
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.155,
+          reboundSettleRotationDeltaDeg: -3.8,
+          reboundSettleXpx: -0.3,
+          reboundSettleYpx: -0.39,
+          reboundSettleEase: 'power2.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.37,
+          liftMinDurationSeconds: 0.32,
+          liftMaxDurationSeconds: 0.41,
+          liftEase: 'power3.inOut',
+        },
+      },
+
+      mobile: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+
+        visualScale: 1.14,
+
+        /*
+         * Mobile mirrors the desktop rhythm, but starts closer to the
+         * target. Auto-return always resolves back to this exact pose.
+         */
+        restRotationDeg: -23.5,
+        impactRotationDeg: -2.9,
+
+        impactFineTuneXpx: 20,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 17,
+        restFineTuneYpx: 1,
+
+        motion: {
+          anticipationDurationSeconds: 0.036,
+          anticipationRotationDeltaDeg: -0.84,
+          anticipationXpx: -0.12,
+          anticipationYpx: -0.08,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.11,
+
+          strikeDurationSeconds: 0.102,
+          strikeMinDurationSeconds: 0.091,
+          strikeMaxDurationSeconds: 0.114,
+          strikeEase: 'expo.in',
+
+          followThroughDurationSeconds: 0.01,
+          overshootRotationDeltaDeg: 0.045,
+          overshootXpx: 0.032,
+          overshootYpx: 0.105,
+
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.112,
+          reboundRotationDeltaDeg: -8.7,
+          reboundXpx: -0.68,
+          reboundYpx: -0.91,
+          reboundEase: 'power3.out',
+
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.145,
+          reboundSettleRotationDeltaDeg: -2.8,
+          reboundSettleXpx: -0.19,
+          reboundSettleYpx: -0.28,
+          reboundSettleEase: 'power2.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.34,
+          liftMinDurationSeconds: 0.3,
+          liftMaxDurationSeconds: 0.38,
+          liftEase: 'power3.inOut',
+        },
+      },
+
+      targetReaction: {
+        translateXpx: 0,
+        translateYpx: 0.45,
+
+        scaleX: 1.0008,
+        scaleY: 0.9975,
+
+        compressionDurationSeconds: 0.045,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.12,
+        recoveryEase: 'power3.out',
+
+        transformOrigin: 'bottom center',
+      },
+
+      shadowReaction: {
+        translateXpx: 0,
+        translateYpx: 0.9,
+
+        scaleX: 1.06,
+        scaleY: 0.92,
+
+        opacity: 0.9,
+
+        compressionDurationSeconds: 0.055,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.15,
+        recoveryEase: 'power3.out',
+
+        transformOrigin: 'center center',
+      },
+
+      impactEffects: {
+        target: {
+          desktop: {
+            compressionXpx: 0.08,
+            compressionYpx: 1.12,
+            compressionRotationDeg: 0.016,
+            compressionScaleX: 1.0009,
+            compressionScaleY: 0.9961,
+            compressionDurationSeconds: 0.047,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.04,
+            recoilYpx: -0.13,
+            recoilRotationDeg: -0.007,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0002,
+            recoilDurationSeconds: 0.035,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.145,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+
+          mobile: {
+            compressionXpx: 0.1,
+            compressionYpx: 1.28,
+            compressionRotationDeg: 0.022,
+            compressionScaleX: 1.0011,
+            compressionScaleY: 0.9956,
+            compressionDurationSeconds: 0.05,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.05,
+            recoilYpx: -0.15,
+            recoilRotationDeg: -0.009,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0003,
+            recoilDurationSeconds: 0.038,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.155,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 1.25,
+          scaleX: 1.1,
+          scaleY: 0.86,
+          opacity: 0.92,
+          compressionDurationSeconds: 0.062,
+          recoveryDurationSeconds: 0.2,
+        },
+
+        castShadow: {
+          xPercent: 3,
+          yPercent: 6,
+          rotationOffsetDeg: 8,
+
+          rest: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.07,
+          },
+
+          anticipation: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.045,
+          },
+
+          impact: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.17,
+          },
+
+          rebound: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.05,
+          },
+
+          settle: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.085,
+          },
+        },
+
+        dust: {
+          anchorOffsetXpx: -16,
+          anchorOffsetYpx: 0,
+
+          peakOpacity: 0.075,
+
+          startScale: 0.76,
+          peakScale: 0.98,
+          endScale: 1.18,
+
+          startYPercent: -42,
+          peakYPercent: -53,
+          endYPercent: -70,
+
+          revealDurationSeconds: 0.038,
+          fadeDurationSeconds: 0.18,
+        },
+
+        contactShadow: {
+          preContactOpacity: 0.06,
+
+          contactOpacity: 0.19,
+          contactScaleX: 1.1,
+          contactScaleY: 0.5,
+          contactDurationSeconds: 0.034,
+
+          recoilOpacity: 0.095,
+          recoilScaleX: 1.12,
+          recoilScaleY: 0.62,
+          recoilDurationSeconds: 0.05,
+
+          fadeDurationSeconds: 0.15,
+        },
+
+        resonance: {
+          enabled: true,
+
+          startOpacity: 0.065,
+          peakOpacity: 0.08,
+          endOpacity: 0,
+
+          startScaleX: 0.72,
+          startScaleY: 0.82,
+
+          endScaleX: 1.34,
+          endScaleY: 1.04,
+
+          durationSeconds: 0.15,
+          revealDurationSeconds: 0.04,
+          fadeDurationSeconds: 0.11,
+          ease: 'power2.out',
+        },
+      },
+    },
+
+    I: {
+      label: 'Weighted controlled rebound',
+      description:
+        'A heavier F variation with restrained vertical lift, a subtle lateral recoil and the slowest damping.',
+
+      mobileViewport: {
+        playback: 'timed',
+        start: 'top 82%',
+        end: 'bottom 18%',
+        replayMode: 'once-per-entry',
+        initialState: 'rest',
+        finalState: 'auto-return',
+        entryDelaySeconds: 0.04,
+
+        /*
+         * The timer starts after rebound and rebound-settle finish.
+         * The final lift therefore never interrupts the contact motion.
+         */
+        holdAtImpactSeconds: 0.15,
+        autoReturnDelaySeconds: 0.08,
+
+        resetWhenFullyOutside: true,
+        resetPosition: 'either',
+        resetDelaySeconds: 0,
+        resetDurationSeconds: 0.26,
+        resetEase: 'power3.out',
+
+        playOnInitialLoadIfVisible: true,
+        playOnEnter: true,
+        playOnEnterBack: true,
+        finishCurrentAnimationOnLeave: true,
+        reverseOnLeave: false,
+        minimumReplayIntervalSeconds: 0.96,
+        refreshSilently: true,
+        preventRefreshPlayback: true,
+        markers: false,
+      },
+
+      desktop: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+        restRotationDeg: -32,
+        impactRotationDeg: 1.1,
+
+        impactFineTuneXpx: 0,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 20.5,
+        restFineTuneYpx: 0,
+
+        motion: {
+          anticipationDurationSeconds: 0.06,
+          anticipationRotationDeltaDeg: -1.8,
+          anticipationXpx: -0.28,
+          anticipationYpx: -0.2,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.19,
+
+          strikeDurationSeconds: 0.136,
+          strikeMinDurationSeconds: 0.122,
+          strikeMaxDurationSeconds: 0.152,
+          strikeEase: 'power4.in',
+
+          followThroughDurationSeconds: 0.013,
+          overshootRotationDeltaDeg: 0.05,
+          overshootXpx: 0.04,
+          overshootYpx: 0.1,
+
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.165,
+          reboundRotationDeltaDeg: -9.4,
+          reboundXpx: -1.2,
+          reboundYpx: -0.94,
+          reboundEase: 'power2.out',
+
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.235,
+          reboundSettleRotationDeltaDeg: -3,
+          reboundSettleXpx: -0.4,
+          reboundSettleYpx: -0.28,
+          reboundSettleEase: 'power2.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.45,
+          liftMinDurationSeconds: 0.4,
+          liftMaxDurationSeconds: 0.49,
+          liftEase: 'power3.inOut',
+        },
+      },
+
+      mobile: {
+        pivotXPercent: 18,
+        pivotYPercent: 65,
+
+        visualScale: 1.14,
+
+        /*
+         * Mobile mirrors the desktop rhythm, but starts closer to the
+         * target. Auto-return always resolves back to this exact pose.
+         */
+        restRotationDeg: -24,
+        impactRotationDeg: -3.1,
+
+        impactFineTuneXpx: 20,
+        impactFineTuneYpx: 0,
+
+        restFineTuneXpx: 17.5,
+        restFineTuneYpx: 1.2,
+
+        motion: {
+          anticipationDurationSeconds: 0.047,
+          anticipationRotationDeltaDeg: -1.08,
+          anticipationXpx: -0.16,
+          anticipationYpx: -0.1,
+          anticipationEase: 'power2.out',
+          anticipationMaxProgress: 0.14,
+
+          strikeDurationSeconds: 0.118,
+          strikeMinDurationSeconds: 0.106,
+          strikeMaxDurationSeconds: 0.132,
+          strikeEase: 'power4.in',
+
+          followThroughDurationSeconds: 0.012,
+          overshootRotationDeltaDeg: 0.04,
+          overshootXpx: 0.032,
+          overshootYpx: 0.085,
+
+          reboundEnabled: true,
+          reboundDurationSeconds: 0.155,
+          reboundRotationDeltaDeg: -7,
+          reboundXpx: -0.74,
+          reboundYpx: -0.64,
+          reboundEase: 'power2.out',
+
+          reboundSettleEnabled: true,
+          reboundSettleDurationSeconds: 0.22,
+          reboundSettleRotationDeltaDeg: -2.2,
+          reboundSettleXpx: -0.24,
+          reboundSettleYpx: -0.19,
+          reboundSettleEase: 'power2.inOut',
+
+          settleEnabled: false,
+          settleDurationSeconds: 0,
+          settleEase: 'power3.out',
+
+          liftDurationSeconds: 0.41,
+          liftMinDurationSeconds: 0.37,
+          liftMaxDurationSeconds: 0.45,
+          liftEase: 'power3.inOut',
+        },
+      },
+
+      targetReaction: {
+        translateXpx: 0,
+        translateYpx: 0.45,
+
+        scaleX: 1.0008,
+        scaleY: 0.9975,
+
+        compressionDurationSeconds: 0.045,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.12,
+        recoveryEase: 'power3.out',
+
+        transformOrigin: 'bottom center',
+      },
+
+      shadowReaction: {
+        translateXpx: 0,
+        translateYpx: 0.9,
+
+        scaleX: 1.06,
+        scaleY: 0.92,
+
+        opacity: 0.9,
+
+        compressionDurationSeconds: 0.055,
+        compressionEase: 'power3.out',
+
+        recoveryDurationSeconds: 0.15,
+        recoveryEase: 'power3.out',
+
+        transformOrigin: 'center center',
+      },
+
+      impactEffects: {
+        target: {
+          desktop: {
+            compressionXpx: 0.08,
+            compressionYpx: 1.12,
+            compressionRotationDeg: 0.016,
+            compressionScaleX: 1.0009,
+            compressionScaleY: 0.9961,
+            compressionDurationSeconds: 0.047,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.04,
+            recoilYpx: -0.13,
+            recoilRotationDeg: -0.007,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0002,
+            recoilDurationSeconds: 0.035,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.145,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+
+          mobile: {
+            compressionXpx: 0.1,
+            compressionYpx: 1.28,
+            compressionRotationDeg: 0.022,
+            compressionScaleX: 1.0011,
+            compressionScaleY: 0.9956,
+            compressionDurationSeconds: 0.05,
+            compressionEase: 'power3.out',
+
+            recoilXpx: -0.05,
+            recoilYpx: -0.15,
+            recoilRotationDeg: -0.009,
+            recoilScaleX: 1,
+            recoilScaleY: 1.0003,
+            recoilDurationSeconds: 0.038,
+            recoilEase: 'power2.out',
+
+            settleDurationSeconds: 0.155,
+            settleEase: 'power3.out',
+            transformOrigin: 'bottom center',
+          },
+        },
+
+        broadShadow: {
+          translateYpx: 1.25,
+          scaleX: 1.1,
+          scaleY: 0.86,
+          opacity: 0.92,
+          compressionDurationSeconds: 0.062,
+          recoveryDurationSeconds: 0.2,
+        },
+
+        castShadow: {
+          xPercent: 3,
+          yPercent: 6,
+          rotationOffsetDeg: 8,
+
+          rest: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.07,
+          },
+
+          anticipation: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.045,
+          },
+
+          impact: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.17,
+          },
+
+          rebound: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.05,
+          },
+
+          settle: {
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 0.085,
+          },
+        },
+
+        dust: {
+          anchorOffsetXpx: -16,
+          anchorOffsetYpx: 0,
+
+          peakOpacity: 0.075,
+
+          startScale: 0.76,
+          peakScale: 0.98,
+          endScale: 1.18,
+
+          startYPercent: -42,
+          peakYPercent: -53,
+          endYPercent: -70,
+
+          revealDurationSeconds: 0.038,
+          fadeDurationSeconds: 0.18,
+        },
+
+        contactShadow: {
+          preContactOpacity: 0.06,
+
+          contactOpacity: 0.19,
+          contactScaleX: 1.1,
+          contactScaleY: 0.5,
+          contactDurationSeconds: 0.034,
+
+          recoilOpacity: 0.095,
+          recoilScaleX: 1.12,
+          recoilScaleY: 0.62,
+          recoilDurationSeconds: 0.05,
+
+          fadeDurationSeconds: 0.15,
+        },
+
+        resonance: {
+          enabled: true,
+
+          startOpacity: 0.065,
+          peakOpacity: 0.08,
+          endOpacity: 0,
+
+          startScaleX: 0.72,
+          startScaleY: 0.82,
+
+          endScaleX: 1.34,
+          endScaleY: 1.04,
+
+          durationSeconds: 0.15,
+          revealDurationSeconds: 0.04,
+          fadeDurationSeconds: 0.11,
           ease: 'power2.out',
         },
       },
@@ -2411,9 +2933,8 @@ export function initGavel(): void {
     };
 
     const BASE_GAVEL_PRESET: GavelResolvedPreset = {
-      label: 'Scroll-cocked reveal',
-      description:
-        'Recommended mobile showcase: the hammer cocks with scroll, lands at the end of the viewport pass, then releases a polished contact burst.',
+      label: 'Balanced controlled rebound',
+      description: 'Controlled TSA rebound with restrained lift, strong damping and a calm return.',
 
       desktop: {
         pivotXPercent: 18,
@@ -2873,10 +3394,17 @@ export function initGavel(): void {
         geometryConfig.contactYPercent
       );
 
-      const contactVector = {
-        x: contactLocal.x - pivotLocal.x,
+      /*
+       * The rendered gavel can be scaled independently per device.
+       * Contact geometry must use the same scale or the larger hammer
+       * will visually miss the target even though the pose math is correct.
+       */
+      const visualScale = Math.max(0.01, geometryConfig.visualScale);
 
-        y: contactLocal.y - pivotLocal.y,
+      const contactVector = {
+        x: (contactLocal.x - pivotLocal.x) * visualScale,
+
+        y: (contactLocal.y - pivotLocal.y) * visualScale,
       };
 
       const originCompensation = calculateOriginCompensation({
@@ -3024,6 +3552,7 @@ export function initGavel(): void {
 
       const motionConfig = deviceProfile.motion;
       const broadShadowEffect = impactEffects.broadShadow;
+      const visualScale = Math.max(0.01, geometryConfig.visualScale);
 
       const { restRotationDeg } = deviceProfile;
 
@@ -3167,14 +3696,41 @@ export function initGavel(): void {
         };
       };
 
-      type CastShadowPhase = 'rest' | 'anticipation' | 'impact' | 'settle';
+      const getPostImpactHoldPose = (): GavelPose | null => {
+        if (!geometry) {
+          return null;
+        }
+
+        if (motionConfig.reboundEnabled !== true) {
+          return geometry.impact;
+        }
+
+        if (motionConfig.reboundSettleEnabled === false) {
+          return {
+            x: geometry.impact.x + (motionConfig.reboundXpx ?? 0),
+            y: geometry.impact.y + (motionConfig.reboundYpx ?? 0),
+            rotation: geometry.impact.rotation + (motionConfig.reboundRotationDeltaDeg ?? -18),
+          };
+        }
+
+        return {
+          x: geometry.impact.x + (motionConfig.reboundSettleXpx ?? 0),
+          y: geometry.impact.y + (motionConfig.reboundSettleYpx ?? 0),
+          rotation: geometry.impact.rotation + (motionConfig.reboundSettleRotationDeltaDeg ?? -12),
+        };
+      };
+
+      type CastShadowPhase = 'rest' | 'anticipation' | 'impact' | 'rebound' | 'settle';
 
       const getCastShadowVars = (
         pose: GavelPose,
         phase: CastShadowPhase
       ): Record<string, string | number | boolean> => {
         const castShadowEffect = impactEffects.castShadow;
-        const phaseEffect = castShadowEffect[phase];
+        const phaseEffect =
+          phase === 'rebound'
+            ? (castShadowEffect.rebound ?? castShadowEffect.anticipation)
+            : castShadowEffect[phase];
 
         return {
           /*
@@ -3192,8 +3748,8 @@ export function initGavel(): void {
           xPercent: castShadowEffect.xPercent,
           yPercent: castShadowEffect.yPercent,
 
-          scaleX: phaseEffect.scaleX,
-          scaleY: phaseEffect.scaleY,
+          scaleX: visualScale * phaseEffect.scaleX,
+          scaleY: visualScale * phaseEffect.scaleY,
           opacity: phaseEffect.opacity,
 
           filter:
@@ -3853,6 +4409,9 @@ export function initGavel(): void {
           y: pose.y,
           rotation: pose.rotation,
 
+          scaleX: visualScale,
+          scaleY: visualScale,
+
           transformOrigin: geometry.transformOrigin,
 
           force3D: QUICK_TUNING.performance.force3D,
@@ -3935,7 +4494,10 @@ export function initGavel(): void {
           },
 
           onComplete: () => {
-            completeTimeline(timeline, 'impact-hold');
+            completeTimeline(
+              timeline,
+              motionConfig.reboundEnabled === true ? 'rebound-hold' : 'impact-hold'
+            );
           },
 
           onInterrupt: () => {
@@ -3970,6 +4532,9 @@ export function initGavel(): void {
 
           timeline.to(gavel, {
             ...anticipationPose,
+
+            scaleX: visualScale,
+            scaleY: visualScale,
 
             transformOrigin: geometry.transformOrigin,
 
@@ -4032,6 +4597,9 @@ export function initGavel(): void {
           y: geometry.impact.y,
           rotation: geometry.impact.rotation,
 
+          scaleX: visualScale,
+          scaleY: visualScale,
+
           transformOrigin: geometry.transformOrigin,
 
           duration: duration(strikeDuration),
@@ -4065,21 +4633,52 @@ export function initGavel(): void {
         );
 
         /*
-         * Subtle physical follow-through after contact.
-         * It is intentionally much smaller than the previous penetration.
+         * Contact response.
+         *
+         * Legacy presets use a micro follow-through followed by a settle
+         * back onto the impact pose. Rebound presets instead rise away
+         * from the hit area, descend into a smaller damped pose, hold,
+         * and can then return to rest through the mobile viewport logic.
          */
         const followThroughDuration =
           motionConfig.followThroughEnabled === false
             ? 0
             : (motionConfig.followThroughDurationSeconds ?? 0.028);
+
+        const reboundEnabled = motionConfig.reboundEnabled === true;
+        const reboundDuration = reboundEnabled ? (motionConfig.reboundDurationSeconds ?? 0.19) : 0;
+        const reboundSettleEnabled = reboundEnabled && motionConfig.reboundSettleEnabled !== false;
+        const reboundSettleDuration = reboundSettleEnabled
+          ? (motionConfig.reboundSettleDurationSeconds ?? 0.24)
+          : 0;
+
         const finalSettleDuration =
-          motionConfig.settleEnabled === false ? 0 : motionConfig.settleDurationSeconds;
+          reboundEnabled || motionConfig.settleEnabled === false
+            ? 0
+            : motionConfig.settleDurationSeconds;
+
+        const postContactStartTime = contactTime + duration(followThroughDuration);
+
+        const reboundPose: GavelPose = {
+          x: geometry.impact.x + (motionConfig.reboundXpx ?? 0),
+          y: geometry.impact.y + (motionConfig.reboundYpx ?? 0),
+          rotation: geometry.impact.rotation + (motionConfig.reboundRotationDeltaDeg ?? -18),
+        };
+
+        const reboundSettlePose: GavelPose = {
+          x: geometry.impact.x + (motionConfig.reboundSettleXpx ?? 0),
+          y: geometry.impact.y + (motionConfig.reboundSettleYpx ?? 0),
+          rotation: geometry.impact.rotation + (motionConfig.reboundSettleRotationDeltaDeg ?? -12),
+        };
 
         if (followThroughDuration > 0) {
           timeline.to(
             gavel,
             {
               ...overshootPose,
+
+              scaleX: visualScale,
+              scaleY: visualScale,
 
               transformOrigin: geometry.transformOrigin,
 
@@ -4100,13 +4699,72 @@ export function initGavel(): void {
           );
         }
 
-        if (finalSettleDuration > 0) {
+        if (reboundDuration > 0) {
+          timeline.to(
+            gavel,
+            {
+              ...reboundPose,
+
+              scaleX: visualScale,
+              scaleY: visualScale,
+
+              transformOrigin: geometry.transformOrigin,
+
+              duration: duration(reboundDuration),
+              ease: motionConfig.reboundEase ?? 'power3.out',
+
+              force3D: QUICK_TUNING.performance.force3D,
+            },
+            postContactStartTime
+          );
+
+          timeline.call(
+            () => {
+              activePhase = 'rebound';
+            },
+            null,
+            postContactStartTime
+          );
+
+          if (reboundSettleDuration > 0) {
+            const reboundSettleStartTime = postContactStartTime + duration(reboundDuration);
+
+            timeline.to(
+              gavel,
+              {
+                ...reboundSettlePose,
+
+                scaleX: visualScale,
+                scaleY: visualScale,
+
+                transformOrigin: geometry.transformOrigin,
+
+                duration: duration(reboundSettleDuration),
+                ease: motionConfig.reboundSettleEase ?? 'power2.inOut',
+
+                force3D: QUICK_TUNING.performance.force3D,
+              },
+              reboundSettleStartTime
+            );
+
+            timeline.call(
+              () => {
+                activePhase = 'rebound-settle';
+              },
+              null,
+              reboundSettleStartTime
+            );
+          }
+        } else if (finalSettleDuration > 0) {
           timeline.to(
             gavel,
             {
               x: geometry.impact.x,
               y: geometry.impact.y,
               rotation: geometry.impact.rotation,
+
+              scaleX: visualScale,
+              scaleY: visualScale,
 
               transformOrigin: geometry.transformOrigin,
 
@@ -4115,7 +4773,7 @@ export function initGavel(): void {
 
               force3D: QUICK_TUNING.performance.force3D,
             },
-            contactTime + duration(followThroughDuration)
+            postContactStartTime
           );
 
           timeline.call(
@@ -4123,28 +4781,54 @@ export function initGavel(): void {
               activePhase = 'settle';
             },
             null,
-            contactTime + duration(followThroughDuration)
+            postContactStartTime
           );
         }
 
         addImpactReactionToTimeline(timeline, contactTime);
 
         /*
-         * Gavel cast shadow follows the same post-contact path.
+         * The cast shadow follows the exact same post-contact path.
          */
-        if (castShadow && followThroughDuration > 0) {
-          timeline.to(
-            castShadow,
-            {
-              ...getCastShadowVars(overshootPose, 'impact'),
+        if (castShadow) {
+          if (followThroughDuration > 0) {
+            timeline.to(
+              castShadow,
+              {
+                ...getCastShadowVars(overshootPose, 'impact'),
 
-              duration: duration(followThroughDuration),
-              ease: 'power1.out',
-            },
-            contactTime
-          );
+                duration: duration(followThroughDuration),
+                ease: 'power1.out',
+              },
+              contactTime
+            );
+          }
 
-          if (finalSettleDuration > 0) {
+          if (reboundDuration > 0) {
+            timeline.to(
+              castShadow,
+              {
+                ...getCastShadowVars(reboundPose, 'rebound'),
+
+                duration: duration(reboundDuration),
+                ease: motionConfig.reboundEase ?? 'power3.out',
+              },
+              postContactStartTime
+            );
+
+            if (reboundSettleDuration > 0) {
+              timeline.to(
+                castShadow,
+                {
+                  ...getCastShadowVars(reboundSettlePose, 'settle'),
+
+                  duration: duration(reboundSettleDuration),
+                  ease: motionConfig.reboundSettleEase ?? 'power2.inOut',
+                },
+                postContactStartTime + duration(reboundDuration)
+              );
+            }
+          } else if (finalSettleDuration > 0) {
             timeline.to(
               castShadow,
               {
@@ -4153,7 +4837,7 @@ export function initGavel(): void {
                 duration: duration(finalSettleDuration),
                 ease: motionConfig.settleEase,
               },
-              contactTime + duration(followThroughDuration)
+              postContactStartTime
             );
           }
         }
@@ -4220,6 +4904,9 @@ export function initGavel(): void {
             y: geometry.rest.y,
 
             rotation: geometry.rest.rotation,
+
+            scaleX: visualScale,
+            scaleY: visualScale,
 
             transformOrigin: geometry.transformOrigin,
 
@@ -4320,6 +5007,9 @@ export function initGavel(): void {
 
           rotation: geometry.rest.rotation,
 
+          scaleX: visualScale,
+          scaleY: visualScale,
+
           transformOrigin: geometry.transformOrigin,
 
           force3D: QUICK_TUNING.performance.force3D,
@@ -4348,6 +5038,9 @@ export function initGavel(): void {
 
           rotation: geometry.impact.rotation,
 
+          scaleX: visualScale,
+          scaleY: visualScale,
+
           transformOrigin: geometry.transformOrigin,
 
           force3D: QUICK_TUNING.performance.force3D,
@@ -4373,6 +5066,7 @@ export function initGavel(): void {
 
         const preservedProgress = getProgress();
         const preservedState = desiredState;
+        const preservedPhase = activePhase;
 
         killActiveTimeline();
         killImpactReactionTimeline();
@@ -4392,13 +5086,23 @@ export function initGavel(): void {
         setReactionDefaults();
         renderControllerDebug();
 
-        const preservedPose = interpolatePose(preservedProgress);
+        const shouldPreserveReboundHold =
+          preservedState === 'impact' &&
+          motionConfig.reboundEnabled === true &&
+          (preservedPhase === 'rebound-hold' || preservedPhase === 'rebound-settle');
+
+        const preservedPose = shouldPreserveReboundHold
+          ? (getPostImpactHoldPose() ?? interpolatePose(preservedProgress))
+          : interpolatePose(preservedProgress);
 
         gsap.set(gavel, {
           x: preservedPose.x,
           y: preservedPose.y,
 
           rotation: preservedPose.rotation,
+
+          scaleX: visualScale,
+          scaleY: visualScale,
 
           transformOrigin: geometry.transformOrigin,
 
@@ -4412,7 +5116,10 @@ export function initGavel(): void {
           );
         }
 
-        if (preservedState === 'impact' && preservedProgress >= 0.995) {
+        if (shouldPreserveReboundHold) {
+          activePhase = 'rebound-hold';
+          setWillChange(false);
+        } else if (preservedState === 'impact' && preservedProgress >= 0.995) {
           setImpact();
         } else if (preservedState === 'rest' && preservedProgress <= 0.005) {
           setRest();
@@ -4466,6 +5173,9 @@ export function initGavel(): void {
           y: geometry.rest.y,
 
           rotation: geometry.rest.rotation,
+
+          scaleX: visualScale,
+          scaleY: visualScale,
 
           transformOrigin: geometry.transformOrigin,
 
@@ -4879,13 +5589,23 @@ export function initGavel(): void {
           const dustEffect = impactEffects.dust;
           const resonanceEffect = impactEffects.resonance;
 
+          const postContactMotionDuration =
+            motion.reboundEnabled === true
+              ? (motion.reboundDurationSeconds ?? 0.19) +
+                (motion.reboundSettleEnabled === false
+                  ? 0
+                  : (motion.reboundSettleDurationSeconds ?? 0.24))
+              : motion.settleEnabled === false
+                ? 0
+                : motion.settleDurationSeconds;
+
           const motionDuration =
             (motion.anticipationEnabled === false ? 0 : motion.anticipationDurationSeconds) +
             (motion.strikeDurationSeconds ?? motion.strikeMaxDurationSeconds) +
             (motion.followThroughEnabled === false
               ? 0
               : (motion.followThroughDurationSeconds ?? 0.028)) +
-            (motion.settleEnabled === false ? 0 : motion.settleDurationSeconds);
+            postContactMotionDuration;
 
           const targetDuration =
             targetEffect.enabled === false
