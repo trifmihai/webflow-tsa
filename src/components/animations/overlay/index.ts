@@ -85,7 +85,6 @@ const STATUE_SHINE_CONFIG = {
 
   /*
     Higher values follow the cursor more tightly.
-
     14 = soft and cinematic
     18 = balanced
     22 = responsive but still smooth
@@ -95,7 +94,6 @@ const STATUE_SHINE_CONFIG = {
 
   /*
     Optional percentage offset from the real pointer position.
-
     Keep both at 0 for exact cursor alignment.
   */
   cursorOffsetXPercent: 0,

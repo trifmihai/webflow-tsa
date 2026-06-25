@@ -5590,6 +5590,12 @@ export function initGavel(): void {
 
         let scrollRefreshFrame = 0;
         let initialVisibilityFrame = 0;
+        let hasDeferredGeometryRefresh = false;
+        let hasDeferredScrollTriggerRefresh = false;
+
+        const baseControllerRefresh = controller.refresh;
+        const baseControllerRefreshNow = controller.refreshNow;
+        const baseControllerScheduleRefresh = controller.scheduleRefresh;
 
         const durationMultiplier = QUICK_TUNING.debug.enabled
           ? QUICK_TUNING.debug.slowMotionMultiplier
@@ -5624,6 +5630,23 @@ export function initGavel(): void {
           clearTimer('resetTimer');
         };
 
+        const isMobileSequenceActive = (): boolean => {
+          if (
+            mobileState.status === 'waiting' ||
+            mobileState.status === 'playing' ||
+            mobileState.status === 'holding' ||
+            mobileState.status === 'returning'
+          ) {
+            return true;
+          }
+
+          return controller.isAnimating() || controller.progress() > 0.005;
+        };
+
+        const shouldDeferRefresh = (): boolean => {
+          return mobileViewport.preventRefreshPlayback && isMobileSequenceActive();
+        };
+
         const scheduleScrollTriggerRefresh = (): void => {
           cancelAnimationFrame(scrollRefreshFrame);
 
@@ -5631,6 +5654,49 @@ export function initGavel(): void {
             scrollRefreshFrame = 0;
             ScrollTrigger.refresh();
           });
+        };
+
+        const runDeferredRefreshIfStable = (): void => {
+          if (
+            mobileState.isDestroyed ||
+            isMobileSequenceActive() ||
+            (!hasDeferredGeometryRefresh && !hasDeferredScrollTriggerRefresh)
+          ) {
+            return;
+          }
+
+          const shouldRefreshGeometry = hasDeferredGeometryRefresh;
+          const shouldRefreshScrollTrigger = hasDeferredScrollTriggerRefresh;
+
+          hasDeferredGeometryRefresh = false;
+          hasDeferredScrollTriggerRefresh = false;
+
+          if (shouldRefreshScrollTrigger) {
+            scheduleScrollTriggerRefresh();
+            return;
+          }
+
+          if (shouldRefreshGeometry) {
+            baseControllerRefreshNow();
+          }
+        };
+
+        const requestGeometryRefresh = (): void => {
+          if (shouldDeferRefresh()) {
+            hasDeferredGeometryRefresh = true;
+            return;
+          }
+
+          baseControllerScheduleRefresh();
+        };
+
+        const requestScrollTriggerRefresh = (): void => {
+          if (shouldDeferRefresh()) {
+            hasDeferredScrollTriggerRefresh = true;
+            return;
+          }
+
+          scheduleScrollTriggerRefresh();
         };
 
         const getImpactSequenceDurationMs = (): number => {
@@ -5747,6 +5813,80 @@ export function initGavel(): void {
           return !mobileState.hasPlayed || mobileState.status === 'outside';
         };
 
+        const rearmReplayIfAllowed = (): void => {
+          if (
+            mobileViewport.replayMode === 'once-per-entry' ||
+            mobileViewport.replayMode === 'on-enter-and-enter-back'
+          ) {
+            mobileState.hasPlayed = false;
+          }
+        };
+
+        const finalizeOutsideAtStableRest = (): boolean => {
+          if (
+            mobileState.isDestroyed ||
+            mobileState.isInside ||
+            controller.isAnimating() ||
+            controller.progress() > 0.005
+          ) {
+            return false;
+          }
+
+          clearTimer('resetTimer');
+          rearmReplayIfAllowed();
+          setMobileStatus('outside');
+          runDeferredRefreshIfStable();
+
+          return true;
+        };
+
+        const runOutsideHardReset = (): void => {
+          if (mobileState.isDestroyed || mobileState.isInside) {
+            return;
+          }
+
+          controller.reset({
+            initialState: mobileViewport.initialState,
+            resetMobileReplay: true,
+          });
+          rearmReplayIfAllowed();
+          setMobileStatus('outside');
+          runDeferredRefreshIfStable();
+        };
+
+        const getOutsideResetFallbackDelayMs = (): number => {
+          return (
+            mobileViewport.entryDelaySeconds * 1000 +
+            getImpactSequenceDurationMs() +
+            (mobileViewport.holdAtImpactSeconds + mobileViewport.autoReturnDelaySeconds) * 1000 +
+            getLiftDurationMs() +
+            500
+          );
+        };
+
+        const deferOutsideResetUntilStableRest = (): void => {
+          clearTimer('resetTimer');
+
+          mobileState.resetTimer = window.setTimeout(() => {
+            mobileState.resetTimer = null;
+
+            if (finalizeOutsideAtStableRest()) {
+              return;
+            }
+
+            runOutsideHardReset();
+          }, getOutsideResetFallbackDelayMs());
+        };
+
+        const scheduleOutsideHardReset = (): void => {
+          clearTimer('resetTimer');
+
+          mobileState.resetTimer = window.setTimeout(() => {
+            mobileState.resetTimer = null;
+            runOutsideHardReset();
+          }, mobileViewport.resetDelaySeconds * 1000);
+        };
+
         const startReturnToRest = (): void => {
           if (mobileState.isDestroyed) {
             return;
@@ -5763,7 +5903,13 @@ export function initGavel(): void {
               return;
             }
 
-            setMobileStatus(mobileState.isInside ? 'completed' : 'outside');
+            if (mobileState.isInside) {
+              setMobileStatus('completed');
+              runDeferredRefreshIfStable();
+              return;
+            }
+
+            finalizeOutsideAtStableRest();
           }, getLiftDurationMs());
         };
 
@@ -5800,6 +5946,7 @@ export function initGavel(): void {
         ): void => {
           mobileState.isInside = true;
           mobileState.enteredFrom = direction;
+          clearTimer('resetTimer');
 
           if (!mobileViewport.enabled || mobileState.isDestroyed) {
             return;
@@ -5865,15 +6012,6 @@ export function initGavel(): void {
           );
         };
 
-        const rearmReplayIfAllowed = (): void => {
-          if (
-            mobileViewport.replayMode === 'once-per-entry' ||
-            mobileViewport.replayMode === 'on-enter-and-enter-back'
-          ) {
-            mobileState.hasPlayed = false;
-          }
-        };
-
         const handleMobileLeave = (position: GavelMobileEntryDirection): void => {
           mobileState.isInside = false;
 
@@ -5901,32 +6039,35 @@ export function initGavel(): void {
           }
 
           if (shouldResetForLeave(position)) {
-            clearTimer('resetTimer');
-            mobileState.resetTimer = window.setTimeout(() => {
-              mobileState.resetTimer = null;
+            if (mobileViewport.finishCurrentAnimationOnLeave && isMobileSequenceActive()) {
+              deferOutsideResetUntilStableRest();
+              return;
+            }
 
-              if (mobileState.isDestroyed || mobileState.isInside) {
-                return;
-              }
-
-              controller.reset({
-                initialState: mobileViewport.initialState,
-                resetMobileReplay: true,
-              });
-              rearmReplayIfAllowed();
-              setMobileStatus('outside');
-            }, mobileViewport.resetDelaySeconds * 1000);
-          } else {
-            rearmReplayIfAllowed();
-            setMobileStatus('outside');
+            scheduleOutsideHardReset();
+            return;
           }
+
+          if (mobileViewport.finishCurrentAnimationOnLeave && isMobileSequenceActive()) {
+            deferOutsideResetUntilStableRest();
+            return;
+          }
+
+          rearmReplayIfAllowed();
+          setMobileStatus('outside');
+          runDeferredRefreshIfStable();
         };
 
         const beginSilentRefresh = (): void => {
           mobileState.isRefreshing = true;
 
+          if (shouldDeferRefresh()) {
+            hasDeferredGeometryRefresh = true;
+            return;
+          }
+
           if (mobileViewport.refreshSilently) {
-            controller.refreshNow();
+            baseControllerRefreshNow();
           }
         };
 
@@ -5939,9 +6080,15 @@ export function initGavel(): void {
             return;
           }
 
-          if (!mobileState.isInside && mobileState.status !== 'returning') {
+          if (
+            !mobileState.isInside &&
+            mobileState.status !== 'returning' &&
+            !isMobileSequenceActive()
+          ) {
             setMobileStatus('outside');
           }
+
+          runDeferredRefreshIfStable();
         };
 
         controller.reset({
@@ -5958,6 +6105,28 @@ export function initGavel(): void {
             mobileState.hasPlayed = false;
             mobileState.lastPlayTimestamp = 0;
           }
+        };
+
+        controller.refresh = () => {
+          if (shouldDeferRefresh()) {
+            hasDeferredGeometryRefresh = true;
+            return;
+          }
+
+          baseControllerRefresh();
+        };
+
+        controller.refreshNow = () => {
+          if (shouldDeferRefresh()) {
+            hasDeferredGeometryRefresh = true;
+            return;
+          }
+
+          baseControllerRefreshNow();
+        };
+
+        controller.scheduleRefresh = () => {
+          requestGeometryRefresh();
         };
 
         if (mobileViewport.playback === 'scrub') {
@@ -6088,8 +6257,8 @@ export function initGavel(): void {
           const resizeObserver =
             QUICK_TUNING.performance.useResizeObserver && typeof ResizeObserver !== 'undefined'
               ? new ResizeObserver(() => {
-                  controller.scheduleRefresh();
-                  scheduleScrollTriggerRefresh();
+                  requestGeometryRefresh();
+                  requestScrollTriggerRefresh();
                 })
               : null;
 
@@ -6103,6 +6272,8 @@ export function initGavel(): void {
             mobileState.isDestroyed = true;
             setMobileStatus('destroyed');
             cancelMobileTimers();
+            hasDeferredGeometryRefresh = false;
+            hasDeferredScrollTriggerRefresh = false;
 
             scrollTrigger.kill();
             resizeObserver?.disconnect();
@@ -6150,8 +6321,8 @@ export function initGavel(): void {
         const resizeObserver =
           QUICK_TUNING.performance.useResizeObserver && typeof ResizeObserver !== 'undefined'
             ? new ResizeObserver(() => {
-                controller.scheduleRefresh();
-                scheduleScrollTriggerRefresh();
+                requestGeometryRefresh();
+                requestScrollTriggerRefresh();
               })
             : null;
 
@@ -6179,6 +6350,8 @@ export function initGavel(): void {
           mobileState.isDestroyed = true;
           setMobileStatus('destroyed');
           cancelMobileTimers();
+          hasDeferredGeometryRefresh = false;
+          hasDeferredScrollTriggerRefresh = false;
 
           scrollTrigger.kill();
           resizeObserver?.disconnect();
