@@ -657,7 +657,7 @@ type GavelRuntimeWindow = Omit<Window, 'gsap' | 'ScrollTrigger'> & {
    ========================================================================== */
 
 const QUICK_TUNING = {
-  version: '14.0.0',
+  version: '14.0.1',
 
   /*
    * Varianta încărcată implicit după publicare.
@@ -1888,7 +1888,12 @@ const QUICK_TUNING = {
         impactFineTuneXpx: 10,
         impactFineTuneYpx: 0,
 
-        restFineTuneXpx: 40,
+        /*
+         * Native iPhone viewport safety adjustment.
+         * This changes only the authored rest/return pose. Exact impact
+         * remains locked to the target by calculateGeometry().
+         */
+        restFineTuneXpx: 72,
         restFineTuneYpx: -10,
 
         motion: {
