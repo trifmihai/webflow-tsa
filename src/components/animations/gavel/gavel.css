@@ -60,8 +60,28 @@
 [data-gavel-component] [data-gavel-target],
 [data-gavel-component] [data-gavel-shadow] {
   pointer-events: none !important;
+}
 
-  /* Avoid unnecessary WebKit compositing layers. */
+/*
+ * Keep the two large animated PNG layers on stable WebKit compositor
+ * surfaces. This restores the rendering strategy used by v1.11 without
+ * changing any position, scale, rotation, duration, easing or sequencing.
+ */
+[data-gavel-component] [data-gavel],
+[data-gavel-component] [data-gavel-cast-shadow] {
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+}
+
+/*
+ * The smaller reaction layers do not need their own persistent compositor
+ * surfaces. Keeping them flat avoids creating unnecessary layers.
+ */
+[data-gavel-component] [data-gavel-impact-dust],
+[data-gavel-component] [data-gavel-contact-shadow],
+[data-gavel-component] [data-gavel-resonance],
+[data-gavel-component] [data-gavel-target],
+[data-gavel-component] [data-gavel-shadow] {
   backface-visibility: visible !important;
   -webkit-backface-visibility: visible !important;
   transform-style: flat !important;

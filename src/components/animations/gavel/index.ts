@@ -792,7 +792,7 @@ const QUICK_TUNING = {
   },
 
   performance: {
-    force3D: false,
+    force3D: true,
     temporaryWillChange: true,
     clearPropsAfterRest: false,
     clearPropsAfterImpact: false,
