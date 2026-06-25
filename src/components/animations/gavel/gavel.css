@@ -8,10 +8,6 @@
   contain: none !important;
 }
 
-/*
- * Webflow applies clip-path to the base light wrapper.
- * The gavel variation must remain completely unclipped.
- */
 [data-gavel-component].practice-cta_light-wrapper.is-govel {
   overflow: visible !important;
   clip-path: none !important;
@@ -32,10 +28,12 @@
 }
 
 /*
- * The strike group contains the gavel, cast shadow, dust and target.
- * It must never clip its absolutely positioned children.
+ * The strike group contains the animated hammer assets.
+ * It must not create another isolated stacking context.
  */
 [data-gavel-component] .practice-cta_strike-group {
+  isolation: auto !important;
+
   overflow: visible !important;
   clip-path: none !important;
   -webkit-clip-path: none !important;
@@ -43,14 +41,16 @@
 }
 
 /*
- * Only the broad target shadow is intentionally clipped.
- * This element is a sibling of the strike group and therefore
- * does not clip the gavel.
+ * This wrapper contains only the broad shadow under the target.
+ * Its clip-path must not affect the sibling strike group.
  */
 [data-gavel-component] .practice-cta_shadow-clip {
+  isolation: auto !important;
+
   overflow: visible;
   clip-path: inset(-100vmax -100vmax 0 -100vmax);
   -webkit-clip-path: inset(-100vmax -100vmax 0 -100vmax);
+
   pointer-events: none;
 }
 
@@ -85,13 +85,8 @@
 }
 
 /*
- * Gavel and cast shadow use the same Webflow-authored layout box.
- *
- * Desktop authored origin must match:
- * desktopAuthoredOriginXPercent: 50
- * desktopAuthoredOriginYPercent: 50
- *
- * TypeScript later changes the active animation pivot through GSAP.
+ * This is the active pivot used by the original working version.
+ * GSAP uses the same pivot during the animation.
  */
 [data-gavel-component] .practice-cta_govel-shadow,
 [data-gavel-component] .practice-cta_govel {
@@ -103,15 +98,15 @@
   max-width: none;
   height: auto;
 
-  transform-origin: 50% 50%;
+  transform-origin: 18% 65%;
 }
 
 [data-gavel-component] .practice-cta_govel-shadow {
   /*
-   * Match this with the active preset's castShadow.rest.opacity.
-   * Current G preset value: 0.46.
+   * Keep this synchronized with:
+   * castShadow.rest.opacity in TypeScript.
    */
-  opacity: 0.46;
+  opacity: 0.5;
 
   filter: brightness(0) saturate(0) blur(3px);
   mix-blend-mode: multiply;
@@ -124,15 +119,14 @@
 }
 
 /*
- * Dust is positioned dynamically from the measured contact point.
- * Do not add right or bottom offsets here.
+ * Dust is positioned dynamically by TypeScript from the contact point.
  */
 [data-gavel-component] .practice-cta_dust {
   position: absolute;
   top: 0;
-  left: 0;
   right: auto;
   bottom: auto;
+  left: 0;
 
   display: block;
 
@@ -156,9 +150,9 @@
 [data-gavel-component] [data-gavel-contact-shadow] {
   position: absolute;
   top: 0;
-  left: 0;
   right: auto;
   bottom: auto;
+  left: 0;
 
   display: block;
 
@@ -191,9 +185,9 @@
 [data-gavel-component] [data-gavel-resonance] {
   position: absolute;
   top: 0;
-  left: 0;
   right: auto;
   bottom: auto;
+  left: 0;
 
   display: block;
 
@@ -320,34 +314,27 @@
 
 @media screen and (max-width: 991px) {
   /*
-   * Webflow's page-wrapper currently has overflow hidden.
-   *
-   * It must allow the gavel to escape its layout box.
-   * Horizontal scrolling is prevented on the viewport instead.
+   * Do not set overflow-x: clip or hidden on html/body.
+   * Safari iOS can clip the transformed hammer at viewport level.
    */
-  html,
-  body {
-    overflow-x: clip;
-  }
-
-  .page-wrapper {
-    overflow: visible !important;
-  }
-
-  /*
-   * Keep the full gavel ancestor chain unclipped.
-   */
-  .main-wrapper:has([data-gavel-component]),
-  .section_practice:has([data-gavel-component]),
-  .practice_group:has([data-gavel-component]),
-  .practice-cta_component:has([data-gavel-component]),
+  .page-wrapper,
+  .main-wrapper,
+  .section_practice,
+  .practice_group,
+  .practice-cta_component,
   [data-gavel-component],
   [data-gavel-component].practice-cta_light-wrapper.is-govel,
   [data-gavel-component] .practice-cta_strike-group {
     overflow: visible !important;
+
     clip-path: none !important;
     -webkit-clip-path: none !important;
+
     contain: none !important;
+  }
+
+  [data-gavel-component] {
+    isolation: isolate;
   }
 
   [data-gavel-component] .practice-cta_strike-group {
@@ -357,17 +344,15 @@
 
     width: clamp(10.5rem, 23vw, 12.5rem);
 
+    isolation: auto !important;
+    overflow: visible !important;
+
     transform: translateX(-50%);
   }
 
   /*
-   * Keep the existing mobile position unchanged.
-   *
-   * Mobile authored origin must match:
-   * mobileAuthoredOriginXPercent: 75
-   * mobileAuthoredOriginYPercent: 80
-   *
-   * GSAP later switches to the configured animation pivot.
+   * Preserve the existing layout position.
+   * Do not change left, bottom or width.
    */
   [data-gavel-component] .practice-cta_govel-shadow,
   [data-gavel-component] .practice-cta_govel {
@@ -378,7 +363,7 @@
     max-width: none;
     height: auto;
 
-    transform-origin: 75% 80%;
+    transform-origin: 18% 65%;
   }
 
   [data-gavel-component] .practice-cta_govel-shadow {
@@ -392,9 +377,9 @@
   [data-gavel-component] .practice-cta_dust {
     position: absolute;
     top: 0;
-    left: 0;
     right: auto;
     bottom: auto;
+    left: 0;
 
     width: 68%;
 
