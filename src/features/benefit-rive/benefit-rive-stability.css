@@ -1,0 +1,10 @@
+/*
+ * Keep WebGL canvases on a stable compositor layer while Safari updates
+ * the visual viewport during mobile scrolling.
+ */
+[data-benefit-rive-canvas],
+[data-benefit-experience-rive-canvas] {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+}
