@@ -9,7 +9,7 @@
 }
 
 /*
- * Webflow applies clip-path on the base light-wrapper class.
+ * Webflow applies clip-path to the base light wrapper.
  * The gavel variation must remain completely unclipped.
  */
 [data-gavel-component].practice-cta_light-wrapper.is-govel {
@@ -32,8 +32,8 @@
 }
 
 /*
- * The strike group contains the gavel, cast shadow, dust and hit target.
- * It must never clip the animated assets.
+ * The strike group contains the gavel, cast shadow, dust and target.
+ * It must never clip its absolutely positioned children.
  */
 [data-gavel-component] .practice-cta_strike-group {
   overflow: visible !important;
@@ -43,9 +43,9 @@
 }
 
 /*
- * Only the broad shadow underneath the target is intentionally clipped.
- * This element is a sibling of the strike group, so it does not clip
- * the gavel itself.
+ * Only the broad target shadow is intentionally clipped.
+ * This element is a sibling of the strike group and therefore
+ * does not clip the gavel.
  */
 [data-gavel-component] .practice-cta_shadow-clip {
   overflow: visible;
@@ -86,7 +86,12 @@
 
 /*
  * Gavel and cast shadow use the same Webflow-authored layout box.
- * GSAP owns their animated translation, rotation and scale.
+ *
+ * Desktop authored origin must match:
+ * desktopAuthoredOriginXPercent: 50
+ * desktopAuthoredOriginYPercent: 50
+ *
+ * TypeScript later changes the active animation pivot through GSAP.
  */
 [data-gavel-component] .practice-cta_govel-shadow,
 [data-gavel-component] .practice-cta_govel {
@@ -98,18 +103,19 @@
   max-width: none;
   height: auto;
 
-  transform-origin: 18% 65%;
+  transform-origin: 50% 50%;
 }
 
 [data-gavel-component] .practice-cta_govel-shadow {
   /*
-   * Match this value with the active preset's castShadow.rest.opacity.
+   * Match this with the active preset's castShadow.rest.opacity.
    * Current G preset value: 0.46.
    */
   opacity: 0.46;
 
   filter: brightness(0) saturate(0) blur(3px);
   mix-blend-mode: multiply;
+
   transform: translate(3%, 6%) rotate(-14deg);
 }
 
@@ -129,6 +135,7 @@
   bottom: auto;
 
   display: block;
+
   width: 8.5rem;
   max-width: none;
   height: auto;
@@ -154,10 +161,12 @@
   bottom: auto;
 
   display: block;
+
   width: 4.25rem;
   height: 0.65rem;
 
   border-radius: 50%;
+
   background: radial-gradient(
     ellipse at center,
     rgb(45 42 38 / 20%) 0%,
@@ -187,11 +196,13 @@
   bottom: auto;
 
   display: block;
+
   width: 5.75rem;
   height: 1.35rem;
 
   border: 1px solid rgb(70 70 70 / 14%);
   border-radius: 50%;
+
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 22%);
 
   opacity: 0;
@@ -207,6 +218,7 @@
   left: 62%;
 
   width: 12.5rem;
+
   transform-origin: bottom center;
 }
 
@@ -216,12 +228,14 @@
   position: absolute;
   inset: 0;
   z-index: 10000;
+
   overflow: visible;
   pointer-events: none;
 }
 
 .tsa-gavel-debug-marker {
   position: absolute;
+
   width: 0.625rem;
   height: 0.625rem;
 
@@ -252,6 +266,7 @@
     sans-serif;
 
   white-space: nowrap;
+
   transform: translateX(-50%);
 }
 
@@ -285,9 +300,11 @@
 
 .tsa-gavel-debug-line {
   position: absolute;
+
   height: 2px;
 
   background: rgb(0 145 255 / 70%);
+
   transform-origin: left center;
 }
 
@@ -303,9 +320,27 @@
 
 @media screen and (max-width: 991px) {
   /*
-   * Webflow continues to own the wrapper height, order and layout.
-   * These rules only configure the animation assets.
+   * Webflow's page-wrapper currently has overflow hidden.
+   *
+   * It must allow the gavel to escape its layout box.
+   * Horizontal scrolling is prevented on the viewport instead.
    */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  .page-wrapper {
+    overflow: visible !important;
+  }
+
+  /*
+   * Keep the full gavel ancestor chain unclipped.
+   */
+  .main-wrapper:has([data-gavel-component]),
+  .section_practice:has([data-gavel-component]),
+  .practice_group:has([data-gavel-component]),
+  .practice-cta_component:has([data-gavel-component]),
   [data-gavel-component],
   [data-gavel-component].practice-cta_light-wrapper.is-govel,
   [data-gavel-component] .practice-cta_strike-group {
@@ -325,13 +360,25 @@
     transform: translateX(-50%);
   }
 
+  /*
+   * Keep the existing mobile position unchanged.
+   *
+   * Mobile authored origin must match:
+   * mobileAuthoredOriginXPercent: 75
+   * mobileAuthoredOriginYPercent: 80
+   *
+   * GSAP later switches to the configured animation pivot.
+   */
   [data-gavel-component] .practice-cta_govel-shadow,
   [data-gavel-component] .practice-cta_govel {
     bottom: -10%;
     left: -150%;
 
     width: clamp(20rem, 50vw, 26rem);
-    transform-origin: 18% 65%;
+    max-width: none;
+    height: auto;
+
+    transform-origin: 75% 80%;
   }
 
   [data-gavel-component] .practice-cta_govel-shadow {
@@ -373,6 +420,7 @@
     inset: auto;
 
     display: block;
+
     width: 100%;
 
     filter: drop-shadow(0 -11px 5px rgb(214 214 214 / 3%))
