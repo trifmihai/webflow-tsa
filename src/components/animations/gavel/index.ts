@@ -657,7 +657,7 @@ type GavelRuntimeWindow = Omit<Window, 'gsap' | 'ScrollTrigger'> & {
    ========================================================================== */
 
 const QUICK_TUNING = {
-  version: '14.1.0',
+  version: '14.1.1',
 
   /*
    * Varianta încărcată implicit după publicare.
@@ -2848,6 +2848,121 @@ export function initGavel(): void {
 
     const instances: GavelInstance[] = [];
     const globalCleanup: Array<() => void> = [];
+
+    /*
+     * Native iOS momentum scrolling can be terminated when a global
+     * ScrollTrigger.refresh() runs while the page is still coasting.
+     *
+     * Gavel images can finish lazy-loading shortly before this section,
+     * and ResizeObserver can request another refresh at the same time.
+     * Batch every global refresh and, on mobile, execute it only after
+     * scrolling has been idle long enough for native momentum to finish.
+     *
+     * This coordinator changes refresh timing only. It does not change
+     * any animation pose, duration, easing, trigger boundary or sequence.
+     */
+    const MOBILE_SCROLL_REFRESH_IDLE_MS = 220;
+    const mobileRefreshQuery = window.matchMedia(
+      `(max-width: ${QUICK_TUNING.interaction.desktopMinWidthPx - 1}px)`
+    );
+
+    let safeScrollTriggerRefreshFrame = 0;
+    let safeScrollTriggerRefreshTimer: number | null = null;
+    let safeScrollTriggerRefreshPending = false;
+    let lastPageScrollTimestamp = Number.NEGATIVE_INFINITY;
+    let safeRefreshCoordinatorDestroyed = false;
+
+    const markPageScrollActivity = (): void => {
+      lastPageScrollTimestamp = window.performance.now();
+    };
+
+    const clearSafeScrollTriggerRefreshTimer = (): void => {
+      if (safeScrollTriggerRefreshTimer === null) {
+        return;
+      }
+
+      window.clearTimeout(safeScrollTriggerRefreshTimer);
+      safeScrollTriggerRefreshTimer = null;
+    };
+
+    const cancelSafeScrollTriggerRefresh = (): void => {
+      cancelAnimationFrame(safeScrollTriggerRefreshFrame);
+      safeScrollTriggerRefreshFrame = 0;
+
+      clearSafeScrollTriggerRefreshTimer();
+      safeScrollTriggerRefreshPending = false;
+    };
+
+    const runSafeScrollTriggerRefresh = (): void => {
+      if (safeRefreshCoordinatorDestroyed || !safeScrollTriggerRefreshPending) {
+        return;
+      }
+
+      const mobileIdleDuration = window.performance.now() - lastPageScrollTimestamp;
+
+      if (mobileRefreshQuery.matches && mobileIdleDuration < MOBILE_SCROLL_REFRESH_IDLE_MS) {
+        clearSafeScrollTriggerRefreshTimer();
+
+        const remainingDelay = Math.max(
+          16,
+          MOBILE_SCROLL_REFRESH_IDLE_MS - mobileIdleDuration + 16
+        );
+
+        safeScrollTriggerRefreshTimer = window.setTimeout(() => {
+          safeScrollTriggerRefreshTimer = null;
+          runSafeScrollTriggerRefresh();
+        }, remainingDelay);
+
+        return;
+      }
+
+      cancelAnimationFrame(safeScrollTriggerRefreshFrame);
+
+      safeScrollTriggerRefreshFrame = requestAnimationFrame(() => {
+        safeScrollTriggerRefreshFrame = 0;
+
+        if (safeRefreshCoordinatorDestroyed || !safeScrollTriggerRefreshPending) {
+          return;
+        }
+
+        const frameIdleDuration = window.performance.now() - lastPageScrollTimestamp;
+
+        /*
+         * Recheck inside the frame because another touch or momentum-scroll
+         * event may have occurred after the refresh was scheduled.
+         */
+        if (mobileRefreshQuery.matches && frameIdleDuration < MOBILE_SCROLL_REFRESH_IDLE_MS) {
+          runSafeScrollTriggerRefresh();
+          return;
+        }
+
+        safeScrollTriggerRefreshPending = false;
+        ScrollTrigger.refresh();
+      });
+    };
+
+    const scheduleSafeScrollTriggerRefresh = (): void => {
+      if (safeRefreshCoordinatorDestroyed) {
+        return;
+      }
+
+      safeScrollTriggerRefreshPending = true;
+      runSafeScrollTriggerRefresh();
+    };
+
+    const destroySafeScrollTriggerRefreshCoordinator = (): void => {
+      if (safeRefreshCoordinatorDestroyed) {
+        return;
+      }
+
+      safeRefreshCoordinatorDestroyed = true;
+      window.removeEventListener('scroll', markPageScrollActivity);
+      cancelSafeScrollTriggerRefresh();
+    };
+
+    window.addEventListener('scroll', markPageScrollActivity, {
+      passive: true,
+    });
 
     const clamp = (value: number, min: number, max: number): number => {
       return Math.min(Math.max(value, min), max);
@@ -5588,7 +5703,6 @@ export function initGavel(): void {
           isInside: mobileState.isInside,
         }));
 
-        let scrollRefreshFrame = 0;
         let initialVisibilityFrame = 0;
         let hasDeferredGeometryRefresh = false;
         let hasDeferredScrollTriggerRefresh = false;
@@ -5647,15 +5761,6 @@ export function initGavel(): void {
           return mobileViewport.preventRefreshPlayback && isMobileSequenceActive();
         };
 
-        const scheduleScrollTriggerRefresh = (): void => {
-          cancelAnimationFrame(scrollRefreshFrame);
-
-          scrollRefreshFrame = requestAnimationFrame(() => {
-            scrollRefreshFrame = 0;
-            ScrollTrigger.refresh();
-          });
-        };
-
         const runDeferredRefreshIfStable = (): void => {
           if (
             mobileState.isDestroyed ||
@@ -5672,7 +5777,7 @@ export function initGavel(): void {
           hasDeferredScrollTriggerRefresh = false;
 
           if (shouldRefreshScrollTrigger) {
-            scheduleScrollTriggerRefresh();
+            scheduleSafeScrollTriggerRefresh();
             return;
           }
 
@@ -5696,7 +5801,7 @@ export function initGavel(): void {
             return;
           }
 
-          scheduleScrollTriggerRefresh();
+          scheduleSafeScrollTriggerRefresh();
         };
 
         const getImpactSequenceDurationMs = (): number => {
@@ -6264,10 +6369,9 @@ export function initGavel(): void {
 
           resizeObserver?.observe(component);
 
-          scheduleScrollTriggerRefresh();
+          scheduleSafeScrollTriggerRefresh();
 
           return () => {
-            cancelAnimationFrame(scrollRefreshFrame);
             cancelAnimationFrame(initialVisibilityFrame);
             mobileState.isDestroyed = true;
             setMobileStatus('destroyed');
@@ -6328,7 +6432,7 @@ export function initGavel(): void {
 
         resizeObserver?.observe(component);
 
-        scheduleScrollTriggerRefresh();
+        scheduleSafeScrollTriggerRefresh();
 
         if (mobileViewport.playOnInitialLoadIfVisible && mobileViewport.replayMode !== 'manual') {
           initialVisibilityFrame = requestAnimationFrame(() => {
@@ -6345,7 +6449,6 @@ export function initGavel(): void {
         }
 
         return () => {
-          cancelAnimationFrame(scrollRefreshFrame);
           cancelAnimationFrame(initialVisibilityFrame);
           mobileState.isDestroyed = true;
           setMobileStatus('destroyed');
@@ -6404,9 +6507,7 @@ export function initGavel(): void {
                 instance.controller.scheduleRefresh();
               });
 
-            requestAnimationFrame(() => {
-              ScrollTrigger.refresh();
-            });
+            scheduleSafeScrollTriggerRefresh();
           };
 
           element.addEventListener('load', refresh, { once: true });
@@ -6438,7 +6539,7 @@ export function initGavel(): void {
       globalCleanup.push(cleanup);
     };
 
-    const destroyAll = (): void => {
+    const destroyInstances = (): void => {
       globalCleanup.splice(0).forEach((cleanup) => {
         cleanup();
       });
@@ -6448,12 +6549,15 @@ export function initGavel(): void {
       });
     };
 
+    const destroyAll = (): void => {
+      destroyInstances();
+      destroySafeScrollTriggerRefreshCoordinator();
+    };
+
     const initializeAll = (): void => {
       document.querySelectorAll<GavelScopeElement>(SELECTORS.scope).forEach(initializeScope);
 
-      requestAnimationFrame(() => {
-        ScrollTrigger.refresh();
-      });
+      scheduleSafeScrollTriggerRefresh();
     };
 
     /*
@@ -6496,9 +6600,7 @@ export function initGavel(): void {
           instance.controller.scheduleRefresh();
         });
 
-        requestAnimationFrame(() => {
-          ScrollTrigger.refresh();
-        });
+        scheduleSafeScrollTriggerRefresh();
       },
 
       geometry: (index = 0) => {
@@ -6536,7 +6638,9 @@ export function initGavel(): void {
           return true;
         }
 
-        destroyAll();
+        /* Preserve the shared scroll-safe refresh coordinator while
+         * rebuilding instances for a live preset change. */
+        destroyInstances();
 
         activePresetName = presetName;
 

@@ -50,6 +50,7 @@ type DevicePolicy = 'fine-pointer' | 'all';
 type ActivationMode = 'internal' | 'hover-or-viewport';
 type FallbackMode = 'fallback-first' | 'error-only';
 type PreloadMode = 'default' | 'nearby';
+type IdleRenderPolicy = 'stop' | 'continuous';
 
 type ResponsiveStateMachineConfig = {
   desktopName: string | null;
@@ -121,12 +122,30 @@ const FIT_MAP: Record<string, Pick<ResolvedLayoutConfig, 'fit' | 'objectFit'>> =
 
 const ALIGNMENT_MAP: Record<string, Pick<ResolvedLayoutConfig, 'alignment' | 'objectPosition'>> = {
   center: { alignment: Alignment.Center, objectPosition: 'center center' },
-  'bottom-center': { alignment: Alignment.BottomCenter, objectPosition: 'center bottom' },
-  'bottom-left': { alignment: Alignment.BottomLeft, objectPosition: 'left bottom' },
-  'bottom-right': { alignment: Alignment.BottomRight, objectPosition: 'right bottom' },
-  'center-left': { alignment: Alignment.CenterLeft, objectPosition: 'left center' },
-  'center-right': { alignment: Alignment.CenterRight, objectPosition: 'right center' },
-  'top-center': { alignment: Alignment.TopCenter, objectPosition: 'center top' },
+  'bottom-center': {
+    alignment: Alignment.BottomCenter,
+    objectPosition: 'center bottom',
+  },
+  'bottom-left': {
+    alignment: Alignment.BottomLeft,
+    objectPosition: 'left bottom',
+  },
+  'bottom-right': {
+    alignment: Alignment.BottomRight,
+    objectPosition: 'right bottom',
+  },
+  'center-left': {
+    alignment: Alignment.CenterLeft,
+    objectPosition: 'left center',
+  },
+  'center-right': {
+    alignment: Alignment.CenterRight,
+    objectPosition: 'right center',
+  },
+  'top-center': {
+    alignment: Alignment.TopCenter,
+    objectPosition: 'center top',
+  },
   'top-left': { alignment: Alignment.TopLeft, objectPosition: 'left top' },
   'top-right': { alignment: Alignment.TopRight, objectPosition: 'right top' },
 };
@@ -156,6 +175,7 @@ function initBenefitRiveRoot(root: HTMLElement): void {
   const fallbackMode = getFallbackMode(root);
   const mount = getMountElement(root, key);
   const preloadMode = getPreloadMode(root);
+  const idleRenderPolicy = getIdleRenderPolicy(root);
   const minScrollPreloadViewports = getPreloadMinScrollViewports(root);
 
   applyLayoutCssVariables(root, layoutConfig);
@@ -377,6 +397,10 @@ function initBenefitRiveRoot(root: HTMLElement): void {
     return document.visibilityState === 'visible' && canvas.isConnected && isRenderVisible;
   };
 
+  const shouldKeepIdleRendererAlive = (): boolean => {
+    return config.mode === 'animation' && idleRenderPolicy === 'continuous' && canRenderNow();
+  };
+
   const canWarmupOffscreen = (): boolean => {
     return preloadMode === 'nearby' || mobilePreloadQuery.matches;
   };
@@ -461,7 +485,8 @@ function initBenefitRiveRoot(root: HTMLElement): void {
         config.mode === 'animation' &&
         isVisualReady &&
         !activationRequested &&
-        !isPlaying
+        !isPlaying &&
+        !shouldKeepIdleRendererAlive()
       ) {
         stopRendering();
       }
@@ -636,7 +661,11 @@ function initBenefitRiveRoot(root: HTMLElement): void {
       idleResetCancelResolvers
     );
 
-    if (token === idleResetToken && (!activationRequested || config.mode !== 'animation')) {
+    if (
+      token === idleResetToken &&
+      (!activationRequested || config.mode !== 'animation') &&
+      !shouldKeepIdleRendererAlive()
+    ) {
       stopRendering();
     }
   };
@@ -897,7 +926,6 @@ function initBenefitRiveRoot(root: HTMLElement): void {
 
     loopCallback = (event): void => {
       if (!pendingGracefulStop || !isLoopEventForAnimation(event)) return;
-
       if (activationRequested) {
         pendingGracefulStop = false;
         stopRequestedFromBoundaryValue = null;
@@ -1972,6 +2000,12 @@ function getPreloadMode(root: HTMLElement): PreloadMode {
   return root.getAttribute('data-rive-preload')?.trim() === 'nearby' ? 'nearby' : 'default';
 }
 
+function getIdleRenderPolicy(root: HTMLElement): IdleRenderPolicy {
+  return root.getAttribute('data-rive-idle-render')?.trim() === 'continuous'
+    ? 'continuous'
+    : 'stop';
+}
+
 function getNearbyPreloadViewports(root: HTMLElement, useMobileDefault: boolean): number {
   const attributeValue = getOptionalAttribute(root, 'data-rive-preload-viewports');
   const defaultValue = useMobileDefault
@@ -2148,7 +2182,12 @@ function getLayoutParityMismatch(
   fallback: HTMLElement,
   mount: HTMLElement,
   canvas: HTMLCanvasElement
-): { canvas: RectSnapshot; fallback: RectSnapshot; mount: RectSnapshot; tolerance: number } | null {
+): {
+  canvas: RectSnapshot;
+  fallback: RectSnapshot;
+  mount: RectSnapshot;
+  tolerance: number;
+} | null {
   const fallbackRect = getRectSnapshot(fallback);
   const mountRect = getRectSnapshot(mount);
   const canvasRect = getRectSnapshot(canvas);
