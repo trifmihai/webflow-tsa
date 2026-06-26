@@ -1,0 +1,35 @@
+/*
+============================================
+  MOBILE HORIZONTAL OVERFLOW GUARD
+  Keeps phone viewports locked to vertical page scroll.
+============================================
+*/
+
+@media screen and (max-width: 767px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .page-wrapper,
+  .main-wrapper {
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+}
+
+@supports (overflow: clip) {
+  @media screen and (max-width: 767px) {
+    .page-wrapper,
+    .main-wrapper {
+      overflow-x: clip !important;
+    }
+  }
+}

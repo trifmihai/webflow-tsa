@@ -112,6 +112,15 @@ type GavelMobileViewportConfig = {
 
   minimumReplayIntervalSeconds: number;
 
+  /*
+   * A confirmed tap inside the rendered hammer bounds replays the same
+   * timed mobile sequence. Pointer movement is tolerated only within the
+   * configured threshold so normal touch scrolling remains unaffected.
+   */
+  tapReplayEnabled: boolean;
+  tapReplayMaxMovementPx: number;
+  tapReplayMaxDurationMs: number;
+
   refreshSilently: boolean;
   preventRefreshPlayback: boolean;
 
@@ -516,6 +525,13 @@ type GavelGeneratedEffect = {
   createdByScript: boolean;
 };
 
+type GavelMobileTouchCandidate = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startedAt: number;
+};
+
 type GavelMobileRuntimeState = {
   status: GavelMobileEntryState;
 
@@ -657,7 +673,7 @@ type GavelRuntimeWindow = Omit<Window, 'gsap' | 'ScrollTrigger'> & {
    ========================================================================== */
 
 const QUICK_TUNING = {
-  version: '14.1.1',
+  version: '14.1.2',
 
   /*
    * Varianta încărcată implicit după publicare.
@@ -733,6 +749,10 @@ const QUICK_TUNING = {
        * Prevent rapid viewport oscillations from replaying it immediately.
        */
       minimumReplayIntervalSeconds: 0.8,
+
+      tapReplayEnabled: true,
+      tapReplayMaxMovementPx: 12,
+      tapReplayMaxDurationMs: 700,
 
       refreshSilently: true,
       preventRefreshPlayback: true,
@@ -6234,6 +6254,177 @@ export function initGavel(): void {
           requestGeometryRefresh();
         };
 
+        /*
+         * The gavel intentionally keeps pointer-events disabled so it cannot
+         * steal interaction from the CTA beneath it. Mobile tap replay is
+         * therefore detected through document-level pointer coordinates and
+         * the hammer's live transformed bounds.
+         *
+         * A gesture is accepted only when it starts and ends inside the gavel,
+         * remains within the movement threshold and completes quickly enough
+         * to be a tap rather than a scroll or long press.
+         */
+        let mobileTouchCandidate: GavelMobileTouchCandidate | null = null;
+        let suppressClickUntil = 0;
+        let suppressedClickPoint: GavelPoint | null = null;
+
+        const isPointInsideRenderedGavel = (clientX: number, clientY: number): boolean => {
+          const rect = gavel.getBoundingClientRect();
+
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            clientX >= rect.left &&
+            clientX <= rect.right &&
+            clientY >= rect.top &&
+            clientY <= rect.bottom
+          );
+        };
+
+        const replayMobileFromTap = (): void => {
+          if (
+            !mobileViewport.enabled ||
+            !mobileViewport.tapReplayEnabled ||
+            mobileViewport.playback !== 'timed' ||
+            mobileState.isDestroyed ||
+            (mobileState.isRefreshing && mobileViewport.preventRefreshPlayback)
+          ) {
+            return;
+          }
+
+          const requiresLiftBeforeReplay =
+            controller.isAnimating() ||
+            controller.progress() > 0.005 ||
+            controller.desiredState() === 'impact';
+
+          cancelMobileTimers();
+          setMobileStatus('playing');
+
+          mobileState.hasPlayed = true;
+          mobileState.lastPlayTimestamp = window.performance.now();
+
+          controller.replay({ manual: true, force: true });
+
+          const replayLeadDurationMs = requiresLiftBeforeReplay ? getLiftDurationMs() : 0;
+
+          mobileState.returnTimer = window.setTimeout(() => {
+            mobileState.returnTimer = null;
+            completeMobileImpact();
+          }, replayLeadDurationMs + getImpactSequenceDurationMs());
+        };
+
+        const handleMobileTouchPointerDown = (event: PointerEvent): void => {
+          if (
+            !mobileViewport.tapReplayEnabled ||
+            mobileViewport.playback !== 'timed' ||
+            event.pointerType !== 'touch' ||
+            !event.isPrimary ||
+            !isPointInsideRenderedGavel(event.clientX, event.clientY)
+          ) {
+            mobileTouchCandidate = null;
+            return;
+          }
+
+          mobileTouchCandidate = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            startedAt: window.performance.now(),
+          };
+        };
+
+        const handleMobileTouchPointerUp = (event: PointerEvent): void => {
+          const candidate = mobileTouchCandidate;
+          mobileTouchCandidate = null;
+
+          if (
+            !candidate ||
+            event.pointerType !== 'touch' ||
+            event.pointerId !== candidate.pointerId
+          ) {
+            return;
+          }
+
+          const movement = Math.hypot(
+            event.clientX - candidate.startX,
+            event.clientY - candidate.startY
+          );
+          const durationMs = window.performance.now() - candidate.startedAt;
+
+          if (
+            movement > mobileViewport.tapReplayMaxMovementPx ||
+            durationMs > mobileViewport.tapReplayMaxDurationMs ||
+            !isPointInsideRenderedGavel(event.clientX, event.clientY)
+          ) {
+            return;
+          }
+
+          /*
+           * Prevent the compatibility click generated after the confirmed tap
+           * from activating the CTA underneath the pointer-events-none image.
+           */
+          suppressClickUntil = window.performance.now() + 500;
+          suppressedClickPoint = {
+            x: event.clientX,
+            y: event.clientY,
+          };
+          replayMobileFromTap();
+        };
+
+        const handleMobileTouchPointerCancel = (event: PointerEvent): void => {
+          if (mobileTouchCandidate?.pointerId === event.pointerId) {
+            mobileTouchCandidate = null;
+          }
+        };
+
+        const handleMobileCompatibilityClick = (event: MouseEvent): void => {
+          const clickPoint = suppressedClickPoint;
+
+          if (window.performance.now() > suppressClickUntil || !clickPoint) {
+            suppressedClickPoint = null;
+            return;
+          }
+
+          const distanceFromConfirmedTap = Math.hypot(
+            event.clientX - clickPoint.x,
+            event.clientY - clickPoint.y
+          );
+
+          if (distanceFromConfirmedTap > mobileViewport.tapReplayMaxMovementPx + 8) {
+            return;
+          }
+
+          suppressClickUntil = 0;
+          suppressedClickPoint = null;
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+        };
+
+        const addMobileTapReplayListeners = (): void => {
+          if (!mobileViewport.tapReplayEnabled || mobileViewport.playback !== 'timed') {
+            return;
+          }
+
+          document.addEventListener('pointerdown', handleMobileTouchPointerDown, true);
+          document.addEventListener('pointerup', handleMobileTouchPointerUp, true);
+          document.addEventListener('pointercancel', handleMobileTouchPointerCancel, true);
+          document.addEventListener('click', handleMobileCompatibilityClick, true);
+        };
+
+        const removeMobileTapReplayListeners = (): void => {
+          mobileTouchCandidate = null;
+          suppressClickUntil = 0;
+          suppressedClickPoint = null;
+
+          document.removeEventListener('pointerdown', handleMobileTouchPointerDown, true);
+          document.removeEventListener('pointerup', handleMobileTouchPointerUp, true);
+          document.removeEventListener('pointercancel', handleMobileTouchPointerCancel, true);
+          document.removeEventListener('click', handleMobileCompatibilityClick, true);
+        };
+
+        addMobileTapReplayListeners();
+
         if (mobileViewport.playback === 'scrub') {
           let scrubImpactPlayed = false;
 
@@ -6381,6 +6572,7 @@ export function initGavel(): void {
 
             scrollTrigger.kill();
             resizeObserver?.disconnect();
+            removeMobileTapReplayListeners();
             controller.setMobileStateReader(null);
 
             controller.kill();
@@ -6458,6 +6650,7 @@ export function initGavel(): void {
 
           scrollTrigger.kill();
           resizeObserver?.disconnect();
+          removeMobileTapReplayListeners();
           controller.setMobileStateReader(null);
 
           controller.kill();

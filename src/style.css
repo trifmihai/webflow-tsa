@@ -24,3 +24,6 @@
 /* Keep this guard after team motion and responsive overrides so image sizing wins. */
 @import './components/team-card/team-card-layout-guard.css';
 @import './components/hero-avatars/hero-avatars.css';
+
+/* Keep this last so mobile page-level clipping wins over component overflow unlocks. */
+@import './styles/mobile-overflow-guard.css';
