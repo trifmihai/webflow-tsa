@@ -6,6 +6,7 @@ import { initOverlayFilterPresets } from './components/animations/overlay-filter
 import { initPlanStamp } from './components/animations/stamp';
 import { initBlogToc } from './components/blog-toc';
 import { initCallPopover } from './components/call-popover';
+import { initCookieConsent, prepareGoogleConsentDefaults } from './components/cookie-consent';
 import { initHeroAvatarHover } from './components/hero-avatars';
 import { initNavbar } from './components/navbar';
 import { initPracticeTextReels } from './components/practice-text-reel';
@@ -18,6 +19,8 @@ import { onDomReady } from './utils/dom';
 // import { initTextReveal } from './components/text-reveal';
 
 export function initSite(): void {
+  prepareGoogleConsentDefaults();
+  onDomReady(initCookieConsent);
   initNavbar();
   initTeamCards();
   initPlanStamp();
